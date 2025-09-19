@@ -2,25 +2,21 @@ import heroWoman from "@/assets/hero-woman.webp";
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <div className="relative inline-block">
-            <img
-              src={heroWoman}
-              alt="Professional woman"
-              className="w-80 h-96 object-cover rounded-2xl shadow-2xl mx-auto"
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <h1 className="text-6xl lg:text-8xl font-bold text-primary">
-              Coming Soon
-            </h1>
-            <p className="text-xl text-muted-foreground">
-              Interview4You.in
-            </p>
-          </div>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <img
+        src={heroWoman}
+        alt="Professional woman"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      
+      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-6xl lg:text-8xl font-bold text-white drop-shadow-2xl">
+            Coming Soon
+          </h1>
+          <p className="text-2xl text-white/90 drop-shadow-lg">
+            Interview4You.in
+          </p>
         </div>
       </div>
     </div>
