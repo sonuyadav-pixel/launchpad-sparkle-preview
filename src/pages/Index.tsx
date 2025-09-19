@@ -17,7 +17,7 @@ const Index = () => {
           <img
             src={interview4uLogo}
             alt="Interview4You Logo"
-            className="h-16 w-auto drop-shadow-lg"
+            className="h-16 w-auto"
           />
         </header>
         
