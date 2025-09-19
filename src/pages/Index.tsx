@@ -1,5 +1,5 @@
 import heroInterview from "@/assets/hero-interview.png";
-import companyLogo from "@/assets/company-logo.png";
+import interview4uLogo from "@/assets/interview4u-logo.png";
 import { Mail, Linkedin, Twitter, Instagram, Facebook } from "lucide-react";
 
 const Index = () => {
@@ -15,7 +15,7 @@ const Index = () => {
         {/* Header with logo */}
         <header className="absolute top-0 right-0 p-6 z-10">
           <img
-            src={companyLogo}
+            src={interview4uLogo}
             alt="Interview4You Logo"
             className="h-16 w-auto drop-shadow-lg"
           />
