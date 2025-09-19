@@ -12,10 +12,10 @@ const Index = () => {
       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-6xl lg:text-8xl font-bold text-white drop-shadow-2xl">
-            Coming Soon
+            coming soon...
           </h1>
           <p className="text-2xl text-white/90 drop-shadow-lg">
-            Interview4You.in
+            Interview4u
           </p>
         </div>
       </div>
