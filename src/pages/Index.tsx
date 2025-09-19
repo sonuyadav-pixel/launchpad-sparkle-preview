@@ -13,7 +13,7 @@ const Index = () => {
       
       <div className="absolute inset-0 bg-black/40">
         {/* Header with logo */}
-        <header className="absolute top-0 right-0 p-6 z-10">
+        <header className="absolute top-0 left-0 p-6 z-10">
           <img
             src={interview4uLogo}
             alt="Interview4You Logo"
