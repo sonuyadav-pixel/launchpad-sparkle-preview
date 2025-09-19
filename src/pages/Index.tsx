@@ -1,11 +1,11 @@
-import heroWoman from "@/assets/hero-woman.webp";
+import heroInterview from "@/assets/hero-interview.png";
 
 const Index = () => {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       <img
-        src={heroWoman}
-        alt="Professional woman"
+        src={heroInterview}
+        alt="Professional interview scene with candidates and interviewers"
         className="absolute inset-0 w-full h-full object-cover"
       />
       
