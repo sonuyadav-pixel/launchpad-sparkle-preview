@@ -4,14 +4,17 @@ import { Mail, Linkedin, Twitter, Instagram, Facebook } from "lucide-react";
 
 const Index = () => {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      <img
-        src={heroInterview}
-        alt="Professional interview scene with candidates and interviewers"
-        className="absolute inset-0 w-full h-full object-cover"
+    <main className="relative min-h-screen w-full overflow-hidden bg-gray-900">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+        style={{ 
+          backgroundImage: `url(${heroInterview})`,
+        }}
       />
       
-      <div className="absolute inset-0 bg-black/40">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/40 flex flex-col">
         {/* Header with logo */}
         <header className="absolute top-0 left-0 p-6 z-10">
           <img
@@ -24,10 +27,10 @@ const Index = () => {
         {/* Main content */}
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
           <div className="text-center space-y-4">
-            <h1 className="text-6xl lg:text-8xl font-bold text-white drop-shadow-2xl">
+            <h1 className="text-6xl lg:text-8xl font-bold text-white">
               coming soon...
             </h1>
-            <p className="text-2xl text-white/90 drop-shadow-lg">
+            <p className="text-2xl text-white/90">
               Interview4you
             </p>
           </div>
@@ -72,7 +75,7 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
