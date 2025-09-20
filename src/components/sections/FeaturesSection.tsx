@@ -26,9 +26,9 @@ const features = [
 
 const FeaturesSection = () => {
   return (
-    <section className="py-20 bg-section-light">
+    <section className="py-20 bg-section-light overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 animate-fade-in-up">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Features You'll Love
           </h2>
@@ -38,19 +38,28 @@ const FeaturesSection = () => {
           {features.map((feature, index) => (
             <Card 
               key={index} 
-              className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-sm"
+              className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-sm animate-scale-in relative overflow-hidden"
+              style={{ animationDelay: `${index * 0.15}s` }}
             >
-              <CardHeader>
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="w-8 h-8 text-primary" />
+              {/* Animated background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <CardHeader className="relative z-10">
+                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:animate-bounce-gentle">
+                  <feature.icon className="w-8 h-8 text-primary group-hover:animate-pulse" />
                 </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
+                <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">
+                  {feature.title}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base leading-relaxed">
+              <CardContent className="relative z-10">
+                <CardDescription className="text-base leading-relaxed group-hover:text-card-foreground transition-colors duration-300">
                   {feature.description}
                 </CardDescription>
               </CardContent>
+              
+              {/* Decorative corner element */}
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </Card>
           ))}
         </div>
