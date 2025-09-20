@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Brain, Target, BarChart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Section3DBackground from "@/components/3d/Section3DBackground";
+import { AnimatedHeading, RotatingText, MultiLineAnimatedText } from "@/components/animations/TextAnimations";
 import featureAiQuestions from "@/assets/feature-ai-questions.jpg";
 import featureScoring from "@/assets/feature-scoring.jpg";
 import featureDashboard from "@/assets/feature-dashboard.jpg";
@@ -45,6 +47,12 @@ const FeaturesSection = () => {
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
+  const subtitleTexts = [
+    "Powerful tools designed to revolutionize your hiring process",
+    "Advanced AI capabilities that transform recruitment",
+    "Intelligent features for smarter hiring decisions"
+  ];
+
   useEffect(() => {
     if (!isAutoPlaying) return;
     
@@ -71,52 +79,57 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section className="py-20 bg-section-light overflow-hidden">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16 animate-fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+    <section className="relative py-20 bg-section-light overflow-hidden">
+      {/* 3D Background */}
+      <Section3DBackground type="features" />
+      
+      {/* Content Overlay */}
+      <div className="relative z-10 container mx-auto px-4">
+        <div className="text-center mb-16">
+          <AnimatedHeading className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Features You'll Love
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Powerful tools designed to revolutionize your hiring process
-          </p>
+          </AnimatedHeading>
+          <RotatingText 
+            texts={subtitleTexts}
+            className="text-xl text-muted-foreground max-w-2xl mx-auto"
+          />
         </div>
         
         {/* Main Feature Carousel */}
-        <div className="relative max-w-7xl mx-auto">
-          <div className="bg-card rounded-3xl shadow-2xl overflow-hidden border">
+        <div className="relative max-w-7xl mx-auto group">
+          <div className="bg-card/90 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border hover:shadow-3xl transition-all duration-500 group-hover:shadow-primary/20">
             <div className="grid lg:grid-cols-5 min-h-[600px]">
               {/* Image Side - Takes up 3 columns */}
               <div className="lg:col-span-3 relative bg-gradient-to-br from-primary/5 to-accent/10 p-8 flex items-center justify-center">
                 <div className="relative w-full max-w-lg">
-                  <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                  <div className="relative overflow-hidden rounded-2xl shadow-2xl group-hover:shadow-3xl transition-all duration-700">
                     <img
                       src={features[currentFeature].image}
                       alt={features[currentFeature].title}
-                      className="w-full h-auto animate-scale-in transform hover:scale-105 transition-transform duration-700"
+                      className="w-full h-auto animate-scale-in transform hover:scale-105 transition-transform duration-700 group-hover:scale-110"
                       key={currentFeature}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent"></div>
                   </div>
                   
                   {/* Feature Icon Overlay */}
-                  <div className="absolute -top-4 -right-4 bg-primary/90 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center animate-pulse-glow">
+                  <div className="absolute -top-4 -right-4 bg-primary/90 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center animate-pulse-glow shadow-2xl hover:scale-110 transition-transform duration-300">
                     {React.createElement(features[currentFeature].icon, { 
                       className: "w-8 h-8 text-white" 
                     })}
                   </div>
                 </div>
                 
-                {/* Decorative elements */}
-                <div className="absolute top-12 left-12 w-20 h-20 bg-primary/10 rounded-full animate-float blur-sm"></div>
-                <div className="absolute bottom-12 right-12 w-16 h-16 bg-accent/20 rounded-full animate-bounce-gentle blur-sm"></div>
+                {/* Decorative elements with enhanced shadows */}
+                <div className="absolute top-12 left-12 w-20 h-20 bg-primary/10 rounded-full animate-float blur-sm shadow-lg"></div>
+                <div className="absolute bottom-12 right-12 w-16 h-16 bg-accent/20 rounded-full animate-bounce-gentle blur-sm shadow-md"></div>
               </div>
               
               {/* Content Side - Takes up 2 columns */}
               <div className="lg:col-span-2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-background to-primary/5">
                 <div key={currentFeature} className="animate-fade-in space-y-6">
                   {/* Feature Number */}
-                  <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                  <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-shadow duration-300">
                     <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
                     <span className="text-sm font-semibold text-primary">
                       Feature {currentFeature + 1}
@@ -124,9 +137,11 @@ const FeaturesSection = () => {
                   </div>
                   
                   {/* Title */}
-                  <h3 className="text-2xl lg:text-3xl font-bold text-card-foreground">
-                    {features[currentFeature].title}
-                  </h3>
+                  <AnimatedHeading>
+                    <h3 className="text-2xl lg:text-3xl font-bold text-card-foreground">
+                      {features[currentFeature].title}
+                    </h3>
+                  </AnimatedHeading>
                   
                   {/* Short Description */}
                   <p className="text-lg font-medium text-primary">
@@ -139,18 +154,11 @@ const FeaturesSection = () => {
                   </p>
                   
                   {/* Benefits List */}
-                  <div className="space-y-2">
-                    {features[currentFeature].benefits.map((benefit, index) => (
-                      <div 
-                        key={benefit}
-                        className="flex items-center gap-3 animate-fade-in-right"
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
-                        <span className="text-sm text-card-foreground">{benefit}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <MultiLineAnimatedText 
+                    lines={features[currentFeature].benefits}
+                    className="space-y-2"
+                    lineDelay={200}
+                  />
                 </div>
               </div>
             </div>
@@ -161,7 +169,7 @@ const FeaturesSection = () => {
             variant="outline"
             size="icon"
             onClick={prevFeature}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-lg"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-2xl hover:shadow-primary/30"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
@@ -170,7 +178,7 @@ const FeaturesSection = () => {
             variant="outline"
             size="icon"
             onClick={nextFeature}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-lg"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-2xl hover:shadow-primary/30"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -182,10 +190,10 @@ const FeaturesSection = () => {
             <button
               key={index}
               onClick={() => goToFeature(index)}
-              className={`group relative px-4 py-2 rounded-full transition-all duration-300 ${
+              className={`group relative px-4 py-2 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl ${
                 index === currentFeature 
-                  ? 'bg-primary text-primary-foreground scale-105 shadow-lg' 
-                  : 'bg-background border border-border hover:border-primary/50 hover:scale-105'
+                  ? 'bg-primary text-primary-foreground scale-105 shadow-2xl shadow-primary/30' 
+                  : 'bg-background border border-border hover:border-primary/50 hover:scale-105 hover:shadow-primary/20'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -210,9 +218,9 @@ const FeaturesSection = () => {
             <span>Feature {currentFeature + 1}</span>
             <span>{features.length} Total</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner">
             <div 
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700 ease-out rounded-full"
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700 ease-out rounded-full shadow-lg"
               style={{ width: `${((currentFeature + 1) / features.length) * 100}%` }}
             />
           </div>
