@@ -1,30 +1,75 @@
-import { Brain, Target, BarChart, Zap } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { Brain, Target, BarChart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import featureAiQuestions from "@/assets/feature-ai-questions.jpg";
+import featureScoring from "@/assets/feature-scoring.jpg";
+import featureDashboard from "@/assets/feature-dashboard.jpg";
+import featureIntegrations from "@/assets/feature-integrations.jpg";
 
 const features = [
   {
     icon: Brain,
     title: "Adaptive AI Questions",
-    description: "Smart interview questions that adapt in real-time based on candidate responses and role requirements."
+    shortDescription: "Smart questions that adapt in real-time",
+    description: "Our AI dynamically adjusts interview questions based on candidate responses and role requirements, ensuring relevant and engaging conversations.",
+    image: featureAiQuestions,
+    benefits: ["Real-time adaptation", "Role-specific questions", "Natural conversation flow"]
   },
   {
     icon: Target,
     title: "Candidate Scoring & Insights",
-    description: "Automatically score candidates on skills, communication, and problem-solving abilities with detailed insights."
+    shortDescription: "Comprehensive candidate evaluation",
+    description: "Advanced AI algorithms provide detailed scoring on technical skills, communication abilities, and problem-solving approaches with actionable insights.",
+    image: featureScoring,
+    benefits: ["Skill assessment", "Communication analysis", "Detailed reports"]
   },
   {
     icon: BarChart,
     title: "HR Dashboard",
-    description: "View comprehensive feedback, filter candidates by skills, and export detailed reports for decision-making."
+    shortDescription: "Centralized candidate management",
+    description: "Intuitive dashboard for HR teams to view comprehensive feedback, filter candidates by skills, and export detailed reports for informed decisions.",
+    image: featureDashboard,
+    benefits: ["Candidate filtering", "Export reports", "Team collaboration"]
   },
   {
     icon: Zap,
     title: "Seamless Integrations",
-    description: "Connect with your existing ATS, Slack notifications, and email systems for streamlined workflow."
+    shortDescription: "Connect with your existing tools",
+    description: "Effortlessly integrate with your current ATS, receive Slack notifications, and automate email workflows for a streamlined hiring process.",
+    image: featureIntegrations,
+    benefits: ["ATS integration", "Slack notifications", "Email automation"]
   }
 ];
 
 const FeaturesSection = () => {
+  const [currentFeature, setCurrentFeature] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    
+    const interval = setInterval(() => {
+      setCurrentFeature((prev) => (prev + 1) % features.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying]);
+
+  const nextFeature = () => {
+    setIsAutoPlaying(false);
+    setCurrentFeature((prev) => (prev + 1) % features.length);
+  };
+
+  const prevFeature = () => {
+    setIsAutoPlaying(false);
+    setCurrentFeature((prev) => (prev - 1 + features.length) % features.length);
+  };
+
+  const goToFeature = (index: number) => {
+    setIsAutoPlaying(false);
+    setCurrentFeature(index);
+  };
+
   return (
     <section className="py-20 bg-section-light overflow-hidden">
       <div className="container mx-auto px-4">
@@ -32,36 +77,145 @@ const FeaturesSection = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Features You'll Love
           </h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Powerful tools designed to revolutionize your hiring process
+          </p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8">
-          {features.map((feature, index) => (
-            <Card 
-              key={index} 
-              className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-0 shadow-sm animate-scale-in relative overflow-hidden"
-              style={{ animationDelay: `${index * 0.15}s` }}
-            >
-              {/* Animated background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <CardHeader className="relative z-10">
-                <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:animate-bounce-gentle">
-                  <feature.icon className="w-8 h-8 text-primary group-hover:animate-pulse" />
+        {/* Main Feature Carousel */}
+        <div className="relative max-w-7xl mx-auto">
+          <div className="bg-card rounded-3xl shadow-2xl overflow-hidden border">
+            <div className="grid lg:grid-cols-5 min-h-[600px]">
+              {/* Image Side - Takes up 3 columns */}
+              <div className="lg:col-span-3 relative bg-gradient-to-br from-primary/5 to-accent/10 p-8 flex items-center justify-center">
+                <div className="relative w-full max-w-lg">
+                  <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                    <img
+                      src={features[currentFeature].image}
+                      alt={features[currentFeature].title}
+                      className="w-full h-auto animate-scale-in transform hover:scale-105 transition-transform duration-700"
+                      key={currentFeature}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent"></div>
+                  </div>
+                  
+                  {/* Feature Icon Overlay */}
+                  <div className="absolute -top-4 -right-4 bg-primary/90 backdrop-blur-sm w-16 h-16 rounded-full flex items-center justify-center animate-pulse-glow">
+                    {React.createElement(features[currentFeature].icon, { 
+                      className: "w-8 h-8 text-white" 
+                    })}
+                  </div>
                 </div>
-                <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">
-                  {feature.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <CardDescription className="text-base leading-relaxed group-hover:text-card-foreground transition-colors duration-300">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
+                
+                {/* Decorative elements */}
+                <div className="absolute top-12 left-12 w-20 h-20 bg-primary/10 rounded-full animate-float blur-sm"></div>
+                <div className="absolute bottom-12 right-12 w-16 h-16 bg-accent/20 rounded-full animate-bounce-gentle blur-sm"></div>
+              </div>
               
-              {/* Decorative corner element */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </Card>
+              {/* Content Side - Takes up 2 columns */}
+              <div className="lg:col-span-2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-background to-primary/5">
+                <div key={currentFeature} className="animate-fade-in space-y-6">
+                  {/* Feature Number */}
+                  <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full">
+                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+                    <span className="text-sm font-semibold text-primary">
+                      Feature {currentFeature + 1}
+                    </span>
+                  </div>
+                  
+                  {/* Title */}
+                  <h3 className="text-2xl lg:text-3xl font-bold text-card-foreground">
+                    {features[currentFeature].title}
+                  </h3>
+                  
+                  {/* Short Description */}
+                  <p className="text-lg font-medium text-primary">
+                    {features[currentFeature].shortDescription}
+                  </p>
+                  
+                  {/* Detailed Description */}
+                  <p className="text-muted-foreground leading-relaxed">
+                    {features[currentFeature].description}
+                  </p>
+                  
+                  {/* Benefits List */}
+                  <div className="space-y-2">
+                    {features[currentFeature].benefits.map((benefit, index) => (
+                      <div 
+                        key={benefit}
+                        className="flex items-center gap-3 animate-fade-in-right"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></div>
+                        <span className="text-sm text-card-foreground">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Navigation Arrows */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={prevFeature}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-lg"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={nextFeature}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/90 backdrop-blur-sm border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all duration-300 hover:scale-110 shadow-lg"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+        </div>
+        
+        {/* Feature Navigation Tabs */}
+        <div className="flex justify-center mt-8 gap-2 flex-wrap">
+          {features.map((feature, index) => (
+            <button
+              key={index}
+              onClick={() => goToFeature(index)}
+              className={`group relative px-4 py-2 rounded-full transition-all duration-300 ${
+                index === currentFeature 
+                  ? 'bg-primary text-primary-foreground scale-105 shadow-lg' 
+                  : 'bg-background border border-border hover:border-primary/50 hover:scale-105'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {React.createElement(feature.icon, { 
+                  className: `w-4 h-4 ${index === currentFeature ? 'text-primary-foreground' : 'text-primary'}` 
+                })}
+                <span className="text-sm font-medium hidden sm:inline">
+                  {feature.title}
+                </span>
+              </div>
+              
+              {index === currentFeature && (
+                <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping"></div>
+              )}
+            </button>
           ))}
+        </div>
+        
+        {/* Progress Indicator */}
+        <div className="mt-6 max-w-sm mx-auto">
+          <div className="flex justify-between text-xs text-muted-foreground mb-2">
+            <span>Feature {currentFeature + 1}</span>
+            <span>{features.length} Total</span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700 ease-out rounded-full"
+              style={{ width: `${((currentFeature + 1) / features.length) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
     </section>
