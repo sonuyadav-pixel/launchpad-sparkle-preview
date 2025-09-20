@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import interview4uLogo from "@/assets/interview4u-logo.png";
-import AI3DScene from "@/components/3d/AI3DScene";
+// Temporarily disabled: import AI3DScene from "@/components/3d/AI3DScene";
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
-      {/* 3D Background */}
-      <AI3DScene />
+      {/* Temporarily disabled 3D Background */}
+      {/* <AI3DScene /> */}
       
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-black/20"></div>

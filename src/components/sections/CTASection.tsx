@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import Section3DBackground from "@/components/3d/Section3DBackground";
+// Temporarily disabled: import Section3DBackground from "@/components/3d/Section3DBackground";
 import { AnimatedHeading, RotatingText } from "@/components/animations/TextAnimations";
 
 const CTASection = () => {
@@ -11,8 +11,8 @@ const CTASection = () => {
 
   return (
     <section className="relative py-20 bg-gradient-to-r from-gradient-start to-gradient-end overflow-hidden">
-      {/* 3D Background */}
-      <Section3DBackground type="cta" />
+      {/* Temporarily disabled 3D Background */}
+      {/* <Section3DBackground type="cta" /> */}
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4 text-center">

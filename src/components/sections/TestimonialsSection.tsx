@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Section3DBackground from "@/components/3d/Section3DBackground";
+// Temporarily disabled: import Section3DBackground from "@/components/3d/Section3DBackground";
 import { AnimatedHeading, RotatingText } from "@/components/animations/TextAnimations";
 import testimonial1 from "@/assets/testimonial-1.jpg";
 import testimonial2 from "@/assets/testimonial-2.jpg";
@@ -65,8 +65,8 @@ const TestimonialsSection = () => {
 
   return (
     <section className="relative py-20 bg-section-light">
-      {/* 3D Background */}
-      <Section3DBackground type="testimonials" />
+      {/* Temporarily disabled 3D Background */}
+      {/* <Section3DBackground type="testimonials" /> */}
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">

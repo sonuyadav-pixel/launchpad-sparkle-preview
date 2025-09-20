@@ -1,6 +1,6 @@
 import React from "react";
 import { User, MessageCircle, BarChart3, Monitor } from "lucide-react";
-import Section3DBackground from "@/components/3d/Section3DBackground";
+// Temporarily disabled: import Section3DBackground from "@/components/3d/Section3DBackground";
 import { AnimatedHeading, RotatingText, MultiLineAnimatedText } from "@/components/animations/TextAnimations";
 import step1Profile from "@/assets/step-1-profile.jpg";
 import step2Interview from "@/assets/step-2-interview.jpg";
@@ -47,8 +47,8 @@ const HowItWorksSection = () => {
 
   return (
     <section className="relative py-20 bg-background overflow-hidden">
-      {/* 3D Background */}
-      <Section3DBackground type="work" />
+      {/* Temporarily disabled 3D Background */}
+      {/* <Section3DBackground type="work" /> */}
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">
