@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Text3D, OrbitControls, Environment } from '@react-three/drei';
+import { Float, OrbitControls, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Floating AI Brain Component
@@ -114,31 +114,19 @@ const AI3DScene = () => {
         {/* Data Particles */}
         <DataParticles />
         
-        {/* Floating Text Elements */}
+        {/* Floating Geometric Text Elements */}
         <Float speed={2} rotationIntensity={0.2} floatIntensity={0.3}>
-          <Text3D
-            font="/fonts/Inter_Bold.json"
-            size={0.5}
-            height={0.1}
-            position={[-2, -3, 0]}
-            rotation={[0, 0.2, 0]}
-          >
-            AI
+          <mesh position={[-2, -3, 0]} rotation={[0, 0.2, 0]}>
+            <boxGeometry args={[1.5, 0.3, 0.2]} />
             <meshStandardMaterial color="#2196F3" />
-          </Text3D>
+          </mesh>
         </Float>
         
         <Float speed={1.8} rotationIntensity={0.3} floatIntensity={0.4}>
-          <Text3D
-            font="/fonts/Inter_Bold.json"
-            size={0.3}
-            height={0.05}
-            position={[2, -2, 1]}
-            rotation={[0, -0.3, 0]}
-          >
-            SMART
+          <mesh position={[2, -2, 1]} rotation={[0, -0.3, 0]}>
+            <cylinderGeometry args={[0.2, 0.2, 1]} />
             <meshStandardMaterial color="#ffffff" />
-          </Text3D>
+          </mesh>
         </Float>
         
         <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
