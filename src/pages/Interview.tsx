@@ -286,9 +286,32 @@ const Interview = () => {
     addTranscriptMessage('ai', randomResponse);
   };
 
+  // Check if permissions are already granted
+  const checkExistingPermissions = async () => {
+    try {
+      // Try to get media without showing permission dialog
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: true
+      });
+      
+      // If we get here, permissions are already granted
+      console.log('Permissions already granted');
+      stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+      setShowPermissionRequest(false);
+      initializeMedia();
+    } catch (error: any) {
+      console.log('Permissions not granted yet:', error.name);
+      // If we get here, we need to request permissions
+      setShowPermissionRequest(true);
+    }
+  };
+
   // Start media only after permission is granted
   useEffect(() => {
-    // Don't auto-initialize media, wait for permission request
+    // Check existing permissions first
+    checkExistingPermissions();
+    
     return () => {
       // Cleanup: stop all tracks and recognition when component unmounts
       if (streamRef.current) {
