@@ -31,7 +31,7 @@ serve(async (req) => {
 
   try {
     console.log('Starting interview-session function');
-    console.log('Method:', method);
+    console.log('Method:', req.method);
     console.log('Headers:', Object.fromEntries(req.headers.entries()));
     
     // Initialize Supabase client
