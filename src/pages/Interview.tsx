@@ -500,7 +500,7 @@ const Interview = () => {
                 </Button>
               </div>
 
-              <TabsContent value="transcript" className="flex-1 px-6 pb-6 min-h-0">
+              <TabsContent value="transcript" className="px-6 pb-6 h-64">
                 <ScrollArea className="h-full">
                   <div className="space-y-4 pr-4 pb-4">
                     {transcript.map((message) => (
