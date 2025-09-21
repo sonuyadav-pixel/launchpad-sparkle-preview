@@ -21,8 +21,11 @@ import {
   Settings,
   ArrowLeft,
   Send,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react';
+import TranscriptPanel from '@/components/interview/TranscriptPanel';
+import VoiceToTextModule from '@/components/interview/VoiceToTextModule';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +36,7 @@ interface TranscriptMessage {
   speaker: 'user' | 'ai';
   message: string;
   timestamp: Date;
+  confidence?: number;
 }
 
 const Interview = () => {
@@ -116,6 +120,30 @@ const Interview = () => {
     initializeSession();
   }, [sessionId, navigate, toast]);
 
+  // Handle voice to text updates
+  const handleVoiceToTextUpdate = useCallback((text: string, isFinal: boolean, confidence?: number) => {
+    if (isFinal && text.trim()) {
+      // Add final transcript to the transcript history
+      const userMessage: TranscriptMessage = {
+        id: Date.now().toString(),
+        speaker: 'user',
+        message: text.trim(),
+        timestamp: new Date(),
+        confidence: confidence
+      };
+      setTranscript(prev => [userMessage, ...prev]);
+      setCurrentTranscript('');
+      
+      // Send to realtime client if connected
+      if (realtimeClientRef.current) {
+        realtimeClientRef.current.sendTextMessage(text.trim());
+      }
+    } else if (!isFinal) {
+      // Update current transcript with partial result
+      setCurrentTranscript(text);
+    }
+  }, []);
+
   // Handle realtime messages
   const handleRealtimeMessage = useCallback((message: any) => {
     console.log('📨 Realtime message:', message.type);
@@ -149,7 +177,8 @@ const Interview = () => {
             id: Date.now().toString(),
             speaker: 'user',
             message: message.text.trim(),
-            timestamp: new Date()
+            timestamp: new Date(),
+            confidence: message.confidence
           };
           setTranscript(prev => [userMessage, ...prev]);
           setCurrentTranscript('');
@@ -532,41 +561,21 @@ const Interview = () => {
             </Card>
           </div>
 
-          {/* Transcript */}
+          {/* Transcript and Voice-to-Text */}
           <div className="space-y-6">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5" />
-                  Live Transcript
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col min-h-0">
-                <ScrollArea className="flex-1 pr-4">
-                  <div className="space-y-4">
-                    {transcript.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.speaker === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            msg.speaker === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          <p className="text-sm">{msg.message}</p>
-                          <p className="text-xs opacity-70 mt-1">
-                            {msg.timestamp.toLocaleTimeString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Enhanced Transcript Panel */}
+            <TranscriptPanel
+              transcript={transcript}
+              currentTranscript={currentTranscript}
+              isListening={isListening}
+              isAISpeaking={isAISpeaking}
+            />
+
+            {/* Voice to Text Module */}
+            <VoiceToTextModule
+              onTranscriptUpdate={handleVoiceToTextUpdate}
+              isActive={isInterviewActive && !isMuted}
+            />
           </div>
         </div>
       </div>
