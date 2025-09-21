@@ -46,6 +46,10 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
+  
+  // Conversation flow control
+  const lastProcessedTime = useRef<number>(0);
+  const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   
   // Refs
@@ -192,6 +196,27 @@ const Interview = () => {
     try {
       console.log('🧠 Processing user speech:', transcript);
       
+      // Skip if transcript is too short or AI is currently speaking
+      if (transcript.length < 3) {
+        console.log('🚫 Skipping: transcript too short');
+        return;
+      }
+      
+      // Check if AI is currently speaking or processing
+      if (isAISpeaking.current) {
+        console.log('🚫 Skipping: AI is currently speaking');
+        return;
+      }
+      
+      // Check if we just processed speech recently (debounce)
+      const now = Date.now();
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
+        console.log('🚫 Skipping: too soon after last response');
+        return;
+      }
+      
+      lastProcessedTime.current = now;
+      
       // Add user message to transcript
       const userMessage: TranscriptMessage = {
         id: Date.now().toString(),
@@ -205,24 +230,37 @@ const Interview = () => {
       // Add to database
       await addTranscriptMessage(userMessage);
       
-      // Generate AI response
-      const aiResponse = await generateAIResponse(transcript);
-      
-      if (aiResponse) {
-        const aiMessage: TranscriptMessage = {
-          id: (Date.now() + 1).toString(),
-          speaker: 'ai',
-          message: aiResponse,
-          timestamp: new Date()
-        };
+      // Only generate AI response if user seems to have finished speaking
+      // Wait a moment to see if more speech is coming
+      setTimeout(async () => {
+        if (isAISpeaking.current) return; // Double check AI isn't speaking
         
-        setLocalTranscript(prev => [aiMessage, ...prev]);
-        await addTranscriptMessage(aiMessage);
-        
-        // Speak the AI response
-        console.log('🔊 Speaking AI response...');
-        await speak(aiResponse, 'alloy');
-      }
+        try {
+          console.log('🤖 Generating delayed AI response...');
+          const aiResponse = await generateAIResponse(transcript);
+          
+          if (aiResponse && !isAISpeaking.current) {
+            const aiMessage: TranscriptMessage = {
+              id: (Date.now() + 1).toString(),
+              speaker: 'ai',
+              message: aiResponse,
+              timestamp: new Date()
+            };
+            
+            setLocalTranscript(prev => [aiMessage, ...prev]);
+            await addTranscriptMessage(aiMessage);
+            
+            // Speak the AI response
+            console.log('🔊 Speaking AI response...');
+            isAISpeaking.current = true;
+            await speak(aiResponse, 'alloy');
+            isAISpeaking.current = false;
+          }
+        } catch (error) {
+          console.error('❌ Error in delayed AI response:', error);
+          isAISpeaking.current = false;
+        }
+      }, 2000); // Wait 2 seconds before responding
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
