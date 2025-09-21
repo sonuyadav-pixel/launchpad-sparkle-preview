@@ -40,14 +40,6 @@ const InterviewModule = () => {
       setError("");
       console.log('Starting new interview...');
       
-      // Test edge function connectivity first
-      try {
-        const testResponse = await supabase.functions.invoke('test-function');
-        console.log('Test function response:', testResponse);
-      } catch (testError) {
-        console.error('Test function failed:', testError);
-      }
-      
       const session = await createSession({
         title: `Interview Session - ${new Date().toLocaleDateString()}`,
         interview_type: 'general'
@@ -55,7 +47,7 @@ const InterviewModule = () => {
       
       console.log('Session created successfully:', session);
       
-      // Navigate to interview page with session ID
+      // Navigate immediately to interview page with session ID
       navigate(`/interview?session=${session.id}`);
     } catch (error) {
       console.error('Failed to start interview:', error);

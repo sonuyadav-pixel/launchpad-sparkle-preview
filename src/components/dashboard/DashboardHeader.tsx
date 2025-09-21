@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, DollarSign } from "lucide-react";
+import { Menu, LogOut, DollarSign, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { sessionManager } from "@/utils/SessionManager";
@@ -100,11 +100,12 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          
           <Button
             variant="outline"
             size="sm"
             onClick={onOpenPricing}
-            className="hidden sm:inline-flex items-center gap-2"
+            className="hidden md:inline-flex items-center gap-2"
           >
             <DollarSign className="h-4 w-4" />
             Pricing

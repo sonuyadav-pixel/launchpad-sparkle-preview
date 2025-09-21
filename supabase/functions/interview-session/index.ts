@@ -252,7 +252,67 @@ serve(async (req) => {
         });
       }
 
+      case 'get-user-sessions': {
+        if (method !== 'POST') {
+          throw new Error('Method not allowed');
+        }
+
+        // Get all sessions for the user (for feedback page)
+        const { data: sessions, error } = await supabase
+          .from('interview_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching user sessions:', error);
+          throw error;
+        }
+
+        return new Response(JSON.stringify({ sessions }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       case 'get-transcript': {
+        if (method !== 'POST') {
+          throw new Error('Method not allowed');
+        }
+
+        const sessionId = body?.session_id;
+        if (!sessionId) {
+          throw new Error('Session ID is required');
+        }
+
+        // Verify session belongs to user
+        const { data: session, error: sessionError } = await supabase
+          .from('interview_sessions')
+          .select('id')
+          .eq('id', sessionId)
+          .eq('user_id', user.id)
+          .single();
+
+        if (sessionError || !session) {
+          throw new Error('Session not found or access denied');
+        }
+
+        const { data: transcript, error } = await supabase
+          .from('interview_transcripts')
+          .select('*')
+          .eq('session_id', sessionId)
+          .order('timestamp', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching transcript:', error);
+          throw error;
+        }
+
+        return new Response(JSON.stringify({ transcript }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'get-transcript-legacy': {
         if (method !== 'GET') {
           throw new Error('Method not allowed');
         }
