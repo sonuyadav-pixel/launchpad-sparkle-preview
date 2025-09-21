@@ -10,9 +10,9 @@ const HeroSection = () => {
   const [smartTextIndex, setSmartTextIndex] = useState(0);
 
   const smartPhrases = [
-    "Smart Hiring Decisions",
-    "Smart Candidate Assessment", 
-    "Smart Interview Analytics"
+    "Hiring Decisions",
+    "Candidate Assessment", 
+    "Interview Analytics"
   ];
 
   const features = [
@@ -108,8 +108,9 @@ const HeroSection = () => {
               </span>
             </h1>
             
-            <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white/90 transition-all duration-500">
-              {smartPhrases[smartTextIndex]}
+            <div className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 flex items-center justify-center gap-3">
+              <span>Smarter</span>
+              <span className="text-black transition-all duration-500">{smartPhrases[smartTextIndex]}</span>
             </div>
             
             <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
