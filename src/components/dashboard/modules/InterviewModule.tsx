@@ -6,7 +6,7 @@ import { Video, Users, Calendar, Clock, Play, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type InterviewSession } from "@/hooks/useInterviewSession";
 import { supabase } from "@/integrations/supabase/client";
-import OngoingInterviewSection from "./OngoingInterviewSection";
+import { OngoingInterviewSection } from "./OngoingInterviewSection";
 import ProductValueProposition from "./ProductValueProposition";
 
 const InterviewModule = () => {
@@ -106,13 +106,8 @@ const InterviewModule = () => {
 
   return (
     <div className="space-y-0">
-      {/* Section 1: Ongoing Interview - Only show if interview is active */}
-      {activeSession && activeSession.status === 'active' && (
-        <OngoingInterviewSection 
-          activeSession={activeSession} 
-          onJoinSession={handleJoinActiveSession}
-        />
-      )}
+      {/* Section 1: Ongoing Interview - Always check for active session */}
+      <OngoingInterviewSection />
 
       {/* Section 2: Main Interview Module */}
       <Card className="h-full">

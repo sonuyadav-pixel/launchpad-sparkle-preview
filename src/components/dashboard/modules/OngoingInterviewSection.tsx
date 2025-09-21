@@ -1,140 +1,186 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Video, Users, Clock, Play } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { type InterviewSession } from "@/hooks/useInterviewSession";
+import React, { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Video, Users, Clock, ArrowRight, Phone, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { sessionManager } from '@/utils/SessionManager';
+import { useInterviewSession } from '@/hooks/useInterviewSession';
 
-interface OngoingInterviewSectionProps {
-  activeSession: InterviewSession;
-  onJoinSession: () => void;
-}
-
-const OngoingInterviewSection = ({ activeSession, onJoinSession }: OngoingInterviewSectionProps) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [elapsedTime, setElapsedTime] = useState(0);
-
-  // Mock participants data - in real app this would come from real-time presence
-  const participants = [
-    { id: 1, name: "AI Interviewer", role: "Interviewer", isOnline: true },
-    { id: 2, name: "You", role: "Candidate", isOnline: true },
-  ];
+export const OngoingInterviewSection = () => {
+  const navigate = useNavigate();
+  const [sessionDetails, setSessionDetails] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const { updateSession } = useInterviewSession();
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
+    const updateSessionDetails = () => {
+      const details = sessionManager.getSessionDetails();
+      setSessionDetails(details);
       
-      // Calculate elapsed time since session started
-      const sessionStart = new Date(activeSession.created_at);
-      const elapsed = Math.floor((Date.now() - sessionStart.getTime()) / 1000);
-      setElapsedTime(elapsed);
-    }, 1000);
+      if (details && !details.isActive) {
+        setTimeLeft(300 - details.timeSincePaused);
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [activeSession.created_at]);
+    updateSessionDetails();
+    const interval = setInterval(updateSessionDetails, 1000);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  };
+    return () => clearInterval(interval);
+  }, []);
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+  // Auto-close session after 5 minutes
+  useEffect(() => {
+    if (sessionDetails?.shouldAutoClose) {
+      handleAutoClose();
+    }
+  }, [sessionDetails?.shouldAutoClose]);
+
+  const handleAutoClose = async () => {
+    console.log('Auto-closing session due to inactivity');
     
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    // Update session status to 'cancelled' in database
+    if (sessionDetails?.sessionId) {
+      try {
+        await updateSession(sessionDetails.sessionId, { 
+          status: 'cancelled',
+          metadata: { reason: 'candidate_left', auto_closed: true }
+        });
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    
+    // End session in manager
+    sessionManager.endSession();
+    setSessionDetails(null);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'waiting': return 'bg-yellow-500';
-      case 'paused': return 'bg-orange-500';
-      default: return 'bg-gray-500';
+  const handleReturnToInterview = () => {
+    if (sessionDetails?.sessionId) {
+      navigate(`/interview?session=${sessionDetails.sessionId}`);
     }
   };
+
+  const handleEndSession = async () => {
+    if (sessionDetails?.sessionId) {
+      try {
+        await updateSession(sessionDetails.sessionId, { 
+          status: 'completed',
+          ended_at: new Date().toISOString()
+        });
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
+    }
+    
+    sessionManager.endSession();
+    setSessionDetails(null);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatTimeLeft = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (!sessionDetails) {
+    return null;
+  }
+
+  const isWarning = timeLeft <= 60 && !sessionDetails.isActive; // Warning when less than 1 minute left
 
   return (
-    <Card className="mb-6 border-green-200 dark:border-green-800">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`${getStatusColor(activeSession.status)} w-3 h-3 rounded-full animate-pulse`}></div>
-            <CardTitle className="text-green-900 dark:text-green-100">
-              Interview in Progress
-            </CardTitle>
-          </div>
-          <Badge className={`${getStatusColor(activeSession.status)} text-white`}>
-            LIVE
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Time and Duration Display */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-            <Clock className="h-5 w-5 mx-auto mb-1 text-green-600" />
-            <div className="text-lg font-mono font-semibold text-green-900 dark:text-green-100">
-              {formatTime(currentTime)}
-            </div>
-            <div className="text-xs text-green-600 dark:text-green-400">Current Time</div>
-          </div>
-          <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-            <Video className="h-5 w-5 mx-auto mb-1 text-blue-600" />
-            <div className="text-lg font-mono font-semibold text-blue-900 dark:text-blue-100">
-              {formatDuration(elapsedTime)}
-            </div>
-            <div className="text-xs text-blue-600 dark:text-blue-400">Duration</div>
-          </div>
-        </div>
-
-        {/* Participants Section */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">
-              Participants ({participants.length})
-            </span>
-          </div>
-          
-          <div className="space-y-2">
-            {participants.map((participant) => (
-              <div 
-                key={participant.id}
-                className="flex items-center justify-between p-2 bg-muted/30 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${participant.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  <span className="text-sm font-medium">{participant.name}</span>
-                  <Badge variant="outline" className="text-xs">
-                    {participant.role}
-                  </Badge>
-                </div>
-                {participant.isOnline && (
-                  <span className="text-xs text-green-600 dark:text-green-400">Online</span>
-                )}
+    <Card className="border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20">
+      <div className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-green-600" />
+                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                  {sessionDetails.isActive ? 'Active' : 'Paused'}
+                </Badge>
               </div>
-            ))}
+              <h3 className="font-semibold text-lg text-foreground">
+                {sessionDetails.title}
+              </h3>
+            </div>
+
+            {/* Session Details */}
+            <div className="flex flex-wrap gap-4 mb-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                <span>{sessionDetails.participants.length} participant{sessionDetails.participants.length !== 1 ? 's' : ''}</span>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span>Duration: {formatTime(sessionDetails.duration)}</span>
+              </div>
+
+              {!sessionDetails.isActive && (
+                <div className={`flex items-center gap-1 ${isWarning ? 'text-red-600' : 'text-orange-600'}`}>
+                  <AlertCircle className="h-4 w-4" />
+                  <span>
+                    Auto-close in: {formatTimeLeft(timeLeft)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Participants */}
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-2">Participants:</p>
+              <div className="flex gap-2">
+                {sessionDetails.participants.map((participant: string, index: number) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {participant}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col gap-2 ml-4">
+            <Button
+              onClick={handleReturnToInterview}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              size="sm"
+            >
+              <ArrowRight className="h-4 w-4 mr-2" />
+              Return to Interview
+            </Button>
+            
+            <Button
+              onClick={handleEndSession}
+              variant="destructive"
+              size="sm"
+            >
+              <Phone className="h-4 w-4 mr-2" />
+              End Session
+            </Button>
           </div>
         </div>
 
-        {/* Join Button */}
-        <Button 
-          onClick={onJoinSession}
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
-          size="lg"
-        >
-          <Play className="h-4 w-4 mr-2" />
-          Rejoin Interview
-        </Button>
-      </CardContent>
+        {/* Warning for auto-close */}
+        {isWarning && !sessionDetails.isActive && (
+          <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-300 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              <span>Session will automatically close in less than 1 minute due to inactivity.</span>
+            </div>
+          </div>
+        )}
+      </div>
     </Card>
   );
 };
-
-export default OngoingInterviewSection;

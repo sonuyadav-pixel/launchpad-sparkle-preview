@@ -81,20 +81,6 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
               Hi, <span className="text-primary">John</span>
             </h2>
           </div>
-
-          {/* Active Interview Indicator */}
-          {hasActiveSession && (
-            <Button
-              onClick={handleReturnToInterview}
-              variant="default"
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 animate-pulse"
-            >
-              <Video className="h-4 w-4" />
-              <span className="hidden md:inline">Return to Interview</span>
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
         </div>
 
         {/* Right Side */}

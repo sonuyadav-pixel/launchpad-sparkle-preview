@@ -148,7 +148,12 @@ const Interview = () => {
       await setupVideo(stream);
       
       // Store session in session manager
-      sessionManager.setActiveSession(currentSession?.id || 'temp', stream, recognitionRef.current);
+      sessionManager.setActiveSession(
+        currentSession?.id || 'temp', 
+        stream, 
+        recognitionRef.current,
+        currentSession?.title || 'AI Interview Session'
+      );
       
       // Initialize speech recognition
       initializeSpeechRecognition();

@@ -6,6 +6,10 @@ export class SessionManager {
     stream: MediaStream | null;
     recognition: any;
     isActive: boolean;
+    startTime: Date;
+    pausedTime: Date | null;
+    participants: string[];
+    title: string;
   } | null = null;
 
   private constructor() {}
@@ -17,13 +21,17 @@ export class SessionManager {
     return SessionManager.instance;
   }
 
-  setActiveSession(sessionId: string, stream: MediaStream | null, recognition: any) {
+  setActiveSession(sessionId: string, stream: MediaStream | null, recognition: any, title?: string) {
     console.log('Setting active session:', sessionId);
     this.activeSession = {
       sessionId,
       stream,
       recognition,
-      isActive: true
+      isActive: true,
+      startTime: new Date(),
+      pausedTime: null,
+      participants: ['You'], // For now, just the current user
+      title: title || 'AI Interview Session'
     };
   }
 
@@ -35,6 +43,7 @@ export class SessionManager {
     if (this.activeSession) {
       console.log('Pausing session:', this.activeSession.sessionId);
       this.activeSession.isActive = false;
+      this.activeSession.pausedTime = new Date();
       
       // Pause speech recognition but keep stream active
       if (this.activeSession.recognition) {
@@ -51,6 +60,7 @@ export class SessionManager {
     if (this.activeSession) {
       console.log('Resuming session:', this.activeSession.sessionId);
       this.activeSession.isActive = true;
+      this.activeSession.pausedTime = null;
       
       // Resume speech recognition
       if (this.activeSession.recognition) {
@@ -61,6 +71,39 @@ export class SessionManager {
         }
       }
     }
+  }
+
+  getSessionDuration(): number {
+    if (!this.activeSession) return 0;
+    
+    const now = new Date();
+    const startTime = this.activeSession.startTime;
+    return Math.floor((now.getTime() - startTime.getTime()) / 1000);
+  }
+
+  getTimeSincePaused(): number {
+    if (!this.activeSession?.pausedTime) return 0;
+    
+    const now = new Date();
+    return Math.floor((now.getTime() - this.activeSession.pausedTime.getTime()) / 1000);
+  }
+
+  shouldAutoClose(): boolean {
+    return this.getTimeSincePaused() >= 300; // 5 minutes = 300 seconds
+  }
+
+  getSessionDetails() {
+    if (!this.activeSession) return null;
+    
+    return {
+      sessionId: this.activeSession.sessionId,
+      title: this.activeSession.title,
+      participants: this.activeSession.participants,
+      duration: this.getSessionDuration(),
+      timeSincePaused: this.getTimeSincePaused(),
+      isActive: this.activeSession.isActive,
+      shouldAutoClose: this.shouldAutoClose()
+    };
   }
 
   endSession() {
