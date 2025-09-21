@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Play, TrendingUp, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const InterviewModule = () => {
+  const navigate = useNavigate();
+  
   const handleStartInterview = () => {
-    // Add interview start logic here
-    console.log("Starting AI interview...");
+    navigate('/interview');
   };
 
   return (
