@@ -231,18 +231,56 @@ const Interview = () => {
     };
   }, []);
 
-  // Handle camera toggle - simplified
-  const toggleCamera = () => {
-    if (streamRef.current) {
+  // Handle camera toggle - with proper restart
+  const toggleCamera = async () => {
+    if (streamRef.current && videoRef.current) {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsCameraOn(videoTrack.enabled);
+        const willBeEnabled = !videoTrack.enabled;
+        videoTrack.enabled = willBeEnabled;
+        setIsCameraOn(willBeEnabled);
         
-        // If turning camera back on, immediately restart video
-        if (videoTrack.enabled && videoRef.current) {
-          console.log('Camera enabled, starting video');
-          videoRef.current.play().catch(err => console.log('Play after enable failed:', err));
+        if (willBeEnabled) {
+          console.log('Camera enabled, restarting video...');
+          setIsVideoLoading(true);
+          
+          // Force video to restart
+          try {
+            // Reset video element
+            videoRef.current.load();
+            
+            // Wait a moment for the load to process
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Try to play
+            await videoRef.current.play();
+            console.log('Video restarted successfully');
+            setIsVideoLoading(false);
+          } catch (error) {
+            console.error('Failed to restart video:', error);
+            
+            // Fallback: recreate the stream
+            try {
+              const newStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' },
+                audio: true
+              });
+              
+              // Stop old stream
+              streamRef.current.getTracks().forEach(track => track.stop());
+              
+              // Set new stream
+              streamRef.current = newStream;
+              videoRef.current.srcObject = newStream;
+              await videoRef.current.play();
+              
+              console.log('Video restarted with new stream');
+              setIsVideoLoading(false);
+            } catch (restartError) {
+              console.error('Complete restart failed:', restartError);
+              setIsVideoLoading(false);
+            }
+          }
         }
       }
     }
