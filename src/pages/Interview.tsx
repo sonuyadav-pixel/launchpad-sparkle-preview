@@ -963,7 +963,7 @@ const Interview = () => {
                 <ScrollArea className="h-full">
                   <div className="space-y-4 pr-4 pb-4">
                     {localTranscript
-                      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
                       .map((message) => (
                       <div
                         key={message.id}
