@@ -36,6 +36,8 @@ const Interview = () => {
   const [hasVideoPermission, setHasVideoPermission] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([
     {
       id: '1',
@@ -47,19 +49,29 @@ const Interview = () => {
 
   const transcriptRef = useRef<HTMLDivElement>(null);
 
-  // Initialize camera and microphone
-  const initializeMedia = async () => {
+  // Initialize camera and microphone with retry logic
+  const initializeMedia = async (attempt = 1) => {
+    const maxRetries = 3;
+    setIsVideoLoading(true);
+    
     try {
-      console.log('Requesting media access...');
+      console.log(`Requesting media access... (attempt ${attempt})`);
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
           facingMode: 'user'
         },
         audio: {
           echoCancellation: true,
-          noiseSuppression: true
+          noiseSuppression: true,
+          autoGainControl: true
         }
       });
       
@@ -67,11 +79,24 @@ const Interview = () => {
       console.log('Video tracks:', stream.getVideoTracks());
       console.log('Audio tracks:', stream.getAudioTracks());
       
+      // Verify we have active tracks
+      const videoTracks = stream.getVideoTracks();
+      const audioTracks = stream.getAudioTracks();
+      
+      if (videoTracks.length === 0) {
+        throw new Error('No video tracks available');
+      }
+      
+      if (audioTracks.length === 0) {
+        throw new Error('No audio tracks available');
+      }
+      
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
+      setRetryCount(0);
       
-      // Set up video element with proper handling
+      // Set up video element with robust handling
       if (videoRef.current) {
         console.log('Setting video source...');
         
@@ -84,42 +109,69 @@ const Interview = () => {
         // Set the new stream
         videoRef.current.srcObject = stream;
         
-        // Add event listeners for better debugging
+        // Add comprehensive event listeners
         videoRef.current.onloadedmetadata = async () => {
           console.log('Video metadata loaded, dimensions:', 
             videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
-          
-          // Force play after metadata is loaded
-          try {
-            if (videoRef.current) {
-              await videoRef.current.play();
-              console.log('Video playing after metadata loaded');
-            }
-          } catch (err) {
-            console.error('Play after metadata failed:', err);
-          }
+          setIsVideoLoading(false);
         };
         
         videoRef.current.oncanplay = async () => {
           console.log('Video can play');
-          // Ensure video is playing
-          if (videoRef.current && videoRef.current.paused) {
-            try {
+          try {
+            if (videoRef.current && videoRef.current.paused) {
               await videoRef.current.play();
               console.log('Video started playing');
-            } catch (err) {
-              console.error('Play on canplay failed:', err);
+              setIsVideoLoading(false);
             }
+          } catch (err) {
+            console.error('Play on canplay failed:', err);
           }
         };
+        
+        videoRef.current.onplaying = () => {
+          console.log('Video is playing');
+          setIsVideoLoading(false);
+        };
+        
+        videoRef.current.onerror = (e) => {
+          console.error('Video element error:', e);
+          setIsVideoLoading(false);
+        };
+        
+        // Force play with timeout
+        setTimeout(async () => {
+          try {
+            if (videoRef.current && videoRef.current.paused) {
+              await videoRef.current.play();
+              console.log('Video force played');
+              setIsVideoLoading(false);
+            }
+          } catch (err) {
+            console.error('Force play failed:', err);
+            setIsVideoLoading(false);
+          }
+        }, 1000);
       }
       
       // Initialize speech recognition
       initializeSpeechRecognition();
+      
     } catch (error) {
-      console.error('Error accessing media devices:', error);
-      setPermissionError(`Unable to access camera and microphone: ${error.message}`);
-      setHasVideoPermission(false);
+      console.error(`Error accessing media devices (attempt ${attempt}):`, error);
+      setIsVideoLoading(false);
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in 2 seconds... (${attempt}/${maxRetries})`);
+        setRetryCount(attempt);
+        setTimeout(() => {
+          initializeMedia(attempt + 1);
+        }, 2000);
+      } else {
+        setPermissionError(`Unable to access camera and microphone after ${maxRetries} attempts: ${error.message}`);
+        setHasVideoPermission(false);
+        setRetryCount(0);
+      }
     }
   };
 
@@ -321,41 +373,62 @@ const Interview = () => {
             <Card className="relative overflow-hidden bg-muted h-full">
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
                 {hasVideoPermission && isCameraOn ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    controls={false}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{ 
-                      transform: 'scaleX(-1)', // Mirror the video like a selfie camera
-                      borderRadius: '0.5rem'
-                    }}
-                    onLoadStart={() => console.log('Video load started')}
-                    onLoadedData={() => {
-                      console.log('Video data loaded');
-                      // Ensure video plays when data is loaded
-                      if (videoRef.current) {
-                        videoRef.current.play().catch(err => console.error('Play on data loaded failed:', err));
-                      }
-                    }}
-                    onLoadedMetadata={() => {
-                      console.log('Video metadata loaded');
-                      if (videoRef.current) {
-                        console.log('Video dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
-                      }
-                    }}
-                    onPlay={() => console.log('Video is playing')}
-                    onPause={() => console.log('Video paused')}
-                    onError={(e) => console.error('Video error:', e)}
-                    onCanPlay={() => {
-                      console.log('Video can play');
-                      if (videoRef.current && videoRef.current.paused) {
-                        videoRef.current.play().catch(err => console.error('Play on can play failed:', err));
-                      }
-                    }}
-                  />
+                  <>
+                    {isVideoLoading && (
+                      <div className="absolute inset-0 bg-muted/80 flex items-center justify-center z-10">
+                        <div className="text-center">
+                          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p className="text-sm text-muted-foreground">
+                            Loading camera...
+                            {retryCount > 0 && ` (retry ${retryCount}/3)`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      controls={false}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ 
+                        transform: 'scaleX(-1)', // Mirror the video like a selfie camera
+                        borderRadius: '0.5rem'
+                      }}
+                      onLoadStart={() => console.log('Video load started')}
+                      onLoadedData={() => {
+                        console.log('Video data loaded');
+                        // Ensure video plays when data is loaded
+                        if (videoRef.current) {
+                          videoRef.current.play().catch(err => console.error('Play on data loaded failed:', err));
+                        }
+                      }}
+                      onLoadedMetadata={() => {
+                        console.log('Video metadata loaded');
+                        if (videoRef.current) {
+                          console.log('Video dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+                        }
+                        setIsVideoLoading(false);
+                      }}
+                      onPlay={() => {
+                        console.log('Video is playing');
+                        setIsVideoLoading(false);
+                      }}
+                      onPause={() => console.log('Video paused')}
+                      onError={(e) => {
+                        console.error('Video error:', e);
+                        setIsVideoLoading(false);
+                      }}
+                      onCanPlay={() => {
+                        console.log('Video can play');
+                        if (videoRef.current && videoRef.current.paused) {
+                          videoRef.current.play().catch(err => console.error('Play on can play failed:', err));
+                        }
+                        setIsVideoLoading(false);
+                      }}
+                    />
+                  </>
                 ) : permissionError ? (
                   <div className="text-center p-4">
                     <VideoOff className="h-12 w-12 text-destructive mx-auto mb-2" />
@@ -365,7 +438,7 @@ const Interview = () => {
                       variant="outline" 
                       size="sm" 
                       className="mt-3"
-                      onClick={initializeMedia}
+                      onClick={() => initializeMedia()}
                     >
                       Retry Access
                     </Button>
