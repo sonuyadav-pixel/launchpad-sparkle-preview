@@ -25,7 +25,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import TranscriptPanel from '@/components/interview/TranscriptPanel';
-import VoiceToTextModule from '@/components/interview/VoiceToTextModule';
+import SimpleVoiceModule from '@/components/interview/SimpleVoiceModule';
 import InterviewProgress from '@/components/interview/InterviewProgress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -594,7 +594,7 @@ const Interview = () => {
             />
 
             {/* Voice to Text Module */}
-            <VoiceToTextModule
+            <SimpleVoiceModule
               onTranscriptUpdate={handleVoiceToTextUpdate}
               isActive={isInterviewActive && !isMuted}
             />
