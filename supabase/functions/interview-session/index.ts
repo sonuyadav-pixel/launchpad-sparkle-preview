@@ -132,7 +132,7 @@ serve(async (req) => {
 
         // For POST requests, we already have the body. For PUT requests, parse it.
         const requestBody = method === 'POST' ? body : await req.json();
-        const { session_id, ...updates } = requestBody;
+        const { session_id, action, ...updates } = requestBody;
 
         if (!session_id) {
           throw new Error('Session ID is required');
