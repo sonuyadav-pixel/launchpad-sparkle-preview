@@ -63,7 +63,7 @@ const Interview = () => {
   const lastActivityRef = useRef<number>(Date.now());
 
   // Speech Recognition Functions
-  const initializeSpeechRecognition = useCallback(() => {
+  const initializeSpeechRecognition = useCallback(async () => {
     console.log('🔧 Initializing Speech Recognition');
     
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -71,6 +71,26 @@ const Interview = () => {
       toast({
         title: "Speech Recognition Not Supported",
         description: "Your browser doesn't support speech recognition",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Request microphone permission first
+    try {
+      console.log('🎤 Requesting microphone permission...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true 
+      });
+      
+      // Stop the stream immediately - we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+      console.log('✅ Microphone permission granted');
+    } catch (error) {
+      console.error('❌ Microphone permission denied:', error);
+      toast({
+        title: "Microphone Access Required",
+        description: "Please allow microphone access for speech recognition",
         variant: "destructive"
       });
       return false;
@@ -106,9 +126,9 @@ const Interview = () => {
       // Only auto-restart if interview is active AND AI is not speaking
       if (isInterviewActive && !isAISpeaking.current) {
         console.log('🔄 Auto-restarting speech recognition...');
-        setTimeout(() => {
+        setTimeout(async () => {
           if (isInterviewActive && !isListening && !isAISpeaking.current) {
-            startSpeechRecognition();
+            await startSpeechRecognition();
           }
         }, 1000); // Reduced delay since we have better control now
       }
@@ -189,7 +209,7 @@ const Interview = () => {
     return true;
   }, [isInterviewActive, isMuted]);
 
-  const startSpeechRecognition = useCallback(() => {
+  const startSpeechRecognition = useCallback(async () => {
     console.log('🚀 startSpeechRecognition called');
     console.log('🚀 Current state:', { 
       isListening, 
@@ -200,7 +220,8 @@ const Interview = () => {
 
     if (!recognitionRef.current) {
       console.log('🚀 No recognition ref, initializing...');
-      if (!initializeSpeechRecognition()) return;
+      const initialized = await initializeSpeechRecognition();
+      if (!initialized) return;
     }
 
     try {
@@ -259,9 +280,9 @@ const Interview = () => {
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
         // Restart speech recognition for next input
-        setTimeout(() => {
+        setTimeout(async () => {
           if (isInterviewActive && !isListening && !isAISpeaking.current) {
-            startSpeechRecognition();
+            await startSpeechRecognition();
           }
         }, 1000);
         return;
@@ -278,9 +299,9 @@ const Interview = () => {
       if (lastProcessedTime.current && now - lastProcessedTime.current < 1500) {
         console.log('🚫 Skipping: too soon after last response');
         // Restart speech recognition for next input
-        setTimeout(() => {
+        setTimeout(async () => {
           if (isInterviewActive && !isListening && !isAISpeaking.current) {
-            startSpeechRecognition();
+            await startSpeechRecognition();
           }
         }, 1000);
         return;
@@ -338,7 +359,7 @@ const Interview = () => {
         
         if (isInterviewActive && !isListening) {
           console.log('🔄 Restarting speech recognition after AI response');
-          setTimeout(() => {
+          setTimeout(async () => {
             console.log('🔄 Timeout fired - checking conditions again');
             console.log('🔄 Conditions check:', { 
               isInterviewActive, 
@@ -349,7 +370,7 @@ const Interview = () => {
             
             if (isInterviewActive && !isListening && !isAISpeaking.current) {
               console.log('🔄 Actually restarting speech recognition now');
-              startSpeechRecognition();
+              await startSpeechRecognition();
             } else {
               console.log('🚫 Cannot restart speech recognition - conditions not met');
             }
@@ -363,9 +384,9 @@ const Interview = () => {
         // Still restart speech recognition even if AI response failed
         console.log('🔄 Restarting speech recognition after AI error');
         if (isInterviewActive && !isListening) {
-          setTimeout(() => {
+          setTimeout(async () => {
             if (isInterviewActive && !isListening && !isAISpeaking.current) {
-              startSpeechRecognition();
+              await startSpeechRecognition();
             }
           }, 1000);
         }
@@ -381,9 +402,9 @@ const Interview = () => {
       });
       
       // Restart speech recognition after error
-      setTimeout(() => {
+      setTimeout(async () => {
         if (isInterviewActive && !isListening) {
-          startSpeechRecognition();
+          await startSpeechRecognition();
         }
       }, 1000);
     }
@@ -666,7 +687,7 @@ const Interview = () => {
       // Auto-start speech recognition when interview starts
       console.log('🎯 Auto-starting speech recognition...');
       if (!recognitionRef.current) {
-        initializeSpeechRecognition();
+        await initializeSpeechRecognition();
       }
       
       // Ensure speech recognition starts immediately
@@ -683,7 +704,7 @@ const Interview = () => {
         
         // Reinitialize if needed
         if (!recognitionRef.current) {
-          initializeSpeechRecognition();
+          await initializeSpeechRecognition();
         }
         
         // Start speech recognition automatically
@@ -838,10 +859,10 @@ const Interview = () => {
             console.log('💓 Error stopping recognition:', e);
           }
         }
-        setTimeout(() => {
+        setTimeout(async () => {
           if (!isListening && !isMuted && isInterviewActive && !isAISpeaking.current) {
             console.log('💓 Heartbeat: Force restarting speech recognition to keep mic always on');
-            startSpeechRecognition();
+            await startSpeechRecognition();
           }
         }, 500);
       }
@@ -865,9 +886,9 @@ const Interview = () => {
     } else if (isInterviewActive) {
       // Unmuting - restart speech recognition immediately
       console.log('🎤 Unmuting microphone - restarting speech recognition');
-      setTimeout(() => {
+      setTimeout(async () => {
         if (isInterviewActive && !isListening && !isAISpeaking.current) {
-          startSpeechRecognition();
+          await startSpeechRecognition();
         }
       }, 500);
     }
