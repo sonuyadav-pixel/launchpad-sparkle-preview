@@ -24,6 +24,20 @@ export const useTextToSpeech = () => {
         throw new Error('Speech synthesis not supported in this browser');
       }
 
+      // Wait for voices to load
+      const loadVoices = () => {
+        return new Promise<void>((resolve) => {
+          const voices = speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            resolve();
+          } else {
+            speechSynthesis.addEventListener('voiceschanged', () => resolve(), { once: true });
+          }
+        });
+      };
+
+      await loadVoices();
+
       // Create speech utterance
       const utterance = new SpeechSynthesisUtterance(text);
       utteranceRef.current = utterance;
@@ -50,6 +64,7 @@ export const useTextToSpeech = () => {
       utterance.onstart = () => {
         console.log('🔊 Speech started');
         setIsPlaying(true);
+        setLoading(false);
       };
 
       utterance.onend = () => {
@@ -62,35 +77,18 @@ export const useTextToSpeech = () => {
         console.error('🔊 Speech error:', event);
         setIsPlaying(false);
         utteranceRef.current = null;
+        setLoading(false);
       };
 
-      // Speak the text
+      // Speak the text immediately
       speechSynthesis.speak(utterance);
-
-      // Wait for speech to start
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Speech synthesis timeout'));
-        }, 5000);
-
-        utterance.onstart = () => {
-          clearTimeout(timeout);
-          setIsPlaying(true);
-          resolve(true);
-        };
-
-        utterance.onerror = (event) => {
-          clearTimeout(timeout);
-          reject(new Error(`Speech synthesis error: ${event.error}`));
-        };
-      });
+      console.log('🔊 Speech synthesis started');
 
     } catch (error) {
       console.error('🔊 Text-to-speech error:', error);
       setIsPlaying(false);
-      throw error;
-    } finally {
       setLoading(false);
+      throw error;
     }
   }, []);
 
