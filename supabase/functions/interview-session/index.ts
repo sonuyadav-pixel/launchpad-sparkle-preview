@@ -212,7 +212,10 @@ serve(async (req) => {
           throw new Error('Method not allowed');
         }
 
-        const body = await req.json();
+        // Use the already parsed body from earlier
+        if (!body) {
+          throw new Error('Request body is required');
+        }
         const transcriptData: TranscriptMessage = {
           session_id: body.session_id,
           speaker: body.speaker,
