@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, DollarSign } from "lucide-react";
+import { Menu, LogOut, DollarSign, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import companyLogo from "@/assets/interview4u-logo.png";
 
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
   onToggleSidebar: () => void;
+  onCollapseSidebar?: () => void;
+  sidebarCollapsed?: boolean;
 }
 
-export const DashboardHeader = ({ onOpenPricing, onToggleSidebar }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSidebar, sidebarCollapsed }: DashboardHeaderProps) => {
   const navigate = useNavigate();
 
   const handleSignOut = () => {
@@ -25,6 +27,7 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar }: DashboardHea
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Left Side */}
         <div className="flex items-center gap-4">
+          {/* Mobile toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -33,6 +36,19 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar }: DashboardHea
           >
             <Menu className="h-5 w-5" />
           </Button>
+          
+          {/* Desktop collapse toggle */}
+          {onCollapseSidebar && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapseSidebar}
+              className="hidden lg:flex"
+            >
+              {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            </Button>
+          )}
+          
           <div className="hidden sm:block">
             <h2 className="text-lg font-semibold text-foreground">
               Hi, <span className="text-primary">John</span>

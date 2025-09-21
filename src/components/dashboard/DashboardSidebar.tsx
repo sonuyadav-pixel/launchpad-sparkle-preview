@@ -81,6 +81,7 @@ interface DashboardSidebarProps {
   onModuleChange: (module: DashboardModule) => void;
   isOpen: boolean;
   onClose: () => void;
+  isCollapsed?: boolean;
 }
 
 export const DashboardSidebar = ({
@@ -88,12 +89,13 @@ export const DashboardSidebar = ({
   onModuleChange,
   isOpen,
   onClose,
+  isCollapsed = false,
 }: DashboardSidebarProps) => {
   const handleItemClick = (moduleId: DashboardModule, comingSoon?: boolean) => {
     if (!comingSoon) {
       onModuleChange(moduleId);
-      // Close sidebar on mobile after selection
-      if (window.innerWidth < 1024) {
+      // Close sidebar on mobile after selection only if not collapsed
+      if (window.innerWidth < 1024 && !isCollapsed) {
         onClose();
       }
     }
@@ -101,8 +103,8 @@ export const DashboardSidebar = ({
 
   return (
     <>
-      {/* Mobile overlay - only show on mobile when sidebar is open */}
-      {isOpen && (
+      {/* Mobile overlay - only show on mobile when sidebar is open and not collapsed */}
+      {isOpen && !isCollapsed && (
         <div 
           className="fixed inset-0 z-40 bg-background/20 lg:hidden"
           onClick={onClose}
@@ -112,27 +114,47 @@ export const DashboardSidebar = ({
       {/* Sidebar */}
       <aside
         className={cn(
-          "w-64 h-[calc(100vh-4rem)] border-r bg-sidebar transition-all duration-300 ease-in-out lg:block",
-          isOpen ? "block" : "hidden lg:block"
+          "h-[calc(100vh-4rem)] border-r bg-sidebar transition-all duration-300 ease-in-out",
+          isCollapsed 
+            ? "w-16" // Mini sidebar width
+            : "w-64", // Full sidebar width
+          // Show logic: always show when collapsed (mini), otherwise follow isOpen
+          isCollapsed 
+            ? "block" 
+            : isOpen 
+              ? "block" 
+              : "hidden lg:block"
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Close button for mobile */}
-          <div className="flex items-center justify-between p-4 lg:hidden">
-            <h3 className="text-lg font-semibold">Menu</h3>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          </div>
+          {/* Close button for mobile - only show when expanded */}
+          {!isCollapsed && (
+            <div className="flex items-center justify-between p-4 lg:hidden">
+              <h3 className="text-lg font-semibold">Menu</h3>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-6 p-4">
+          <nav className={cn(
+            "flex-1 space-y-6",
+            isCollapsed ? "p-2" : "p-4"
+          )}>
             {menuItems.map((group) => (
-              <div key={group.group} className="space-y-3">
-                <h3 className="text-sm font-medium text-sidebar-foreground/70 uppercase tracking-wide">
-                  {group.group}
-                </h3>
-                <ul className="space-y-1">
+              <div key={group.group} className={cn(
+                isCollapsed ? "space-y-1" : "space-y-3"
+              )}>
+                {/* Group label - only show when expanded */}
+                {!isCollapsed && (
+                  <h3 className="text-sm font-medium text-sidebar-foreground/70 uppercase tracking-wide">
+                    {group.group}
+                  </h3>
+                )}
+                <ul className={cn(
+                  isCollapsed ? "space-y-1" : "space-y-1"
+                )}>
                   {group.items.map((item) => {
                     const isActive = activeModule === item.id;
                     const Icon = item.icon;
@@ -143,33 +165,45 @@ export const DashboardSidebar = ({
                           onClick={() => handleItemClick(item.id, item.comingSoon)}
                           disabled={item.comingSoon}
                           className={cn(
-                            "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all duration-200",
+                            "group relative flex w-full items-center gap-3 rounded-lg text-left text-sm font-medium transition-all duration-200",
+                            isCollapsed ? "p-3 justify-center" : "px-3 py-2.5",
                             isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-4 border-primary"
+                              ? isCollapsed
+                                ? "bg-primary text-primary-foreground shadow-lg"
+                                : "bg-sidebar-accent text-sidebar-accent-foreground border-l-4 border-primary"
                               : item.comingSoon
                               ? "text-sidebar-foreground/50 cursor-not-allowed"
                               : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
                           )}
-                          title={item.description}
+                          title={isCollapsed ? item.label : item.description}
                         >
                           <Icon 
                             className={cn(
                               "h-5 w-5 flex-shrink-0",
-                              isActive ? "text-primary" : "text-current"
+                              isActive 
+                                ? isCollapsed 
+                                  ? "text-primary-foreground" 
+                                  : "text-primary"
+                                : "text-current"
                             )} 
                           />
-                          <span className="flex-1">{item.label}</span>
-                          
-                          {item.comingSoon && (
-                            <Badge variant="secondary" className="text-xs">
-                              Soon
-                            </Badge>
-                          )}
-                          
-                          {item.badge && !item.comingSoon && (
-                            <Badge variant="default" className="text-xs bg-primary">
-                              {item.badge}
-                            </Badge>
+                          {/* Text and badges - only show when expanded */}
+                          {!isCollapsed && (
+                            <>
+                              <span className="flex-1">{item.label}</span>
+                              
+                              {item.comingSoon && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Soon
+                                </Badge>
+                              )}
+                              
+                              {item.badge && !item.comingSoon && (
+                                <Badge variant="default" className="text-xs bg-primary">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
                           )}
                         </button>
                       </li>

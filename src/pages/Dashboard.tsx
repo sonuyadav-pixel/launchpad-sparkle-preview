@@ -19,12 +19,15 @@ const Dashboard = () => {
   const [activeModule, setActiveModule] = useState<DashboardModule>("interview");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader 
         onOpenPricing={() => setIsPricingOpen(true)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onCollapseSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        sidebarCollapsed={isSidebarCollapsed}
       />
       
       <div className="flex">
@@ -33,11 +36,13 @@ const Dashboard = () => {
           onModuleChange={setActiveModule}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          isCollapsed={isSidebarCollapsed}
         />
         
         <DashboardContent 
           activeModule={activeModule}
           sidebarOpen={isSidebarOpen}
+          sidebarCollapsed={isSidebarCollapsed}
         />
       </div>
 

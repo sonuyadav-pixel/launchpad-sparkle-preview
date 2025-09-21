@@ -10,9 +10,10 @@ import { InterviewPlusModule } from "./modules/InterviewPlusModule";
 interface DashboardContentProps {
   activeModule: DashboardModule;
   sidebarOpen: boolean;
+  sidebarCollapsed?: boolean;
 }
 
-export const DashboardContent = ({ activeModule, sidebarOpen }: DashboardContentProps) => {
+export const DashboardContent = ({ activeModule, sidebarOpen, sidebarCollapsed }: DashboardContentProps) => {
   const renderModule = () => {
     switch (activeModule) {
       case "interview":
