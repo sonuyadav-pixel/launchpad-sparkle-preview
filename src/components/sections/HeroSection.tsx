@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import interview4uLogo from "@/assets/interview4u-logo.png";
 import AIGraphBackground from "@/components/3d/AIGraphBackground";
 import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackground";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [hoverDescIndex, setHoverDescIndex] = useState(0);
   const [smartTextIndex, setSmartTextIndex] = useState(0);
@@ -125,6 +127,7 @@ const HeroSection = () => {
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 text-xl px-10 py-8 h-auto font-bold shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-white/20 group relative overflow-hidden"
+              onClick={() => navigate("/dashboard")}
             >
               <span className="relative z-10 flex items-center gap-3">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
