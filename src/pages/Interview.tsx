@@ -79,11 +79,16 @@ const Interview = () => {
     const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
     
-    // Configure recognition
+    // Configure recognition for continuous listening
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = 'en-US';
     recognitionRef.current.maxAlternatives = 1;
+    
+    // Disable automatic stopping on silence
+    if ('webkitSpeechRecognition' in window) {
+      recognitionRef.current.webkitGrammarList = null;
+    }
     
     console.log('✅ Speech recognition configured');
     
@@ -114,26 +119,32 @@ const Interview = () => {
       let finalTranscript = '';
       let interimTranscript = '';
       
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Process all results from the beginning to capture full conversation
+      for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+          console.log('✅ Final result:', transcript);
         } else {
           interimTranscript += transcript;
+          console.log('⏳ Interim result:', transcript);
         }
       }
       
-      // Update interim transcript for live display
-      setCurrentTranscript(interimTranscript);
-      
-      // Process final transcript
-      if (finalTranscript.trim()) {
-        console.log('📝 Final transcript:', finalTranscript);
+      // Always update current transcript to show live speech
+      const displayTranscript = finalTranscript || interimTranscript;
+      if (displayTranscript.trim()) {
+        setCurrentTranscript(displayTranscript);
         lastSpeechTime.current = Date.now();
-        resetAutoCloseTimer(); // Reset auto-close timer on user activity
+        resetAutoCloseTimer();
+      }
+      
+      // Only process final transcript for AI response
+      if (finalTranscript.trim()) {
+        console.log('📝 Processing final transcript:', finalTranscript);
         processUserSpeech(finalTranscript.trim());
-        setCurrentTranscript('');
+        setCurrentTranscript(''); // Clear after processing
       }
     };
 
@@ -208,9 +219,9 @@ const Interview = () => {
         return;
       }
       
-      // Check if we just processed speech recently (debounce)
+      // Check if we just processed speech recently (reduced debounce for better responsiveness)
       const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 1500) {
         console.log('🚫 Skipping: too soon after last response');
         return;
       }
