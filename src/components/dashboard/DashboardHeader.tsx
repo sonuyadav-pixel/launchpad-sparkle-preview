@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { sessionManager } from "@/utils/SessionManager";
 import { useState, useEffect } from "react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { FirstNameModal } from "@/components/profile/FirstNameModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
@@ -15,6 +18,9 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
   const navigate = useNavigate();
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [showFirstNameModal, setShowFirstNameModal] = useState(false);
+  
+  const { profile, user, loading, updateProfile, hasFirstName } = useUserProfile();
 
   // Check for active session periodically
   useEffect(() => {
@@ -30,13 +36,24 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
     return () => clearInterval(interval);
   }, []);
 
-  const handleSignOut = () => {
-    // Add sign out logic here
+  // Check if we need to ask for first name
+  useEffect(() => {
+    if (!loading && user && !hasFirstName) {
+      setShowFirstNameModal(true);
+    }
+  }, [loading, user, hasFirstName]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     navigate("/");
   };
 
   const handleLogoClick = () => {
     navigate("/");
+  };
+
+  const handleUpdateFirstName = async (firstName: string) => {
+    await updateProfile({ first_name: firstName });
   };
 
   const handleReturnToInterview = () => {
@@ -65,7 +82,9 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
           
           <div className="hidden sm:block">
             <h2 className="text-lg font-semibold text-foreground">
-              Hi, <span className="text-primary">John</span>
+              Hi, <span className="text-primary">
+                {loading ? "..." : (profile?.first_name || "there")}
+              </span>
             </h2>
           </div>
         </div>
@@ -93,6 +112,12 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
           </Button>
         </div>
       </div>
+      
+      <FirstNameModal 
+        open={showFirstNameModal}
+        onClose={() => setShowFirstNameModal(false)}
+        onSubmit={handleUpdateFirstName}
+      />
     </header>
   );
 };
