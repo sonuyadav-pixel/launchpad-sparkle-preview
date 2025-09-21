@@ -25,10 +25,14 @@ interface TranscriptMessage {
 
 const Interview = () => {
   const navigate = useNavigate();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [interviewDuration, setInterviewDuration] = useState(0);
+  const [hasVideoPermission, setHasVideoPermission] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([
     {
       id: '1',
@@ -39,6 +43,62 @@ const Interview = () => {
   ]);
 
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  // Initialize camera and microphone
+  const initializeMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
+      
+      streamRef.current = stream;
+      setHasVideoPermission(true);
+      setPermissionError(null);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing media devices:', error);
+      setPermissionError('Unable to access camera and microphone. Please check permissions.');
+      setHasVideoPermission(false);
+    }
+  };
+
+  // Start media on component mount
+  useEffect(() => {
+    initializeMedia();
+    
+    return () => {
+      // Cleanup: stop all tracks when component unmounts
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  // Handle camera toggle
+  const toggleCamera = () => {
+    if (streamRef.current) {
+      const videoTrack = streamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsCameraOn(videoTrack.enabled);
+      }
+    }
+  };
+
+  // Handle microphone toggle
+  const toggleMicrophone = () => {
+    if (streamRef.current) {
+      const audioTrack = streamRef.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
+    }
+  };
 
   // Timer effect
   useEffect(() => {
@@ -72,6 +132,10 @@ const Interview = () => {
   };
 
   const handleEndInterview = () => {
+    // Stop all media tracks before leaving
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
     navigate('/dashboard');
   };
 
@@ -111,17 +175,39 @@ const Interview = () => {
             {/* Candidate Video Panel */}
             <Card className="relative overflow-hidden bg-muted">
               <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                {isCameraOn ? (
+                {hasVideoPermission && isCameraOn ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : permissionError ? (
+                  <div className="text-center p-4">
+                    <VideoOff className="h-12 w-12 text-destructive mx-auto mb-2" />
+                    <p className="text-destructive text-sm mb-2">Camera Access Required</p>
+                    <p className="text-muted-foreground text-xs">{permissionError}</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-3"
+                      onClick={initializeMedia}
+                    >
+                      Retry Access
+                    </Button>
+                  </div>
+                ) : !isCameraOn ? (
+                  <div className="text-center">
+                    <VideoOff className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">Camera is off</p>
+                  </div>
+                ) : (
                   <div className="text-center">
                     <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl font-bold text-primary">You</span>
                     </div>
-                    <p className="text-muted-foreground">Camera feed would appear here</p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <VideoOff className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Camera is off</p>
+                    <p className="text-muted-foreground">Loading camera...</p>
                   </div>
                 )}
                 
@@ -136,16 +222,18 @@ const Interview = () => {
                   <Button
                     size="icon"
                     variant={isMuted ? "destructive" : "secondary"}
-                    onClick={() => setIsMuted(!isMuted)}
+                    onClick={toggleMicrophone}
                     className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    disabled={!hasVideoPermission}
                   >
                     {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </Button>
                   <Button
                     size="icon"
                     variant={isCameraOn ? "secondary" : "destructive"}
-                    onClick={() => setIsCameraOn(!isCameraOn)}
+                    onClick={toggleCamera}
                     className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    disabled={!hasVideoPermission}
                   >
                     {isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
                   </Button>
@@ -153,8 +241,13 @@ const Interview = () => {
 
                 {/* Connection Indicator */}
                 <div className="absolute top-4 left-4 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-muted-foreground">Connected</span>
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    hasVideoPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
+                  )}></div>
+                  <span className="text-sm text-muted-foreground">
+                    {hasVideoPermission ? "Connected" : "No Access"}
+                  </span>
                 </div>
               </div>
             </Card>
