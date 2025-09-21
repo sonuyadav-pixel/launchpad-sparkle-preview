@@ -324,12 +324,32 @@ const Interview = () => {
   }, []);
 
   // Handle camera toggle
-  const toggleCamera = () => {
+  const toggleCamera = async () => {
     if (streamRef.current) {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsCameraOn(videoTrack.enabled);
+        
+        // If turning camera back on, ensure video plays
+        if (videoTrack.enabled && videoRef.current) {
+          console.log('Camera turned back on, restarting video...');
+          setIsVideoLoading(true);
+          
+          // Small delay to ensure track is fully enabled
+          setTimeout(async () => {
+            try {
+              if (videoRef.current && videoRef.current.paused) {
+                await videoRef.current.play();
+                console.log('Video restarted after camera toggle');
+              }
+              setIsVideoLoading(false);
+            } catch (error) {
+              console.error('Failed to restart video after camera toggle:', error);
+              setIsVideoLoading(false);
+            }
+          }, 100);
+        }
       }
     }
   };
