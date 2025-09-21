@@ -214,15 +214,36 @@ const Interview = () => {
     };
   }, []);
 
-  // Simple camera toggle
+  // Simple camera toggle that actually works
   const toggleCamera = () => {
-    if (streamRef.current) {
-      const videoTrack = streamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsCameraOn(videoTrack.enabled);
-        console.log('Camera toggled:', videoTrack.enabled);
+    if (!streamRef.current) return;
+    
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    if (!videoTrack) return;
+    
+    const newCameraState = !isCameraOn;
+    setIsCameraOn(newCameraState);
+    
+    if (newCameraState) {
+      // Turning camera ON
+      console.log('Turning camera ON');
+      videoTrack.enabled = true;
+      
+      // Ensure video plays
+      if (videoRef.current) {
+        setIsVideoLoading(true);
+        videoRef.current.play().then(() => {
+          console.log('Video playing after camera enabled');
+          setIsVideoLoading(false);
+        }).catch(err => {
+          console.error('Failed to play video after enabling camera:', err);
+          setIsVideoLoading(false);
+        });
       }
+    } else {
+      // Turning camera OFF
+      console.log('Turning camera OFF');
+      videoTrack.enabled = false;
     }
   };
 
