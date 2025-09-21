@@ -213,18 +213,6 @@ const FeaturesSection = () => {
         </div>
         
         {/* Progress Indicator */}
-        <div className="mt-6 max-w-sm mx-auto">
-          <div className="flex justify-between text-xs text-muted-foreground mb-2">
-            <span>Feature {currentFeature + 1}</span>
-            <span>{features.length} Total</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner">
-            <div 
-              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-700 ease-out rounded-full shadow-lg"
-              style={{ width: `${((currentFeature + 1) / features.length) * 100}%` }}
-            />
-          </div>
-        </div>
       </div>
     </section>
   );
