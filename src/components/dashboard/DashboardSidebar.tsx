@@ -127,9 +127,6 @@ export const DashboardSidebar = ({
               ? "block" 
               : "hidden lg:block"
         )}
-        style={{
-          backgroundColor: isCollapsed ? 'red' : 'blue', // Debug colors to see the difference
-        }}
       >
         <div className="flex h-full flex-col">
           {/* Close button for mobile - only show when expanded */}

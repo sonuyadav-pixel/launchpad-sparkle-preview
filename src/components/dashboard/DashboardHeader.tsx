@@ -64,7 +64,7 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
             <Menu className="h-5 w-5" />
           </Button>
           
-          {/* Desktop collapse toggle */}
+          {/* Desktop collapse toggle - now visible on all screens */}
           {onCollapseSidebar && (
             <Button
               variant="ghost"
@@ -73,7 +73,8 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
                 console.log('Collapse button clicked, current state:', sidebarCollapsed);
                 onCollapseSidebar();
               }}
-              className="hidden lg:flex"
+              className="flex" // Changed from "hidden lg:flex" to make it visible on all screens
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
             </Button>
