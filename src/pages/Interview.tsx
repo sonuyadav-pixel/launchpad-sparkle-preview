@@ -665,7 +665,7 @@ const Interview = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+              <div className="relative aspect-[4/3] bg-gray-900 rounded-lg overflow-hidden" style={{ minHeight: '320px' }}>
                 {isVideoEnabled ? (
                   <video
                     ref={videoRef}
@@ -700,7 +700,7 @@ const Interview = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="relative aspect-video bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="relative aspect-[4/3] bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg overflow-hidden flex items-center justify-center" style={{ minHeight: '320px' }}>
                 <div className="text-center text-white">
                   <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
                     <span className="text-3xl">🤖</span>
