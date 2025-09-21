@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Interview from "./pages/Interview";
-import Feedback from "./pages/Feedback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,11 +29,6 @@ const App = () => (
           <Route path="/interview" element={
             <ProtectedRoute>
               <Interview />
-            </ProtectedRoute>
-          } />
-          <Route path="/feedback" element={
-            <ProtectedRoute>
-              <Feedback />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
