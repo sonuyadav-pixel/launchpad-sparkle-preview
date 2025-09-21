@@ -19,7 +19,7 @@ serve(async (req) => {
     }
 
     console.log('Converting text to speech with ElevenLabs:', text.substring(0, 50) + '...')
-    console.log('Using voice:', voice || 'Aria')
+    console.log('Using voice:', voice || 'alloy')
 
     // Get ElevenLabs API key
     const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
@@ -40,7 +40,7 @@ serve(async (req) => {
     const selectedVoiceId = voiceMapping[voice] || '9BWtsMINqrJLrRacOk9x' // Default to Aria
 
     // Generate speech using ElevenLabs API
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`, {
+    const elevenLabsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`, {
       method: 'POST',
       headers: {
         'Accept': 'audio/mpeg',
@@ -59,14 +59,14 @@ serve(async (req) => {
       }),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('ElevenLabs API error:', response.status, errorText)
-      throw new Error(`ElevenLabs API error: ${response.status} ${errorText}`)
+    if (!elevenLabsResponse.ok) {
+      const errorText = await elevenLabsResponse.text()
+      console.error('ElevenLabs API error:', elevenLabsResponse.status, errorText)
+      throw new Error(`ElevenLabs API error: ${elevenLabsResponse.status} ${errorText}`)
     }
 
     // Convert audio buffer to base64
-    const arrayBuffer = await response.arrayBuffer()
+    const arrayBuffer = await elevenLabsResponse.arrayBuffer()
     const base64Audio = btoa(
       String.fromCharCode(...new Uint8Array(arrayBuffer))
     )
@@ -84,7 +84,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       {
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )
