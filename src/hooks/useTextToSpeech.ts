@@ -1,10 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useTextToSpeech = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const speak = useCallback(async (text: string, voice?: string) => {
     if (!text.trim()) return;
@@ -12,122 +11,82 @@ export const useTextToSpeech = () => {
     try {
       setLoading(true);
       
-      // Stop any currently playing audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      // Stop any currently playing speech
+      if (utteranceRef.current) {
+        speechSynthesis.cancel();
+        utteranceRef.current = null;
       }
 
-      console.log('Converting text to speech:', text.substring(0, 50) + '...');
+      console.log('🔊 Speaking text:', text.substring(0, 50) + '...');
 
-      // Call our edge function
-      const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { 
-          text: text.trim(), 
-          voice: voice || 'alloy' // Default voice
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to convert text to speech');
+      // Check if speech synthesis is supported
+      if (!('speechSynthesis' in window)) {
+        throw new Error('Speech synthesis not supported in this browser');
       }
 
-      if (!data?.audioContent) {
-        throw new Error('No audio content received');
+      // Create speech utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+      
+      // Configure voice settings
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Try to use a better voice if available
+      const voices = speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => 
+        v.name.includes('Google') || 
+        v.name.includes('Microsoft') || 
+        v.lang.startsWith('en')
+      );
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        console.log('🔊 Using voice:', preferredVoice.name);
       }
 
-      // Convert base64 to audio blob
-      const binaryString = atob(data.audioContent);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      
-      console.log('🔊 Audio blob created:', {
-        size: audioBlob.size,
-        type: audioBlob.type,
-        url: audioUrl
-      });
-      
-      // Create and play audio
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      
-      // Set volume to maximum to ensure it's audible
-      audio.volume = 1.0;
-      
-      console.log('🔊 Audio element created:', {
-        volume: audio.volume,
-        muted: audio.muted,
-        readyState: audio.readyState
-      });
-      
-      audio.onloadstart = () => {
-        console.log('🔊 Audio loading started');
+      // Set up event handlers
+      utterance.onstart = () => {
+        console.log('🔊 Speech started');
         setIsPlaying(true);
       };
-      
-      audio.oncanplay = () => {
-        console.log('🔊 Audio can play - browser can start playing');
-      };
-      
-      audio.onplay = () => {
-        console.log('🔊 Audio playback STARTED successfully');
-        setIsPlaying(true);
-      };
-      
-      audio.onended = () => {
-        console.log('🔊 Audio playback ENDED');
+
+      utterance.onend = () => {
+        console.log('🔊 Speech ended');
         setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
-      };
-      
-      audio.onerror = (e) => {
-        console.error('🔊 Audio playback ERROR:', e);
-        console.error('🔊 Audio error details:', {
-          error: audio.error,
-          networkState: audio.networkState,
-          readyState: audio.readyState
-        });
-        setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
+        utteranceRef.current = null;
       };
 
-      // Check if user interaction is required for autoplay
-      console.log('🔊 Attempting to play audio...');
-      try {
-        const playPromise = audio.play();
-        
-        if (playPromise !== undefined) {
-          await playPromise;
-          console.log('🔊 Audio play() promise resolved successfully');
-        }
-      } catch (playError) {
-        console.error('🔊 Audio play() failed:', playError);
-        
-        // If autoplay failed, try to enable audio on user interaction
-        if (playError.name === 'NotAllowedError') {
-          console.log('🔊 Autoplay blocked - audio requires user interaction');
-          
-          // Try playing with user gesture simulation
-          document.addEventListener('click', () => {
-            audio.play().catch(e => console.error('🔊 Manual play failed:', e));
-          }, { once: true });
-          
-          // Show a notification that user needs to click
-          console.log('🔊 Please click anywhere on the page to enable audio');
-        }
-        
-        throw playError;
-      }
+      utterance.onerror = (event) => {
+        console.error('🔊 Speech error:', event);
+        setIsPlaying(false);
+        utteranceRef.current = null;
+      };
+
+      // Speak the text
+      speechSynthesis.speak(utterance);
+
+      // Wait for speech to start
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Speech synthesis timeout'));
+        }, 5000);
+
+        utterance.onstart = () => {
+          clearTimeout(timeout);
+          setIsPlaying(true);
+          resolve(true);
+        };
+
+        utterance.onerror = (event) => {
+          clearTimeout(timeout);
+          reject(new Error(`Speech synthesis error: ${event.error}`));
+        };
+      });
 
     } catch (error) {
-      console.error('Text-to-speech error:', error);
+      console.error('🔊 Text-to-speech error:', error);
       setIsPlaying(false);
       throw error;
     } finally {
@@ -136,9 +95,9 @@ export const useTextToSpeech = () => {
   }, []);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    if (utteranceRef.current) {
+      speechSynthesis.cancel();
+      utteranceRef.current = null;
       setIsPlaying(false);
     }
   }, []);
