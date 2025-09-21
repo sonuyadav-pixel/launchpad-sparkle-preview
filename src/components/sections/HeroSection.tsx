@@ -108,13 +108,11 @@ const HeroSection = () => {
               </span>
             </h1>
             
-            <div className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 relative">
-              <div className="flex justify-center">
-                <span className="relative">Smarter</span>
-                <span className="text-black transition-all duration-500 ml-3 absolute left-full whitespace-nowrap">
-                  {smartPhrases[smartTextIndex]}
-                </span>
-              </div>
+            <div className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/90 flex items-center justify-center">
+              <span className="mr-3">Smarter</span>
+              <span className="text-black transition-all duration-500 min-w-[200px] md:min-w-[280px] lg:min-w-[350px] text-left">
+                {smartPhrases[smartTextIndex]}
+              </span>
             </div>
             
             <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
