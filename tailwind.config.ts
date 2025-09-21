@@ -54,6 +54,7 @@ export default {
         section: {
           light: "hsl(var(--section-light))",
           dark: "hsl(var(--section-dark))",
+          lightBlue: "hsl(var(--section-light-blue))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
