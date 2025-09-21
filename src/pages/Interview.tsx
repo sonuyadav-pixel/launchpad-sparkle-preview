@@ -76,12 +76,29 @@ const Interview = () => {
         console.log('Setting video source...');
         videoRef.current.srcObject = stream;
         
-        // Force video to play
+        // Add event listeners for better debugging
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded');
+          videoRef.current?.play().catch(err => console.error('Play failed:', err));
+        };
+        
+        videoRef.current.oncanplay = () => {
+          console.log('Video can play');
+        };
+        
+        // Force video to play with better error handling
         try {
-          await videoRef.current.play();
-          console.log('Video is now playing');
+          const playPromise = videoRef.current.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+            console.log('Video is now playing');
+          }
         } catch (playError) {
           console.error('Video play error:', playError);
+          // Try to play again after a short delay
+          setTimeout(() => {
+            videoRef.current?.play().catch(err => console.error('Retry play failed:', err));
+          }, 500);
         }
       }
       
