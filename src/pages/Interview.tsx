@@ -332,8 +332,37 @@ const Interview = () => {
       // Start video
       await startVideo();
       
-      // Start speech recognition  
-      await startSpeechRecognition();
+      // Start speech recognition immediately and aggressively
+      console.log('🎯 Force starting speech recognition...');
+      if (!recognitionRef.current) {
+        initializeSpeechRecognition();
+      }
+      
+      // Try multiple times to ensure it starts
+      const forceStart = async () => {
+        for (let i = 0; i < 3; i++) {
+          try {
+            if (recognitionRef.current && !isListening) {
+              console.log(`🚀 Attempt ${i + 1} to start speech recognition`);
+              recognitionRef.current.start();
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              if (isListening) {
+                console.log('✅ Speech recognition started successfully');
+                break;
+              }
+            }
+          } catch (error) {
+            console.log(`❌ Attempt ${i + 1} failed:`, error);
+            if (i === 2) {
+              // Last attempt - reinitialize
+              recognitionRef.current = null;
+              initializeSpeechRecognition();
+            }
+          }
+        }
+      };
+      
+      await forceStart();
       
       // Setup silence detection and heartbeat
       setupSilenceDetection();
@@ -588,6 +617,25 @@ const Interview = () => {
                       >
                         <PhoneOff className="w-5 h-5 mr-2" />
                         End Interview
+                      </Button>
+                      
+                      {/* Manual Speech Control for debugging */}
+                      <Button
+                        onClick={() => {
+                          console.log('🔧 Manual speech recognition start - Current state:', {
+                            isListening,
+                            isInterviewActive,
+                            isMuted,
+                            hasRecognition: !!recognitionRef.current
+                          });
+                          if (!isListening && !isMuted) {
+                            startSpeechRecognition();
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {isListening ? '🎤 Listening' : '🔇 Start Mic'}
                       </Button>
                     </>
                   )}
