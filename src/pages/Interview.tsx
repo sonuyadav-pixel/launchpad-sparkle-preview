@@ -27,12 +27,14 @@ const Interview = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recognitionRef = useRef<any>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
   const [interviewDuration, setInterviewDuration] = useState(0);
   const [hasVideoPermission, setHasVideoPermission] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([
     {
       id: '1',
@@ -47,23 +49,109 @@ const Interview = () => {
   // Initialize camera and microphone
   const initializeMedia = async () => {
     try {
+      console.log('Requesting media access...');
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true
+        }
       });
       
+      console.log('Media access granted:', stream);
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        console.log('Video element updated with stream');
       }
+      
+      // Initialize speech recognition
+      initializeSpeechRecognition();
     } catch (error) {
       console.error('Error accessing media devices:', error);
-      setPermissionError('Unable to access camera and microphone. Please check permissions.');
+      setPermissionError(`Unable to access camera and microphone: ${error.message}`);
       setHasVideoPermission(false);
     }
+  };
+
+  // Initialize speech recognition
+  const initializeSpeechRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
+        setIsListening(true);
+      };
+      
+      recognitionRef.current.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
+        // Restart recognition if not muted
+        if (!isMuted && hasVideoPermission) {
+          setTimeout(() => {
+            recognitionRef.current?.start();
+          }, 100);
+        }
+      };
+      
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript.trim()) {
+          console.log('Speech recognized:', finalTranscript);
+          addTranscriptMessage('user', finalTranscript.trim());
+          
+          // Simulate AI response after a delay
+          setTimeout(() => {
+            simulateAIResponse(finalTranscript.trim());
+          }, 1000);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+      };
+      
+      // Start recognition
+      recognitionRef.current.start();
+    } else {
+      console.warn('Speech recognition not supported in this browser');
+    }
+  };
+
+  // Simulate AI response
+  const simulateAIResponse = (userMessage: string) => {
+    const responses = [
+      "That's interesting. Can you elaborate on that?",
+      "Great point! Tell me more about your experience with that.",
+      "How did that make you feel?",
+      "What would you do differently next time?",
+      "Can you give me a specific example?",
+      "What challenges did you face in that situation?"
+    ];
+    
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    addTranscriptMessage('ai', randomResponse);
   };
 
   // Start media on component mount
@@ -71,9 +159,12 @@ const Interview = () => {
     initializeMedia();
     
     return () => {
-      // Cleanup: stop all tracks when component unmounts
+      // Cleanup: stop all tracks and recognition when component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
     };
   }, []);
@@ -96,6 +187,15 @@ const Interview = () => {
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
+        
+        // Control speech recognition based on mute state
+        if (recognitionRef.current) {
+          if (!audioTrack.enabled) {
+            recognitionRef.current.stop();
+          } else {
+            recognitionRef.current.start();
+          }
+        }
       }
     }
   };
@@ -132,9 +232,12 @@ const Interview = () => {
   };
 
   const handleEndInterview = () => {
-    // Stop all media tracks before leaving
+    // Stop all media tracks and speech recognition before leaving
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
     }
     navigate('/dashboard');
   };
@@ -246,7 +349,7 @@ const Interview = () => {
                     hasVideoPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
                   )}></div>
                   <span className="text-sm text-muted-foreground">
-                    {hasVideoPermission ? "Connected" : "No Access"}
+                    {hasVideoPermission ? (isListening ? "Listening..." : "Connected") : "No Access"}
                   </span>
                 </div>
               </div>
