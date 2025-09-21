@@ -304,26 +304,34 @@ const Interview = () => {
           await speak(aiResponse, 'alloy');
         }
         
+        console.log('🤖 AI response completed, resetting speaking flag');
         isAISpeaking.current = false;
         
         // Restart speech recognition after AI finishes speaking
-        setTimeout(() => {
-          if (isInterviewActive && !isListening) {
-            console.log('🔄 Restarting speech recognition after AI response');
-            startSpeechRecognition();
-          }
-        }, 1000);
+        console.log('🔄 Attempting to restart speech recognition after AI response');
+        if (isInterviewActive && !isListening) {
+          console.log('🔄 Restarting speech recognition after AI response');
+          setTimeout(() => {
+            if (isInterviewActive && !isListening && !isAISpeaking.current) {
+              console.log('🔄 Actually restarting speech recognition now');
+              startSpeechRecognition();
+            }
+          }, 1000);
+        }
         
       } catch (error) {
         console.error('❌ Error in AI response:', error);
         isAISpeaking.current = false;
         
         // Still restart speech recognition even if AI response failed
-        setTimeout(() => {
-          if (isInterviewActive && !isListening) {
-            startSpeechRecognition();
-          }
-        }, 1000);
+        console.log('🔄 Restarting speech recognition after AI error');
+        if (isInterviewActive && !isListening) {
+          setTimeout(() => {
+            if (isInterviewActive && !isListening && !isAISpeaking.current) {
+              startSpeechRecognition();
+            }
+          }, 1000);
+        }
       }
       
     } catch (error) {
