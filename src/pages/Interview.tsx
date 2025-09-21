@@ -103,14 +103,14 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active (removed mute check since we removed mute functionality)
-      if (isInterviewActive) {
+      // Auto-restart if interview is active and not manually stopped
+      if (isInterviewActive && !isMuted) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isListening) {
+          if (isInterviewActive && !isMuted && !isListening) {
             startSpeechRecognition();
           }
-        }, 1500); // Increased delay to prevent rapid restarts
+        }, 1000); // Increased delay to prevent rapid restarts
       }
     };
 
@@ -154,13 +154,7 @@ const Interview = () => {
       // Handle different error types
       if (event.error === 'no-speech') {
         console.log('🔇 No speech detected - continuing...');
-        return; // Don't show error for no-speech, let it auto-restart
-      }
-      
-      if (event.error === 'aborted') {
-        console.log('🔄 Speech recognition was aborted - will restart');
-        setIsListening(false);
-        return; // Let the onend handler restart it
+        return; // Don't show error for no-speech
       }
       
       if (event.error === 'not-allowed') {
@@ -181,31 +175,25 @@ const Interview = () => {
     }
 
     try {
-      // Only start if not already listening and interview is active
-      if (!isListening && isInterviewActive && recognitionRef.current) {
+      if (!isListening && isInterviewActive && !isMuted) {
         console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
-      } else {
-        console.log('🚫 Cannot start speech recognition:', { 
-          isListening, 
-          isInterviewActive, 
-          hasRecognition: !!recognitionRef.current 
-        });
       }
     } catch (error) {
       console.error('❌ Failed to start speech recognition:', error);
-      // Reset and try again after delay if interview is still active
-      if (isInterviewActive) {
-        setTimeout(() => {
+      // If failed, try to reinitialize and restart
+      setTimeout(() => {
+        if (isInterviewActive && !isMuted) {
+          console.log('🔄 Reinitializing speech recognition after error...');
           recognitionRef.current = null;
-          setIsListening(false);
-          if (!isListening) {
-            initializeSpeechRecognition();
+          initializeSpeechRecognition();
+          if (recognitionRef.current) {
+            recognitionRef.current.start();
           }
-        }, 2000);
-      }
+        }
+      }, 2000);
     }
-  }, [isListening, initializeSpeechRecognition, isInterviewActive]);
+  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
