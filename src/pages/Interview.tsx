@@ -228,16 +228,16 @@ const Interview = () => {
     }
   };
 
-  // Generate AI response based on user input using OpenAI
+  // Generate AI response based on user input using ElevenLabs
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      console.log('🤖 Generating AI response using OpenAI for:', userInput);
+      console.log('🤖 Generating AI response using ElevenLabs for:', userInput);
       
       // Get conversation context (last 5 messages for efficiency)
       const context = localTranscript.slice(0, 5).reverse();
       
-      // Call our OpenAI edge function
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      // Call our ElevenLabs edge function
+      const { data, error } = await supabase.functions.invoke('elevenlabs-chat', {
         body: { 
           message: userInput,
           context: context
@@ -245,12 +245,12 @@ const Interview = () => {
       });
 
       if (error) {
-        console.error('🤖 OpenAI API error:', error);
+        console.error('🤖 ElevenLabs API error:', error);
         throw error;
       }
 
       if (!data.response) {
-        throw new Error('No response received from OpenAI');
+        throw new Error('No response received from ElevenLabs');
       }
 
       console.log('🤖 Generated AI response:', data.response);
