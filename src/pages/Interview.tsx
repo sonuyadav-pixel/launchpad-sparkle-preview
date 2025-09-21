@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import PermissionRequest from "@/components/interview/PermissionRequest";
 
 interface TranscriptMessage {
   id: string;
@@ -38,6 +39,7 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [showPermissionRequest, setShowPermissionRequest] = useState(true);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([
     {
       id: '1',
@@ -233,6 +235,17 @@ const Interview = () => {
     }
   };
 
+  // Add transcript message function
+  const addTranscriptMessage = (speaker: 'user' | 'ai', message: string) => {
+    const newMessage: TranscriptMessage = {
+      id: Date.now().toString(),
+      speaker,
+      message,
+      timestamp: new Date()
+    };
+    setTranscript(prev => [...prev, newMessage]);
+  };
+
   // Simulate AI response
   const simulateAIResponse = (userMessage: string) => {
     const responses = [
@@ -248,10 +261,9 @@ const Interview = () => {
     addTranscriptMessage('ai', randomResponse);
   };
 
-  // Start media on component mount
+  // Start media only after permission is granted
   useEffect(() => {
-    initializeMedia();
-    
+    // Don't auto-initialize media, wait for permission request
     return () => {
       // Cleanup: stop all tracks and recognition when component unmounts
       if (streamRef.current) {
@@ -336,15 +348,26 @@ const Interview = () => {
     navigate('/dashboard');
   };
 
-  const addTranscriptMessage = (speaker: 'user' | 'ai', message: string) => {
-    const newMessage: TranscriptMessage = {
-      id: Date.now().toString(),
-      speaker,
-      message,
-      timestamp: new Date()
-    };
-    setTranscript(prev => [...prev, newMessage]);
+  const handlePermissionGranted = () => {
+    setShowPermissionRequest(false);
+    initializeMedia();
   };
+
+  const handlePermissionDenied = (error: string) => {
+    setPermissionError(error);
+    setHasVideoPermission(false);
+    setShowPermissionRequest(false);
+  };
+
+  if (showPermissionRequest) {
+
+  return (
+      <PermissionRequest 
+        onPermissionGranted={handlePermissionGranted}
+        onPermissionDenied={handlePermissionDenied}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
