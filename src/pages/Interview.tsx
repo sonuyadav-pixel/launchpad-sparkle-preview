@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useTextToSpeech } from '@/hooks/useTextToSpeech';
+import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { 
   Video, 
   VideoOff, 
@@ -31,7 +31,7 @@ const Interview = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { speak, isPlaying, loading: ttsLoading } = useTextToSpeech();
+  const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
 
   // Session state
   const sessionId = searchParams.get('session');
@@ -228,32 +228,33 @@ const Interview = () => {
     }
   };
 
-  // Generate AI response based on user input
+  // Generate AI response based on user input using OpenAI
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      console.log('🤖 Generating AI response for:', userInput);
+      console.log('🤖 Generating AI response using OpenAI for:', userInput);
       
-      // Simple AI responses for interview context
-      const responses = [
-        "That's interesting. Can you tell me more about that experience?",
-        "How did you handle that situation?", 
-        "What did you learn from that experience?",
-        "Can you give me a specific example?",
-        "What would you do differently next time?",
-        "How do you think that skill applies to this role?",
-        "Tell me about the challenges you faced.",
-        "What was the outcome of that project?",
-        "How did you work with your team on that?",
-        "What motivates you in that type of work?"
-      ];
+      // Get conversation context (last 5 messages for efficiency)
+      const context = localTranscript.slice(0, 5).reverse();
       
-      // Return a random appropriate response
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      // Add small delay to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return randomResponse;
+      // Call our OpenAI edge function
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: { 
+          message: userInput,
+          context: context
+        }
+      });
+
+      if (error) {
+        console.error('🤖 OpenAI API error:', error);
+        throw error;
+      }
+
+      if (!data.response) {
+        throw new Error('No response received from OpenAI');
+      }
+
+      console.log('🤖 Generated AI response:', data.response);
+      return data.response;
       
     } catch (error) {
       console.error('❌ Error generating AI response:', error);
