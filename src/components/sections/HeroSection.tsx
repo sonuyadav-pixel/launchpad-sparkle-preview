@@ -89,7 +89,7 @@ const HeroSection = () => {
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
               AI-Powered{" "}
               <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                Interview Platform
+                Interviews
               </span>
             </h1>
             
