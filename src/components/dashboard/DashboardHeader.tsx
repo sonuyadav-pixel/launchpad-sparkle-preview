@@ -8,11 +8,10 @@ import { useState, useEffect } from "react";
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
   onToggleSidebar: () => void;
-  onCollapseSidebar?: () => void;
-  sidebarCollapsed?: boolean;
+  sidebarCollapsed?: boolean; // Keep for potential future use
 }
 
-export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSidebar, sidebarCollapsed }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollapsed }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -63,22 +62,6 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
           >
             <Menu className="h-5 w-5" />
           </Button>
-          
-          {/* Desktop collapse toggle - now visible on all screens */}
-          {onCollapseSidebar && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                console.log('Collapse button clicked, current state:', sidebarCollapsed);
-                onCollapseSidebar();
-              }}
-              className="flex" // Changed from "hidden lg:flex" to make it visible on all screens
-              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-            </Button>
-          )}
           
           <div className="hidden sm:block">
             <h2 className="text-lg font-semibold text-foreground">

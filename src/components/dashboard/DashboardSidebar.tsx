@@ -10,7 +10,9 @@ import {
   BookOpen, 
   Briefcase, 
   Sparkles,
-  ChevronLeft
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeft
 } from "lucide-react";
 import { DashboardModule } from "@/pages/Dashboard";
 
@@ -82,6 +84,7 @@ interface DashboardSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isCollapsed?: boolean;
+  onToggleCollapse?: () => void; // Add toggle collapse function
 }
 
 export const DashboardSidebar = ({
@@ -90,6 +93,7 @@ export const DashboardSidebar = ({
   isOpen,
   onClose,
   isCollapsed = false,
+  onToggleCollapse,
 }: DashboardSidebarProps) => {
   const handleItemClick = (moduleId: DashboardModule, comingSoon?: boolean) => {
     if (!comingSoon) {
@@ -120,15 +124,18 @@ export const DashboardSidebar = ({
         )}
       >
         <div className="flex h-full flex-col">
-          {/* Close button for mobile - only show when expanded */}
-          {!isCollapsed && (
-            <div className="flex items-center justify-between p-4 lg:hidden">
-              <h3 className="text-lg font-semibold">Menu</h3>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+          {/* Toggle Mini Sidebar Button - Always visible at top */}
+          <div className="flex items-center justify-between p-4 border-b">
+            {!isCollapsed && <h3 className="text-lg font-semibold">Menu</h3>}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onToggleCollapse}
+              title={isCollapsed ? "Expand sidebar" : "Collapse to mini sidebar"}
+            >
+              {isCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+            </Button>
+          </div>
 
           {/* Navigation */}
           <nav className={cn(

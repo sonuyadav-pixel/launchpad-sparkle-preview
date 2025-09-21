@@ -28,7 +28,7 @@ const Dashboard = () => {
       <DashboardHeader 
         onOpenPricing={() => setIsPricingOpen(true)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        onCollapseSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        // Removed onCollapseSidebar - now handled in sidebar itself
         sidebarCollapsed={isSidebarCollapsed}
       />
       
@@ -39,6 +39,7 @@ const Dashboard = () => {
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         />
         
         <DashboardContent 
