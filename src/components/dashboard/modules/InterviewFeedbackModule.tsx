@@ -78,14 +78,14 @@ const InterviewFeedbackModule = () => {
 
       if (error) throw error;
 
-      // Get recent completed sessions
+      // Get only the most recent completed session
       const completedSessions = (data.sessions || [])
         .filter((session: InterviewSession) => session.status === 'completed')
-        .slice(0, 3);
+        .slice(0, 1); // Only get the last one
       
       setRecentSessions(completedSessions);
-      if (completedSessions.length > 0 && !selectedSession) {
-        setSelectedSession(completedSessions[0]);
+      if (completedSessions.length > 0) {
+        setSelectedSession(completedSessions[0]); // Auto-select the most recent one
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
@@ -210,9 +210,9 @@ const InterviewFeedbackModule = () => {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Session Selection */}
+        {/* Session Selection - Only show if more than one session, otherwise auto-select */}
         <div>
-          <h4 className="font-medium mb-3">Select Recent Interview</h4>
+          <h4 className="font-medium mb-3">Most Recent Interview</h4>
           <div className="grid gap-2">
             {recentSessions.map((session) => (
               <div
