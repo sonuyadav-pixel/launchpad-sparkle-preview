@@ -552,27 +552,34 @@ const Interview = () => {
         initializeSpeechRecognition();
       }
       
-      // Try multiple times to ensure it starts
+      // Ensure speech recognition is properly reset before starting
       const forceStart = async () => {
-        for (let i = 0; i < 3; i++) {
+        // First, stop any existing recognition
+        if (recognitionRef.current) {
           try {
-            if (recognitionRef.current && !isListening) {
-              console.log(`🚀 Attempt ${i + 1} to start speech recognition`);
-              recognitionRef.current.start();
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              if (isListening) {
-                console.log('✅ Speech recognition started successfully');
-                break;
-              }
-            }
-          } catch (error) {
-            console.log(`❌ Attempt ${i + 1} failed:`, error);
-            if (i === 2) {
-              // Last attempt - reinitialize
-              recognitionRef.current = null;
-              initializeSpeechRecognition();
-            }
+            recognitionRef.current.stop();
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (e) {
+            console.log('🔧 Clearing existing recognition');
           }
+        }
+        
+        // Reinitialize if needed
+        if (!recognitionRef.current) {
+          initializeSpeechRecognition();
+        }
+        
+        // Try to start with proper error handling
+        try {
+          if (recognitionRef.current && !isListening) {
+            console.log('🚀 Starting speech recognition');
+            recognitionRef.current.start();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('✅ Speech recognition started successfully');
+          }
+        } catch (error) {
+          console.log('❌ Speech recognition start failed:', error);
+          // Continue anyway - the interview can still work without perfect speech recognition
         }
       };
       
