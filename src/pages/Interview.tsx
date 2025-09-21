@@ -1,3 +1,4 @@
+// Updated to remove all mute functionality - continuous listening only
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,6 @@ const Interview = () => {
   
   // UI state
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
@@ -61,6 +61,9 @@ const Interview = () => {
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
+  const autoResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedTranscript = useRef<string>('');
+  const lastPartialTranscript = useRef<string>('');
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -79,16 +82,11 @@ const Interview = () => {
     const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
     recognitionRef.current = new SpeechRecognition();
     
-    // Configure recognition for continuous listening
+    // Configure recognition
     recognitionRef.current.continuous = true;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = 'en-US';
     recognitionRef.current.maxAlternatives = 1;
-    
-    // Disable automatic stopping on silence
-    if ('webkitSpeechRecognition' in window) {
-      recognitionRef.current.webkitGrammarList = null;
-    }
     
     console.log('✅ Speech recognition configured');
     
@@ -103,11 +101,11 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active and not manually stopped
-      if (isInterviewActive && !isMuted) {
+      // Auto-restart if interview is active
+      if (isInterviewActive) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isMuted && !isListening) {
+          if (isInterviewActive && !isListening) {
             startSpeechRecognition();
           }
         }, 1000); // Increased delay to prevent rapid restarts
@@ -119,32 +117,47 @@ const Interview = () => {
       let finalTranscript = '';
       let interimTranscript = '';
       
-      // Process all results from the beginning to capture full conversation
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
+        console.log(`🔍 Result ${i}: "${transcript}", isFinal: ${event.results[i].isFinal}`);
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
-          console.log('✅ Final result:', transcript);
         } else {
           interimTranscript += transcript;
-          console.log('⏳ Interim result:', transcript);
         }
       }
       
-      // Always update current transcript to show live speech
-      const displayTranscript = finalTranscript || interimTranscript;
-      if (displayTranscript.trim()) {
-        setCurrentTranscript(displayTranscript);
+      console.log(`📊 Final: "${finalTranscript}", Interim: "${interimTranscript}"`);
+      
+      // Update interim transcript for live display
+      setCurrentTranscript(interimTranscript);
+      
+      // Handle continuous speech accumulation
+      if (finalTranscript.trim()) {
+        console.log('📝 Final transcript chunk:', finalTranscript);
         lastSpeechTime.current = Date.now();
         resetAutoCloseTimer();
+        
+        // Accumulate transcript chunks
+        accumulatedTranscript.current += (accumulatedTranscript.current ? ' ' : '') + finalTranscript.trim();
+        console.log('📝 Accumulated transcript:', accumulatedTranscript.current);
+        
+        // Reset the 5-second auto-response timer
+        resetAutoResponseTimer();
+        setCurrentTranscript('');
+      } else if (interimTranscript.trim()) {
+        console.log('🗣️ Interim speech detected:', interimTranscript.trim());
       }
       
-      // Only process final transcript for AI response
-      if (finalTranscript.trim()) {
-        console.log('📝 Processing final transcript:', finalTranscript);
-        processUserSpeech(finalTranscript.trim());
-        setCurrentTranscript(''); // Clear after processing
+      // Handle interim results for real-time feedback
+      if (interimTranscript.trim() && interimTranscript !== lastPartialTranscript.current) {
+        lastPartialTranscript.current = interimTranscript;
+        lastSpeechTime.current = Date.now();
+        
+        // Reset auto-response timer on any speech activity
+        resetAutoResponseTimer();
+        console.log('⏰ Auto-response timer reset due to interim speech');
       }
     };
 
@@ -167,7 +180,7 @@ const Interview = () => {
     };
 
     return true;
-  }, [isInterviewActive, isMuted]);
+  }, [isInterviewActive]);
 
   const startSpeechRecognition = useCallback(() => {
     if (!recognitionRef.current) {
@@ -175,7 +188,7 @@ const Interview = () => {
     }
 
     try {
-      if (!isListening && isInterviewActive && !isMuted) {
+      if (!isListening && isInterviewActive) {
         console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
       }
@@ -183,7 +196,7 @@ const Interview = () => {
       console.error('❌ Failed to start speech recognition:', error);
       // If failed, try to reinitialize and restart
       setTimeout(() => {
-        if (isInterviewActive && !isMuted) {
+        if (isInterviewActive) {
           console.log('🔄 Reinitializing speech recognition after error...');
           recognitionRef.current = null;
           initializeSpeechRecognition();
@@ -193,7 +206,7 @@ const Interview = () => {
         }
       }, 2000);
     }
-  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
+  }, [isListening, initializeSpeechRecognition, isInterviewActive]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
@@ -202,10 +215,105 @@ const Interview = () => {
     }
   }, [isListening]);
 
-  // Process user speech and generate AI response
+  // Auto-response timer management
+  const resetAutoResponseTimer = useCallback(() => {
+    console.log('⏰ Resetting auto-response timer');
+    
+    // Clear existing timer
+    if (autoResponseTimeoutRef.current) {
+      clearTimeout(autoResponseTimeoutRef.current);
+      autoResponseTimeoutRef.current = null;
+    }
+    
+    // Set new 5-second timer
+    autoResponseTimeoutRef.current = setTimeout(() => {
+      console.log('⏰ 5-second silence detected, triggering auto-response');
+      triggerAutoResponse();
+    }, 5000);
+  }, []);
+
+  // Trigger auto-response after silence
+  const triggerAutoResponse = async () => {
+    if (!isInterviewActive || isAISpeaking.current) {
+      console.log('🚫 Auto-response cancelled: interview inactive or AI speaking');
+      return;
+    }
+
+    // Check both accumulated transcript and last partial transcript
+    let transcript = accumulatedTranscript.current.trim();
+    const partialTranscript = lastPartialTranscript.current.trim();
+    
+    // If we have accumulated transcript, use it; otherwise use the last partial transcript
+    if (!transcript && partialTranscript) {
+      transcript = partialTranscript;
+      console.log('📝 Using partial transcript for auto-response:', transcript);
+    }
+    
+    if (!transcript || transcript.length < 3) {
+      console.log('🚫 Auto-response cancelled: no meaningful speech accumulated');
+      console.log('📊 Debug - Accumulated:', accumulatedTranscript.current);
+      console.log('📊 Debug - Partial:', lastPartialTranscript.current);
+      return;
+    }
+
+    console.log('🤖 Processing speech for auto-response:', transcript);
+    
+    // Clear accumulated transcript
+    accumulatedTranscript.current = '';
+    lastPartialTranscript.current = '';
+    
+    try {
+      // Check if we just processed speech recently (debounce)
+      const now = Date.now();
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
+        console.log('🚫 Skipping auto-response: too soon after last response');
+        return;
+      }
+      
+      lastProcessedTime.current = now;
+      
+      // Add user message to transcript
+      const userMessage: TranscriptMessage = {
+        id: Date.now().toString(),
+        speaker: 'user',
+        message: transcript,
+        timestamp: new Date()
+      };
+      
+      setLocalTranscript(prev => [userMessage, ...prev]);
+      await addTranscriptMessage(userMessage);
+      
+      // Generate AI response immediately
+      console.log('🤖 Generating auto AI response...');
+      const aiResponse = await generateAIResponse(transcript);
+      
+      if (aiResponse && !isAISpeaking.current) {
+        const aiMessage: TranscriptMessage = {
+          id: (Date.now() + 1).toString(),
+          speaker: 'ai',
+          message: aiResponse,
+          timestamp: new Date()
+        };
+        
+        setLocalTranscript(prev => [aiMessage, ...prev]);
+        await addTranscriptMessage(aiMessage);
+        
+        // Speak the AI response
+        console.log('🔊 Speaking auto AI response...');
+        isAISpeaking.current = true;
+        await speak(aiResponse, 'alloy');
+        isAISpeaking.current = false;
+      }
+    } catch (error) {
+      console.error('❌ Error in auto-response:', error);
+      isAISpeaking.current = false;
+    }
+  };
+
+  // Process user speech manually (for manual triggers if needed)
   const processUserSpeech = async (transcript: string) => {
     try {
-      console.log('🧠 Processing user speech:', transcript);
+      console.log('🧠 Processing user speech manually:', transcript);
       
       // Skip if transcript is too short or AI is currently speaking
       if (transcript.length < 3) {
@@ -219,9 +327,9 @@ const Interview = () => {
         return;
       }
       
-      // Check if we just processed speech recently (reduced debounce for better responsiveness)
+      // Check if we just processed speech recently (debounce)
       const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 1500) {
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
         console.log('🚫 Skipping: too soon after last response');
         return;
       }
@@ -237,41 +345,28 @@ const Interview = () => {
       };
       
       setLocalTranscript(prev => [userMessage, ...prev]);
-      
-      // Add to database
       await addTranscriptMessage(userMessage);
       
-      // Only generate AI response if user seems to have finished speaking
-      // Wait a moment to see if more speech is coming
-      setTimeout(async () => {
-        if (isAISpeaking.current) return; // Double check AI isn't speaking
+      // Generate AI response
+      const aiResponse = await generateAIResponse(transcript);
+      
+      if (aiResponse && !isAISpeaking.current) {
+        const aiMessage: TranscriptMessage = {
+          id: (Date.now() + 1).toString(),
+          speaker: 'ai',
+          message: aiResponse,
+          timestamp: new Date()
+        };
         
-        try {
-          console.log('🤖 Generating delayed AI response...');
-          const aiResponse = await generateAIResponse(transcript);
-          
-          if (aiResponse && !isAISpeaking.current) {
-            const aiMessage: TranscriptMessage = {
-              id: (Date.now() + 1).toString(),
-              speaker: 'ai',
-              message: aiResponse,
-              timestamp: new Date()
-            };
-            
-            setLocalTranscript(prev => [aiMessage, ...prev]);
-            await addTranscriptMessage(aiMessage);
-            
-            // Speak the AI response
-            console.log('🔊 Speaking AI response...');
-            isAISpeaking.current = true;
-            await speak(aiResponse, 'alloy');
-            isAISpeaking.current = false;
-          }
-        } catch (error) {
-          console.error('❌ Error in delayed AI response:', error);
-          isAISpeaking.current = false;
-        }
-      }, 2000); // Wait 2 seconds before responding
+        setLocalTranscript(prev => [aiMessage, ...prev]);
+        await addTranscriptMessage(aiMessage);
+        
+        // Speak the AI response
+        console.log('🔊 Speaking AI response...');
+        isAISpeaking.current = true;
+        await speak(aiResponse, 'alloy');
+        isAISpeaking.current = false;
+      }
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
@@ -648,6 +743,14 @@ const Interview = () => {
       clearTimeout(autoCloseTimerRef.current);
     }
     
+    if (autoResponseTimeoutRef.current) {
+      clearTimeout(autoResponseTimeoutRef.current);
+    }
+    
+    // Clear accumulated speech
+    accumulatedTranscript.current = '';
+    lastPartialTranscript.current = '';
+    
     // Update session status in database
     if (sessionId) {
       try {
@@ -709,7 +812,7 @@ const Interview = () => {
       if (!isInterviewActive) return;
       
       // Check if speech recognition is still active
-      if (!isListening && !isMuted && isInterviewActive) {
+      if (!isListening && isInterviewActive) {
         console.log('💓 Heartbeat: Speech recognition not active, restarting...');
         startSpeechRecognition();
       }
@@ -721,16 +824,6 @@ const Interview = () => {
     heartbeatRef.current = setTimeout(heartbeat, 5000);
   };
 
-  // Toggle Functions
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    
-    if (!isMuted) {
-      stopSpeechRecognition();
-    } else if (isInterviewActive) {
-      startSpeechRecognition();
-    }
-  };
 
   // Load session on mount
   useEffect(() => {
@@ -762,6 +855,9 @@ const Interview = () => {
       }
       if (autoCloseTimerRef.current) {
         clearTimeout(autoCloseTimerRef.current);
+      }
+      if (autoResponseTimeoutRef.current) {
+        clearTimeout(autoResponseTimeoutRef.current);
       }
     };
   }, []);
@@ -898,17 +994,6 @@ const Interview = () => {
                     )}
                   </Button>
                   
-                  <Button
-                    variant={isMuted ? "secondary" : "default"}
-                    size="lg"
-                    onClick={toggleMute}
-                  >
-                    {isMuted ? (
-                      <MicOff className="w-5 h-5" />
-                    ) : (
-                      <Mic className="w-5 h-5" />
-                    )}
-                  </Button>
                   
                   <Button
                     onClick={endInterview}
@@ -919,24 +1004,6 @@ const Interview = () => {
                     End Interview
                   </Button>
                   
-                  {/* Manual Speech Control for debugging */}
-                  <Button
-                    onClick={() => {
-                      console.log('🔧 Manual speech recognition start - Current state:', {
-                        isListening,
-                        isInterviewActive,
-                        isMuted,
-                        hasRecognition: !!recognitionRef.current
-                      });
-                      if (!isListening && !isMuted) {
-                        startSpeechRecognition();
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {isListening ? '🎤 Listening' : '🔇 Start Mic'}
-                  </Button>
                 </>
               )}
             </div>
