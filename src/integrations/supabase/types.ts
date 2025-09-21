@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      interview_sessions: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          interview_type: string
+          metadata: Json | null
+          settings: Json | null
+          started_at: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          interview_type?: string
+          metadata?: Json | null
+          settings?: Json | null
+          started_at?: string | null
+          status?: string
+          title?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          interview_type?: string
+          metadata?: Json | null
+          settings?: Json | null
+          started_at?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      interview_transcripts: {
+        Row: {
+          id: string
+          message: string
+          metadata: Json | null
+          session_id: string | null
+          speaker: string
+          timestamp: string | null
+        }
+        Insert: {
+          id?: string
+          message: string
+          metadata?: Json | null
+          session_id?: string | null
+          speaker: string
+          timestamp?: string | null
+        }
+        Update: {
+          id?: string
+          message?: string
+          metadata?: Json | null
+          session_id?: string | null
+          speaker?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_transcripts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "interview_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
