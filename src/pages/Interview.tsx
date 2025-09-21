@@ -105,24 +105,32 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active (removed mute check since we removed mute functionality)
-      if (isInterviewActive) {
+      // Only auto-restart if interview is active AND AI is not speaking
+      if (isInterviewActive && !isAISpeaking.current) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isListening) {
+          if (isInterviewActive && !isListening && !isAISpeaking.current) {
             startSpeechRecognition();
           }
-        }, 1500); // Increased delay to prevent rapid restarts
+        }, 1000); // Reduced delay since we have better control now
       }
     };
 
     recognitionRef.current.onresult = (event: any) => {
       console.log('🎤 Speech result received');
+      
+      // Skip if AI is currently speaking to prevent loops
+      if (isAISpeaking.current) {
+        console.log('🚫 Skipping speech result: AI is speaking');
+        return;
+      }
+      
       let finalTranscript = '';
       let interimTranscript = '';
       
-      // Process all results from the beginning to capture full conversation
-      for (let i = 0; i < event.results.length; i++) {
+      // Only process NEW results (start from resultIndex to avoid reprocessing)
+      const resultIndex = event.resultIndex || 0;
+      for (let i = resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
@@ -145,6 +153,12 @@ const Interview = () => {
       // Only process final transcript for AI response
       if (finalTranscript.trim()) {
         console.log('📝 Processing final transcript:', finalTranscript);
+        
+        // Stop speech recognition to prevent loops
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+        
         processUserSpeech(finalTranscript.trim());
         setCurrentTranscript(''); // Clear after processing
       }
@@ -224,6 +238,12 @@ const Interview = () => {
       // Skip if transcript is too short or AI is currently speaking
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
+        // Restart speech recognition for next input
+        setTimeout(() => {
+          if (isInterviewActive && !isListening && !isAISpeaking.current) {
+            startSpeechRecognition();
+          }
+        }, 1000);
         return;
       }
       
@@ -237,6 +257,12 @@ const Interview = () => {
       const now = Date.now();
       if (lastProcessedTime.current && now - lastProcessedTime.current < 1500) {
         console.log('🚫 Skipping: too soon after last response');
+        // Restart speech recognition for next input
+        setTimeout(() => {
+          if (isInterviewActive && !isListening && !isAISpeaking.current) {
+            startSpeechRecognition();
+          }
+        }, 1000);
         return;
       }
       
@@ -255,45 +281,66 @@ const Interview = () => {
       // Add to database
       await addTranscriptMessage(userMessage);
       
-      // Only generate AI response if user seems to have finished speaking
-      // Wait a moment to see if more speech is coming
-      setTimeout(async () => {
-        if (isAISpeaking.current) return; // Double check AI isn't speaking
+      // Generate AI response immediately (no delay needed since we stopped recognition)
+      try {
+        console.log('🤖 Generating AI response...');
+        isAISpeaking.current = true; // Set immediately to prevent other speech processing
         
-        try {
-          console.log('🤖 Generating delayed AI response...');
-          const aiResponse = await generateAIResponse(transcript);
+        const aiResponse = await generateAIResponse(transcript);
+        
+        if (aiResponse) {
+          const aiMessage: TranscriptMessage = {
+            id: (Date.now() + 1).toString(),
+            speaker: 'ai',
+            message: aiResponse,
+            timestamp: new Date()
+          };
           
-          if (aiResponse && !isAISpeaking.current) {
-            const aiMessage: TranscriptMessage = {
-              id: (Date.now() + 1).toString(),
-              speaker: 'ai',
-              message: aiResponse,
-              timestamp: new Date()
-            };
-            
-            setLocalTranscript(prev => [aiMessage, ...prev]);
-            await addTranscriptMessage(aiMessage);
-            
-            // Speak the AI response
-            console.log('🔊 Speaking AI response...');
-            isAISpeaking.current = true;
-            await speak(aiResponse, 'alloy');
-            isAISpeaking.current = false;
-          }
-        } catch (error) {
-          console.error('❌ Error in delayed AI response:', error);
-          isAISpeaking.current = false;
+          setLocalTranscript(prev => [aiMessage, ...prev]);
+          await addTranscriptMessage(aiMessage);
+          
+          // Speak the AI response
+          console.log('🔊 Speaking AI response...');
+          await speak(aiResponse, 'alloy');
         }
-      }, 2000); // Wait 2 seconds before responding
+        
+        isAISpeaking.current = false;
+        
+        // Restart speech recognition after AI finishes speaking
+        setTimeout(() => {
+          if (isInterviewActive && !isListening) {
+            console.log('🔄 Restarting speech recognition after AI response');
+            startSpeechRecognition();
+          }
+        }, 1000);
+        
+      } catch (error) {
+        console.error('❌ Error in AI response:', error);
+        isAISpeaking.current = false;
+        
+        // Still restart speech recognition even if AI response failed
+        setTimeout(() => {
+          if (isInterviewActive && !isListening) {
+            startSpeechRecognition();
+          }
+        }, 1000);
+      }
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
+      isAISpeaking.current = false;
       toast({
         title: "Processing Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive"
       });
+      
+      // Restart speech recognition after error
+      setTimeout(() => {
+        if (isInterviewActive && !isListening) {
+          startSpeechRecognition();
+        }
+      }, 1000);
     }
   };
 
