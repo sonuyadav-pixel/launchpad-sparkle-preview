@@ -25,7 +25,8 @@ import {
   MessageSquare
 } from 'lucide-react';
 import TranscriptPanel from '@/components/interview/TranscriptPanel';
-import VoiceToTextModule from '@/components/interview/VoiceToTextModule';
+import { AIInterviewer } from '@/components/interview/AIInterviewer';
+import InterviewProgress from '@/components/interview/InterviewProgress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,12 +66,15 @@ const Interview = () => {
     improvements: [],
     comments: ''
   });
+  const [interviewStartTime, setInterviewStartTime] = useState<number>(0);
+  const [interviewDuration, setInterviewDuration] = useState<number>(0);
   
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const realtimeClientRef = useRef<RealtimeInterviewClient | null>(null);
   const userIdRef = useRef<string>('');
+  const durationIntervalRef = useRef<number>();
 
   // Initialize session and user
   useEffect(() => {
@@ -245,6 +249,13 @@ const Interview = () => {
       setIsListening(true);
 
       setIsInterviewActive(true);
+      const startTime = Date.now();
+      setInterviewStartTime(startTime);
+      
+      // Start duration timer
+      durationIntervalRef.current = window.setInterval(() => {
+        setInterviewDuration(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
 
       // Update session status
       await updateSession(sessionId, { 
@@ -282,6 +293,11 @@ const Interview = () => {
       setIsListening(false);
       setIsConnected(false);
       setIsAISpeaking(false);
+      
+      // Clear duration timer
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
 
       // Update session status
       if (sessionId) {
@@ -406,6 +422,12 @@ const Interview = () => {
         realtimeClientRef.current.disconnect();
       }
       stopVideo();
+    };
+    
+    return () => {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
     };
   }, []);
 
@@ -561,20 +583,30 @@ const Interview = () => {
             </Card>
           </div>
 
-          {/* Transcript and Voice-to-Text */}
+          {/* AI Interviewer */}
           <div className="space-y-6">
-            {/* Enhanced Transcript Panel */}
-            <TranscriptPanel
-              transcript={transcript}
-              currentTranscript={currentTranscript}
-              isListening={isListening}
-              isAISpeaking={isAISpeaking}
+            {/* AI Interviewer Component with Text-to-Speech */}
+            <AIInterviewer 
+              sessionId={sessionId}
+              onTranscriptUpdate={(messages) => {
+                // Convert AI Interviewer messages to transcript format
+                const convertedTranscript = messages.map(msg => ({
+                  id: msg.id,
+                  speaker: msg.speaker,
+                  message: msg.message,
+                  timestamp: msg.timestamp,
+                  metadata: {}
+                }));
+                setTranscript(convertedTranscript);
+              }}
+              onInterviewComplete={endInterview}
             />
 
-            {/* Voice to Text Module */}
-            <VoiceToTextModule
-              onTranscriptUpdate={handleVoiceToTextUpdate}
-              isActive={isInterviewActive && !isMuted}
+            {/* Interview Progress */}
+            <InterviewProgress
+              currentPhase="conversation"
+              questionCount={transcript.filter(m => m.speaker === 'ai').length}
+              duration={interviewDuration}
             />
           </div>
         </div>

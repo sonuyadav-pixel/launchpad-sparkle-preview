@@ -39,19 +39,31 @@ const InterviewModule = () => {
     try {
       setError("");
       console.log('Starting new interview...');
+      console.log('About to call createSession...');
+      console.log('createSession function available:', typeof createSession);
       
       const session = await createSession({
         title: `Interview Session - ${new Date().toLocaleDateString()}`,
         interview_type: 'general'
+      }).catch(sessionError => {
+        console.error('createSession failed with error:', sessionError);
+        throw sessionError;
       });
       
       console.log('Session created successfully:', session);
+      console.log('Session ID:', session?.id);
       
+      if (!session?.id) {
+        throw new Error('Session was created but has no ID');
+      }
+      
+      console.log('Navigating to interview page...');
       // Navigate immediately to interview page with session ID
       navigate(`/interview?session=${session.id}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
-      setError(`Failed to start interview: ${error.message}`);
+      console.error('Error details:', error);
+      setError(`Failed to start interview: ${error?.message || 'Unknown error'}`);
     }
   };
 

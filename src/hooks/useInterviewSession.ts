@@ -41,7 +41,7 @@ export const useInterviewSession = () => {
     try {
       setLoading(true);
       setError("");
-      
+      console.log('createSession called with:', sessionData);
       const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
       console.log('Auth session check:', { 
         hasSession: !!authSession, 
@@ -59,7 +59,10 @@ export const useInterviewSession = () => {
       console.log('Auth token available:', !!authSession.access_token);
 
       const { data, error } = await supabase.functions.invoke('interview-session', {
-        body: sessionData,
+        body: {
+          action: 'create',
+          ...sessionData
+        },
         headers: {
           Authorization: `Bearer ${authSession.access_token}`,
           'Content-Type': 'application/json'

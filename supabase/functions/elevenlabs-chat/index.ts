@@ -100,20 +100,74 @@ serve(async (req) => {
       )
     }
 
-    // Use local AI response generation instead of ElevenLabs API
-    console.log('🤖 Generating local AI response')
+    // Try OpenAI first, then fall back to local responses
+    console.log('🤖 Attempting OpenAI response generation')
     
     // Build conversation history for context-aware responses
     let conversationHistory = '';
     if (context && Array.isArray(context) && context.length > 0) {
-      conversationHistory = context.slice(-3).map((msg: any) => 
+      conversationHistory = context.slice(-5).map((msg: any) => 
         `${msg.speaker === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.message}`
       ).join('\n');
     }
 
-    // Context-aware interview responses based on message content
-    const messageWords = message.toLowerCase().trim();
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     let response = '';
+
+    // Try OpenAI if API key is available
+    if (openAIApiKey) {
+      try {
+        console.log('🤖 Using OpenAI for AI response');
+        
+        const systemPrompt = `You are a professional AI interviewer conducting a job interview. Your role is to:
+1. Ask thoughtful, relevant questions about the candidate's experience, skills, and background
+2. Follow up on their responses with deeper questions
+3. Keep the conversation flowing naturally
+4. Be encouraging but professional
+5. Ask behavioral questions (STAR method)
+6. Probe for specific examples and details
+7. Keep responses concise (1-2 sentences max)
+
+Current conversation context:
+${conversationHistory}
+
+Respond as a professional interviewer would, asking the next logical question or follow-up based on the candidate's response.`;
+
+        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: message }
+            ],
+            max_tokens: 150,
+            temperature: 0.7,
+          }),
+        });
+
+        if (openAIResponse.ok) {
+          const data = await openAIResponse.json();
+          response = data.choices[0].message.content.trim();
+          console.log('✅ Generated OpenAI response');
+        } else {
+          console.log('⚠️ OpenAI failed, falling back to local responses');
+        }
+      } catch (error) {
+        console.log('⚠️ OpenAI error, falling back to local responses:', error);
+      }
+    }
+
+    // Fall back to local responses if OpenAI failed or unavailable
+    if (!response) {
+      console.log('🤖 Generating local AI response')
+      
+      // Context-aware interview responses based on message content
+      const messageWords = message.toLowerCase().trim();
 
     // Different responses based on content
     if (messageWords.includes('hello') || messageWords.includes('welcome') || messageWords.includes('hi')) {
