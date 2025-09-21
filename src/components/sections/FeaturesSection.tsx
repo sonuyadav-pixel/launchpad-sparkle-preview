@@ -79,7 +79,7 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section className="relative py-20 bg-section-lightBlue overflow-hidden">
+    <section className="relative py-20 bg-section-light overflow-hidden">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="features" />
       

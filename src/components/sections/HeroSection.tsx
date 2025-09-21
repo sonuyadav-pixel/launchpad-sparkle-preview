@@ -5,7 +5,7 @@ import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackg
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-section-lightBlue flex items-center justify-center px-4 py-20">
+    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
       {/* Auto-scrolling AI Interview Background */}
       <AutoScrollingBackground />
       
