@@ -374,15 +374,34 @@ const Interview = () => {
                   </Button>
                 </div>
 
-                {/* Connection Indicator */}
-                <div className="absolute top-4 left-4 flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1">
-                  <div className={cn(
-                    "w-2 h-2 rounded-full",
-                    hasVideoPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
-                  )}></div>
-                  <span className="text-sm text-muted-foreground">
-                    {hasVideoPermission ? (isListening ? "Listening..." : "Connected") : "No Access"}
-                  </span>
+                {/* Connection & Audio Status Indicator */}
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  {/* Connection Status */}
+                  <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      hasVideoPermission ? "bg-green-500 animate-pulse" : "bg-red-500"
+                    )}></div>
+                    <span className="text-sm text-muted-foreground">
+                      {hasVideoPermission ? "Connected" : "No Access"}
+                    </span>
+                  </div>
+                  
+                  {/* Audio Status */}
+                  {hasVideoPermission && (
+                    <div className={cn(
+                      "flex items-center gap-2 backdrop-blur-sm rounded-lg px-3 py-1",
+                      isMuted ? "bg-destructive/90" : "bg-green-500/90"
+                    )}>
+                      <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        isMuted ? "bg-white" : "bg-white animate-pulse"
+                      )}></div>
+                      <span className="text-sm text-white font-medium">
+                        {isMuted ? "Muted" : "Listening"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
