@@ -231,8 +231,8 @@ const Interview = () => {
     };
   }, []);
 
-  // Handle camera toggle - with proper restart
-  const toggleCamera = async () => {
+  // Handle camera toggle - fixed and simplified
+  const toggleCamera = () => {
     if (streamRef.current && videoRef.current) {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       if (videoTrack) {
@@ -244,43 +244,18 @@ const Interview = () => {
           console.log('Camera enabled, restarting video...');
           setIsVideoLoading(true);
           
-          // Force video to restart
-          try {
-            // Reset video element
-            videoRef.current.load();
-            
-            // Wait a moment for the load to process
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Try to play
-            await videoRef.current.play();
-            console.log('Video restarted successfully');
-            setIsVideoLoading(false);
-          } catch (error) {
-            console.error('Failed to restart video:', error);
-            
-            // Fallback: recreate the stream
-            try {
-              const newStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user' },
-                audio: true
+          // Simple restart without async complications
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.play().then(() => {
+                console.log('Video restarted');
+                setIsVideoLoading(false);
+              }).catch((error) => {
+                console.error('Video restart failed:', error);
+                setIsVideoLoading(false);
               });
-              
-              // Stop old stream
-              streamRef.current.getTracks().forEach(track => track.stop());
-              
-              // Set new stream
-              streamRef.current = newStream;
-              videoRef.current.srcObject = newStream;
-              await videoRef.current.play();
-              
-              console.log('Video restarted with new stream');
-              setIsVideoLoading(false);
-            } catch (restartError) {
-              console.error('Complete restart failed:', restartError);
-              setIsVideoLoading(false);
             }
-          }
+          }, 100);
         }
       }
     }
