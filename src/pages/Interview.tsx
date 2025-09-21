@@ -158,8 +158,10 @@ const Interview = () => {
 
   // Separate video setup function
   const setupVideo = async (stream: MediaStream) => {
+    console.log('setupVideo called with stream:', stream.id, 'video tracks:', stream.getVideoTracks().length);
+    
     if (!videoRef.current) {
-      console.error('Video element not available');
+      console.error('Video element not available - videoRef.current is null');
       setIsVideoLoading(false);
       return;
     }
@@ -347,7 +349,7 @@ const Interview = () => {
       await initializeMedia(); // Start actual media
       
     } catch (error: any) {
-      console.log('Permissions not granted, showing request modal');
+      console.log('Permissions not granted, showing request modal. Error:', error.name, error.message);
       setShowPermissionRequest(true);
     }
   };
@@ -504,14 +506,48 @@ const Interview = () => {
   };
 
   const handlePermissionGranted = async () => {
+    console.log('Permission granted, initializing media...');
     setShowPermissionRequest(false);
     await initializeMedia();
   };
 
   const handlePermissionDenied = (error: string) => {
+    console.log('Permission denied:', error);
     setPermissionError(error);
     setHasVideoPermission(false);
     setShowPermissionRequest(false);
+  };
+
+  // Debug function to manually test video
+  const debugVideo = async () => {
+    console.log('=== DEBUG VIDEO START ===');
+    console.log('videoRef.current:', !!videoRef.current);
+    console.log('streamRef.current:', !!streamRef.current);
+    console.log('hasVideoPermission:', hasVideoPermission);
+    console.log('isCameraOn:', isCameraOn);
+    console.log('isVideoLoading:', isVideoLoading);
+    
+    if (streamRef.current) {
+      console.log('Stream tracks:', streamRef.current.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+    }
+    
+    if (videoRef.current) {
+      console.log('Video element:', {
+        srcObject: !!videoRef.current.srcObject,
+        readyState: videoRef.current.readyState,
+        videoWidth: videoRef.current.videoWidth,
+        videoHeight: videoRef.current.videoHeight,
+        paused: videoRef.current.paused
+      });
+    }
+    console.log('=== DEBUG VIDEO END ===');
+    
+    // Try to reinitialize
+    try {
+      await initializeMedia();
+    } catch (e) {
+      console.error('Debug reinitialize failed:', e);
+    }
   };
 
   if (showPermissionRequest) {
@@ -670,7 +706,17 @@ const Interview = () => {
                     <span className="text-sm text-muted-foreground">
                       {hasVideoPermission ? "Connected" : "No Access"}
                     </span>
-                  </div>
+                   </div>
+                   
+                   {/* Debug Button - Temporary */}
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={debugVideo}
+                     className="bg-background/80 backdrop-blur-sm text-xs"
+                   >
+                     Debug Video
+                   </Button>
                   
                   {/* Audio Status */}
                   {hasVideoPermission && (
