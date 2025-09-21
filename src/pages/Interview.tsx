@@ -51,36 +51,36 @@ const Interview = () => {
 
   const transcriptRef = useRef<HTMLDivElement>(null);
 
-  // Simple and reliable media initialization
+  // Robust media initialization that works in all cases
   const initializeMedia = async () => {
     try {
-      console.log('Starting media initialization...');
+      console.log('Initializing media...');
+      setIsVideoLoading(true);
       
+      // Stop any existing streams first
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Get new stream
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        },
         audio: true
       });
       
-      console.log('Media stream obtained, setting up video...');
-      
+      console.log('New stream obtained:', stream.id);
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
+      setIsCameraOn(true);
       
-      // Direct video setup
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded, playing...');
-          videoRef.current?.play().then(() => {
-            console.log('Video is now playing!');
-            setIsVideoLoading(false);
-          }).catch(err => {
-            console.error('Play failed:', err);
-            setIsVideoLoading(false);
-          });
-        };
-      }
+      // Setup video element
+      await setupVideo(stream);
       
       // Initialize speech recognition
       initializeSpeechRecognition();
@@ -89,6 +89,74 @@ const Interview = () => {
       console.error('Media initialization failed:', error);
       setPermissionError(`Camera access failed: ${error.message}`);
       setHasVideoPermission(false);
+      setIsVideoLoading(false);
+    }
+  };
+
+  // Separate video setup function
+  const setupVideo = async (stream: MediaStream) => {
+    if (!videoRef.current) {
+      console.error('Video element not available');
+      setIsVideoLoading(false);
+      return;
+    }
+
+    try {
+      console.log('Setting up video with stream:', stream.id);
+      
+      // Clear existing source
+      videoRef.current.srcObject = null;
+      
+      // Wait a bit
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Set new source
+      videoRef.current.srcObject = stream;
+      
+      // Wait for video to be ready and play
+      await new Promise((resolve, reject) => {
+        const video = videoRef.current!;
+        
+        const cleanup = () => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          video.removeEventListener('error', onError);
+        };
+        
+        const onLoaded = async () => {
+          try {
+            await video.play();
+            console.log('Video playing successfully');
+            setIsVideoLoading(false);
+            cleanup();
+            resolve(void 0);
+          } catch (playError) {
+            console.error('Play failed:', playError);
+            setIsVideoLoading(false);
+            cleanup();
+            reject(playError);
+          }
+        };
+        
+        const onError = (e: any) => {
+          console.error('Video error:', e);
+          setIsVideoLoading(false);
+          cleanup();
+          reject(e);
+        };
+        
+        video.addEventListener('loadedmetadata', onLoaded);
+        video.addEventListener('error', onError);
+        
+        // Timeout fallback
+        setTimeout(() => {
+          cleanup();
+          setIsVideoLoading(false);
+          resolve(void 0);
+        }, 5000);
+      });
+      
+    } catch (error) {
+      console.error('Video setup failed:', error);
       setIsVideoLoading(false);
     }
   };
@@ -177,34 +245,35 @@ const Interview = () => {
     addTranscriptMessage('ai', randomResponse);
   };
 
-  // Check if permissions are already granted
+  // Check existing permissions and auto-start if available
   const checkExistingPermissions = async () => {
     try {
-      // Try to get media without showing permission dialog
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+      console.log('Checking existing permissions...');
+      
+      // Try to access media without showing permission dialog
+      const testStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
         audio: true
       });
       
-      // If we get here, permissions are already granted
-      console.log('Permissions already granted');
-      stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+      console.log('Permissions already granted, starting media...');
+      testStream.getTracks().forEach(track => track.stop()); // Stop test stream
+      
       setShowPermissionRequest(false);
-      initializeMedia();
+      await initializeMedia(); // Start actual media
+      
     } catch (error: any) {
-      console.log('Permissions not granted yet:', error.name);
-      // If we get here, we need to request permissions
+      console.log('Permissions not granted, showing request modal');
       setShowPermissionRequest(true);
     }
   };
 
-  // Start media only after permission is granted
+  // Component mount effect
   useEffect(() => {
-    // Check existing permissions first
     checkExistingPermissions();
     
     return () => {
-      // Cleanup: stop all tracks and recognition when component unmounts
+      // Cleanup on unmount
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -214,53 +283,59 @@ const Interview = () => {
     };
   }, []);
 
-  // Fixed camera toggle that refreshes video properly
-  const toggleCamera = () => {
-    if (!streamRef.current || !videoRef.current) return;
+  // Robust camera toggle that always works
+  const toggleCamera = async () => {
+    console.log('Camera toggle clicked, current state:', isCameraOn);
+    
+    if (!streamRef.current) {
+      console.log('No stream, reinitializing...');
+      await initializeMedia();
+      return;
+    }
     
     const videoTrack = streamRef.current.getVideoTracks()[0];
-    if (!videoTrack) return;
+    if (!videoTrack) {
+      console.log('No video track, reinitializing...');
+      await initializeMedia();
+      return;
+    }
     
-    const newCameraState = !isCameraOn;
-    setIsCameraOn(newCameraState);
-    
-    if (newCameraState) {
-      // Turning camera ON - refresh video completely
-      console.log('Turning camera ON - refreshing video');
-      setIsVideoLoading(true);
-      
-      // Re-enable the track
-      videoTrack.enabled = true;
-      
-      // Refresh the video element
-      setTimeout(() => {
-        if (videoRef.current && streamRef.current) {
-          // Clear and reset the video source
-          videoRef.current.srcObject = null;
-          
-          setTimeout(() => {
-            if (videoRef.current && streamRef.current) {
-              videoRef.current.srcObject = streamRef.current;
-              
-              videoRef.current.onloadedmetadata = () => {
-                if (videoRef.current) {
-                  videoRef.current.play().then(() => {
-                    console.log('Video restarted successfully');
-                    setIsVideoLoading(false);
-                  }).catch(err => {
-                    console.error('Failed to play video:', err);
-                    setIsVideoLoading(false);
-                  });
-                }
-              };
-            }
-          }, 50);
-        }
-      }, 50);
-    } else {
-      // Turning camera OFF
+    if (isCameraOn) {
+      // Turn OFF
       console.log('Turning camera OFF');
       videoTrack.enabled = false;
+      setIsCameraOn(false);
+    } else {
+      // Turn ON - reinitialize everything for reliability
+      console.log('Turning camera ON - reinitializing stream');
+      setIsVideoLoading(true);
+      
+      try {
+        // Stop current stream
+        streamRef.current.getTracks().forEach(track => track.stop());
+        
+        // Get fresh stream
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'user'
+          },
+          audio: true
+        });
+        
+        console.log('Fresh stream obtained for camera ON');
+        streamRef.current = newStream;
+        setIsCameraOn(true);
+        
+        // Setup video with new stream
+        await setupVideo(newStream);
+        
+      } catch (error) {
+        console.error('Failed to turn camera ON:', error);
+        setIsVideoLoading(false);
+        setPermissionError('Failed to restart camera');
+      }
     }
   };
 
@@ -326,9 +401,9 @@ const Interview = () => {
     navigate('/dashboard');
   };
 
-  const handlePermissionGranted = () => {
+  const handlePermissionGranted = async () => {
     setShowPermissionRequest(false);
-    initializeMedia();
+    await initializeMedia();
   };
 
   const handlePermissionDenied = (error: string) => {
@@ -376,8 +451,11 @@ const Interview = () => {
                 {hasVideoPermission && isCameraOn ? (
                   <>
                     {isVideoLoading && (
-                      <div className="absolute inset-0 bg-muted/50 flex items-center justify-center z-10">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                        <div className="text-center text-white">
+                          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                          <p className="text-sm">Loading camera...</p>
+                        </div>
                       </div>
                     )}
                     <video
