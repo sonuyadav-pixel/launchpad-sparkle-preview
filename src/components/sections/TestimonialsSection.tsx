@@ -81,7 +81,7 @@ const TestimonialsSection = () => {
         </div>
         
         <div className="max-w-4xl mx-auto">
-          <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-2xl border relative animate-scale-in hover:shadow-3xl transition-all duration-500 group hover:shadow-primary/20">
+          <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-8 md:p-12 shadow-2xl border relative animate-scale-in hover:shadow-2xl transition-all duration-500 group">
             <Quote className="w-12 h-12 text-primary/20 absolute top-6 left-6 animate-pulse group-hover:scale-110 transition-transform duration-300" />
             
             <div className="text-center space-y-6" key={currentIndex}>
@@ -94,7 +94,7 @@ const TestimonialsSection = () => {
                   <img
                     src={currentTestimonial.image}
                     alt={currentTestimonial.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 animate-pulse-glow shadow-lg hover:scale-110 transition-transform duration-300"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 shadow-lg hover:scale-110 transition-transform duration-300"
                   />
                   
                 </div>
@@ -115,7 +115,7 @@ const TestimonialsSection = () => {
                 variant="outline"
                 size="icon"
                 onClick={prevTestimonial}
-                className="rounded-full hover:scale-110 transition-all duration-200 hover:border-primary shadow-lg hover:shadow-xl hover:shadow-primary/30"
+                className="rounded-full hover:scale-110 transition-all duration-200 hover:border-primary shadow-lg hover:shadow-xl"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -131,7 +131,7 @@ const TestimonialsSection = () => {
                     }}
                     className={`w-3 h-3 rounded-full transition-all duration-300 shadow-md hover:shadow-lg ${
                       index === currentIndex 
-                        ? 'bg-primary scale-125 animate-pulse-glow shadow-primary/50' 
+                        ? 'bg-primary scale-125 shadow-lg' 
                         : 'bg-muted hover:bg-primary/50 hover:scale-110'
                     }`}
                   />
@@ -142,7 +142,7 @@ const TestimonialsSection = () => {
                 variant="outline"
                 size="icon"
                 onClick={nextTestimonial}
-                className="rounded-full hover:scale-110 transition-all duration-200 hover:border-primary shadow-lg hover:shadow-xl hover:shadow-primary/30"
+                className="rounded-full hover:scale-110 transition-all duration-200 hover:border-primary shadow-lg hover:shadow-xl"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
