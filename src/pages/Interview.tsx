@@ -285,12 +285,12 @@ const Interview = () => {
 
       {/* Main Content */}
       <main className="pt-20 pb-4 px-4 h-screen flex flex-col">
-        <div className="flex-1 grid grid-rows-2 gap-4 max-w-7xl mx-auto w-full">
-          {/* Top Section - Video Panels */}
-          <div className="grid grid-cols-2 gap-4">
+        <div className="flex-1 flex flex-col gap-4 max-w-7xl mx-auto w-full">
+          {/* Top Section - Video Panels - Fixed Height */}
+          <div className="grid grid-cols-2 gap-4 h-80 flex-shrink-0">
             {/* Candidate Video Panel */}
-            <Card className="relative overflow-hidden bg-muted">
-              <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
+            <Card className="relative overflow-hidden bg-muted h-full">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
                 {hasVideoPermission && isCameraOn ? (
                   <video
                     ref={videoRef}
@@ -408,8 +408,8 @@ const Interview = () => {
             </Card>
 
             {/* AI Bot Video Panel */}
-            <Card className="relative overflow-hidden bg-muted">
-              <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5">
+            <Card className="relative overflow-hidden bg-muted h-full">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5">
                 <div className="text-center">
                   <div className={cn(
                     "w-32 h-32 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4 transition-all duration-500",
@@ -430,8 +430,8 @@ const Interview = () => {
             </Card>
           </div>
 
-          {/* Bottom Section - Transcript & Tabs */}
-          <Card className="flex flex-col">
+          {/* Bottom Section - Transcript & Tabs - Flexible Height */}
+          <Card className="flex flex-col flex-1 min-h-0">
             <Tabs defaultValue="transcript" className="flex flex-col h-full">
               <div className="flex items-center justify-between px-6 py-4 border-b">
                 <TabsList className="grid w-auto grid-cols-3">
@@ -445,9 +445,9 @@ const Interview = () => {
                 </Button>
               </div>
 
-              <TabsContent value="transcript" className="flex-1 px-6 pb-6">
-                <ScrollArea className="h-full" ref={transcriptRef}>
-                  <div className="space-y-4 pr-4">
+              <TabsContent value="transcript" className="flex-1 px-6 pb-6 min-h-0">
+                <ScrollArea className="h-full">
+                  <div className="space-y-4 pr-4 pb-4">
                     {transcript.map((message) => (
                       <div
                         key={message.id}
@@ -480,7 +480,7 @@ const Interview = () => {
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="summary" className="flex-1 px-6 pb-6">
+              <TabsContent value="summary" className="flex-1 px-6 pb-6 min-h-0">
                 <div className="h-full flex items-center justify-center text-center">
                   <div>
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -494,7 +494,7 @@ const Interview = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="coming-soon" className="flex-1 px-6 pb-6">
+              <TabsContent value="coming-soon" className="flex-1 px-6 pb-6 min-h-0">
                 <div className="h-full flex items-center justify-center text-center">
                   <div>
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
