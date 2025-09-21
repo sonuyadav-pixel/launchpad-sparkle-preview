@@ -720,7 +720,7 @@ const Interview = () => {
                       onClick={debugVideo}
                       className="bg-background/80 backdrop-blur-sm text-xs"
                     >
-                      {isCameraOn ? "Turn video off" : "Turn video on"}
+                      Turn video on
                     </Button>
                   
                   {/* Audio Status */}
