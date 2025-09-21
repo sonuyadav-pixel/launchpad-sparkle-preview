@@ -33,7 +33,7 @@ const Interview = () => {
     createSession,
     joinSession,
     updateSession,
-    addTranscriptMessage,
+    addTranscriptMessage: saveTranscriptToDatabase,
     getTranscript,
     setTranscripts
   } = useInterviewSession();
@@ -300,10 +300,10 @@ const Interview = () => {
     
     setLocalTranscript(prev => [...prev, newMessage]);
     
-    // Save to database if session exists
+    // Save to database if session exists (only for user messages, AI messages are saved in simulateAIResponse)
     if (currentSession && speaker === 'user') {
       try {
-        await addTranscriptMessage(currentSession.id, speaker, message);
+        await saveTranscriptToDatabase(currentSession.id, speaker, message);
       } catch (error) {
         console.error('Failed to save message to database:', error);
       }
@@ -329,7 +329,7 @@ const Interview = () => {
     // Save to database if session exists
     if (currentSession) {
       try {
-        await addTranscriptMessage(currentSession.id, 'ai', randomResponse);
+        await saveTranscriptToDatabase(currentSession.id, 'ai', randomResponse);
       } catch (error) {
         console.error('Failed to save AI response to database:', error);
       }
