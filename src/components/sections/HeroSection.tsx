@@ -1,15 +1,16 @@
 import { Button } from "@/components/ui/button";
 import interview4uLogo from "@/assets/interview4u-logo.png";
 import AIGraphBackground from "@/components/3d/AIGraphBackground";
+import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackground";
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
+      {/* Auto-scrolling AI Interview Background */}
+      <AutoScrollingBackground />
+      
       {/* AI Graphs Background */}
       <AIGraphBackground />
-      
-      {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/10"></div>
       
       {/* Brand Logo - Top Left */}
       <div className="absolute top-6 left-6 z-20 animate-fade-in">
