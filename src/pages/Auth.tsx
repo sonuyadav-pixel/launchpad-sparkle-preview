@@ -99,13 +99,14 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-      {/* Logo at the top */}
-      <div className="mb-8">
-        <Logo size="lg" />
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
+      {/* Logo in top left */}
+      <div className="fixed top-4 left-4 z-50">
+        <Logo size="md" />
       </div>
       
-      <div className="w-full max-w-md space-y-4">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-full max-w-md space-y-4">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
@@ -247,7 +248,8 @@ const Auth = () => {
             </CardContent>
           </>
         )}
-      </Card>
+        </Card>
+        </div>
       </div>
     </div>
   );

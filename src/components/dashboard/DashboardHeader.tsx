@@ -27,6 +27,9 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Left Side */}
         <div className="flex items-center gap-4">
+          {/* Logo in top left */}
+          <Logo size="md" />
+          
           {/* Mobile toggle */}
           <Button
             variant="ghost"
@@ -67,8 +70,6 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
             <DollarSign className="h-4 w-4" />
             Pricing
           </Button>
-          
-          <Logo size="md" />
           
           <Button
             variant="outline"

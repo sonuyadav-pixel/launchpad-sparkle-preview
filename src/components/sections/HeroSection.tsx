@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import interview4uLogo from "@/assets/interview4u-logo.png";
+import { Logo } from "@/components/ui/Logo";
 import AIGraphBackground from "@/components/3d/AIGraphBackground";
 import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackground";
 
@@ -90,11 +90,7 @@ const HeroSection = () => {
       
       {/* Brand Logo and Auth - Top */}
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20 animate-fade-in">
-        <img
-          src={interview4uLogo}
-          alt="Interview4You Logo"
-          className="h-12 md:h-16 w-auto hover:scale-105 transition-transform duration-300"
-        />
+        <Logo size="lg" />
       </div>
       
       <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20 animate-fade-in">
