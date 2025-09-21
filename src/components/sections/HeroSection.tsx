@@ -115,7 +115,7 @@ const HeroSection = () => {
                 </svg>
                 Get Started Now
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-white to-white/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black to-black/90 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </Button>
             
             <Button 
