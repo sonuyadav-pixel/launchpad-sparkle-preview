@@ -74,32 +74,44 @@ const Interview = () => {
       // Set up video element with proper handling
       if (videoRef.current) {
         console.log('Setting video source...');
+        
+        // Clear any existing source first
+        videoRef.current.srcObject = null;
+        
+        // Small delay to ensure clean state
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Set the new stream
         videoRef.current.srcObject = stream;
         
         // Add event listeners for better debugging
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded');
-          videoRef.current?.play().catch(err => console.error('Play failed:', err));
-        };
-        
-        videoRef.current.oncanplay = () => {
-          console.log('Video can play');
-        };
-        
-        // Force video to play with better error handling
-        try {
-          const playPromise = videoRef.current.play();
-          if (playPromise !== undefined) {
-            await playPromise;
-            console.log('Video is now playing');
+        videoRef.current.onloadedmetadata = async () => {
+          console.log('Video metadata loaded, dimensions:', 
+            videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+          
+          // Force play after metadata is loaded
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play();
+              console.log('Video playing after metadata loaded');
+            }
+          } catch (err) {
+            console.error('Play after metadata failed:', err);
           }
-        } catch (playError) {
-          console.error('Video play error:', playError);
-          // Try to play again after a short delay
-          setTimeout(() => {
-            videoRef.current?.play().catch(err => console.error('Retry play failed:', err));
-          }, 500);
-        }
+        };
+        
+        videoRef.current.oncanplay = async () => {
+          console.log('Video can play');
+          // Ensure video is playing
+          if (videoRef.current && videoRef.current.paused) {
+            try {
+              await videoRef.current.play();
+              console.log('Video started playing');
+            } catch (err) {
+              console.error('Play on canplay failed:', err);
+            }
+          }
+        };
       }
       
       // Initialize speech recognition
@@ -314,15 +326,35 @@ const Interview = () => {
                     autoPlay
                     muted
                     playsInline
+                    controls={false}
                     className="absolute inset-0 w-full h-full object-cover"
                     style={{ 
                       transform: 'scaleX(-1)', // Mirror the video like a selfie camera
                       borderRadius: '0.5rem'
                     }}
                     onLoadStart={() => console.log('Video load started')}
-                    onLoadedData={() => console.log('Video data loaded')}
+                    onLoadedData={() => {
+                      console.log('Video data loaded');
+                      // Ensure video plays when data is loaded
+                      if (videoRef.current) {
+                        videoRef.current.play().catch(err => console.error('Play on data loaded failed:', err));
+                      }
+                    }}
+                    onLoadedMetadata={() => {
+                      console.log('Video metadata loaded');
+                      if (videoRef.current) {
+                        console.log('Video dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
+                      }
+                    }}
                     onPlay={() => console.log('Video is playing')}
+                    onPause={() => console.log('Video paused')}
                     onError={(e) => console.error('Video error:', e)}
+                    onCanPlay={() => {
+                      console.log('Video can play');
+                      if (videoRef.current && videoRef.current.paused) {
+                        videoRef.current.play().catch(err => console.error('Play on can play failed:', err));
+                      }
+                    }}
                   />
                 ) : permissionError ? (
                   <div className="text-center p-4">
