@@ -37,12 +37,8 @@ export const DashboardContent = ({ activeModule, sidebarOpen }: DashboardContent
   };
 
   return (
-    <main 
-      className={cn(
-        "flex-1 transition-all duration-300 ease-in-out",
-        sidebarOpen ? "lg:ml-64" : "lg:ml-0"
-      )}
-    >
+    <main className="flex-1 overflow-auto">
+    
       <div className="container mx-auto p-6 lg:p-8">
         {renderModule()}
       </div>

@@ -101,7 +101,7 @@ export const DashboardSidebar = ({
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* Mobile overlay - only show on mobile when sidebar is open */}
       {isOpen && (
         <div 
           className="fixed inset-0 z-40 bg-background/20 lg:hidden"
@@ -112,8 +112,8 @@ export const DashboardSidebar = ({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-16 left-0 z-50 h-[calc(100vh-4rem)] w-64 transform border-r bg-sidebar transition-transform duration-300 ease-in-out lg:static lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          "w-64 h-[calc(100vh-4rem)] border-r bg-sidebar transition-all duration-300 ease-in-out lg:block",
+          isOpen ? "block" : "hidden lg:block"
         )}
       >
         <div className="flex h-full flex-col">
