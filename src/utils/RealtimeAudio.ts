@@ -140,12 +140,17 @@ export class RealtimeInterviewClient {
   private audioContext: AudioContext | null = null;
   private chunkSequence = 0;
   private isConnected = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 3;
+  private reconnectTimeout: number | null = null;
 
   constructor(
     private sessionId: string,
     private userId: string,
     private onMessage: (message: any) => void
-  ) {}
+  ) {
+    console.log('🔧 RealtimeInterviewClient initialized with:', { sessionId, userId });
+  }
 
   async connect() {
     try {
@@ -155,67 +160,101 @@ export class RealtimeInterviewClient {
       this.audioContext = new AudioContext();
       this.audioQueue = new AudioQueue(this.audioContext);
       
-      // Connect WebSocket
-      const wsUrl = `wss://ecrxtqvkncbbolmfqpxx.functions.supabase.co/realtime-interview?sessionId=${this.sessionId}&userId=${this.userId}`;
+      // Connect WebSocket - Fixed URL format for Supabase edge functions
+      const wsUrl = `wss://ecrxtqvkncbbolmfqpxx.functions.supabase.co/functions/v1/realtime-interview?sessionId=${this.sessionId}&userId=${this.userId}`;
+      console.log('🔌 Connecting to WebSocket URL:', wsUrl);
       this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => {
-        console.log('✅ WebSocket connected');
+        console.log('✅ WebSocket connected successfully');
         this.isConnected = true;
         this.onMessage({ type: 'connected' });
       };
       
       this.ws.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        console.log('📨 Received:', data.type);
-        
-        switch (data.type) {
-          case 'stt-partial':
-            this.onMessage({ type: 'transcript-partial', text: data.text });
-            break;
-          case 'stt-final':
-            this.onMessage({ type: 'transcript-final', text: data.text });
-            break;
-          case 'bot-text-final':
-            this.onMessage({ type: 'bot-response', text: data.text });
-            break;
-          case 'bot-audio-chunk':
-            if (this.audioQueue) {
-              const binaryString = atob(data.data);
-              const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📨 Received WebSocket message:', data.type);
+          
+          switch (data.type) {
+            case 'stt-partial':
+              this.onMessage({ type: 'transcript-partial', text: data.text });
+              break;
+            case 'stt-final':
+              this.onMessage({ type: 'transcript-final', text: data.text });
+              break;
+            case 'bot-text-final':
+              this.onMessage({ type: 'bot-response', text: data.text });
+              break;
+            case 'bot-audio-chunk':
+              if (this.audioQueue) {
+                const binaryString = atob(data.data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                await this.audioQueue.addToQueue(bytes.buffer);
               }
-              await this.audioQueue.addToQueue(bytes.buffer);
-            }
-            break;
-          case 'bot-audio-complete':
-            this.onMessage({ type: 'bot-audio-complete' });
-            break;
-          case 'error':
-            console.error('❌ Server error:', data.error);
-            this.onMessage({ type: 'error', error: data.error });
-            break;
-          default:
-            this.onMessage(data);
+              break;
+            case 'bot-audio-complete':
+              this.onMessage({ type: 'bot-audio-complete' });
+              break;
+            case 'connection-established':
+              console.log('🔗 Connection established:', data.message);
+              break;
+            case 'error':
+              console.error('❌ Server error:', data.error);
+              this.onMessage({ type: 'error', error: data.error });
+              break;
+            default:
+              this.onMessage(data);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
         }
       };
       
-      this.ws.onclose = () => {
-        console.log('🔌 WebSocket disconnected');
+      this.ws.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
         this.isConnected = false;
         this.onMessage({ type: 'disconnected' });
+        
+        // Attempt to reconnect if it wasn't a clean close
+        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.attemptReconnect();
+        }
       };
       
       this.ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('❌ WebSocket connection error:', error);
         this.onMessage({ type: 'error', error: 'WebSocket connection failed' });
       };
       
     } catch (error) {
       console.error('❌ Connection error:', error);
+      this.onMessage({ type: 'error', error: 'Failed to connect to interview server' });
       throw error;
     }
+  }
+
+  private attemptReconnect() {
+    this.reconnectAttempts++;
+    console.log(`🔄 Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    
+    this.reconnectTimeout = window.setTimeout(async () => {
+      try {
+        await this.connect();
+        this.reconnectAttempts = 0; // Reset on successful connection
+      } catch (error) {
+        console.error('❌ Reconnection failed:', error);
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          this.onMessage({ 
+            type: 'error', 
+            error: 'Failed to connect to interview server after multiple attempts' 
+          });
+        }
+      }
+    }, 2000 * this.reconnectAttempts); // Exponential backoff
   }
 
   async startAudioRecording() {
@@ -276,6 +315,12 @@ export class RealtimeInterviewClient {
 
   disconnect() {
     console.log('🔌 Disconnecting...');
+    
+    // Clear reconnect timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     
     this.stopAudioRecording();
     
