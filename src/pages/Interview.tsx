@@ -289,6 +289,28 @@ const Interview = () => {
   const startVideo = async () => {
     try {
       console.log('📹 Starting video...');
+      console.log('📹 Current video state:', { 
+        isVideoEnabled, 
+        hasVideoRef: !!videoRef.current,
+        currentStream: !!streamRef.current 
+      });
+      
+      // Stop any existing stream first
+      if (streamRef.current) {
+        console.log('🛑 Stopping existing stream...');
+        streamRef.current.getTracks().forEach(track => {
+          console.log('🛑 Stopping track:', track.kind, track.readyState);
+          track.stop();
+        });
+        streamRef.current = null;
+      }
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('getUserMedia is not supported in this browser');
+      }
+      
+      console.log('🎥 Requesting camera access...');
       
       // Request permissions explicitly first
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -300,14 +322,55 @@ const Interview = () => {
         audio: false // We handle audio separately
       });
       
+      console.log('✅ Camera stream obtained:', {
+        streamId: stream.id,
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length
+      });
+      
       streamRef.current = stream;
       
       if (videoRef.current) {
+        console.log('📺 Setting video source...');
         videoRef.current.srcObject = stream;
+        
+        // Add event listeners for video element
+        videoRef.current.onloadedmetadata = () => {
+          console.log('📺 Video metadata loaded');
+        };
+        
+        videoRef.current.oncanplay = () => {
+          console.log('📺 Video can play');
+        };
+        
+        videoRef.current.onplay = () => {
+          console.log('📺 Video started playing');
+        };
+        
+        videoRef.current.onerror = (error) => {
+          console.error('📺 Video element error:', error);
+        };
+        
         // Ensure video plays
-        videoRef.current.play().catch(error => {
-          console.error('Video play error:', error);
-        });
+        try {
+          await videoRef.current.play();
+          console.log('✅ Video play() called successfully');
+        } catch (playError) {
+          console.error('❌ Video play error:', playError);
+          // Try to play again after a delay
+          setTimeout(async () => {
+            try {
+              if (videoRef.current) {
+                await videoRef.current.play();
+                console.log('✅ Video play() retry successful');
+              }
+            } catch (retryError) {
+              console.error('❌ Video play retry failed:', retryError);
+            }
+          }, 1000);
+        }
+      } else {
+        console.error('❌ Video ref is null');
       }
       
       setIsVideoEnabled(true);
@@ -315,6 +378,11 @@ const Interview = () => {
       
     } catch (error) {
       console.error('❌ Error starting video:', error);
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        constraint: error.constraint
+      });
       
       // More specific error handling
       let errorMessage = "Could not access camera. Please check permissions.";
@@ -322,6 +390,10 @@ const Interview = () => {
         errorMessage = "Camera access denied. Please allow camera permissions and try again.";
       } else if (error.name === 'NotFoundError') {
         errorMessage = "No camera found. Please ensure your camera is connected.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "Camera is being used by another application.";
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = "Camera doesn't support the requested settings.";
       }
       
       toast({
@@ -672,7 +744,17 @@ const Interview = () => {
                     autoPlay
                     muted
                     playsInline
+                    controls={false}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('📺 Video element error event:', e);
+                    }}
+                    onLoadStart={() => {
+                      console.log('📺 Video load start');
+                    }}
+                    onCanPlay={() => {
+                      console.log('📺 Video can play event');
+                    }}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-white">
