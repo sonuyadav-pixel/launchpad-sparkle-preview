@@ -242,11 +242,12 @@ const Interview = () => {
       // Get conversation context (last 5 messages for efficiency)
       const context = localTranscript.slice(0, 5).reverse();
       
-      // Call our ElevenLabs edge function
+      // Call our ElevenLabs edge function with rate limiting
       const { data, error } = await supabase.functions.invoke('elevenlabs-chat', {
         body: { 
           message: userInput,
-          context: context
+          context: context,
+          userId: sessionId // Use session ID as user identifier for rate limiting
         }
       });
 
