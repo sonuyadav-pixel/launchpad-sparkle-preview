@@ -192,31 +192,53 @@ const Interview = () => {
   }, [isInterviewActive, isMuted]);
 
   const startSpeechRecognition = useCallback(() => {
+    console.log('🚀 startSpeechRecognition called');
+    console.log('🚀 Current state:', { 
+      isListening, 
+      isInterviewActive, 
+      isAISpeaking: isAISpeaking.current,
+      hasRecognition: !!recognitionRef.current 
+    });
+
     if (!recognitionRef.current) {
+      console.log('🚀 No recognition ref, initializing...');
       if (!initializeSpeechRecognition()) return;
     }
 
     try {
       // Only start if not already listening and interview is active
-      if (!isListening && isInterviewActive && recognitionRef.current) {
+      if (!isListening && isInterviewActive && !isAISpeaking.current && recognitionRef.current) {
         console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
       } else {
         console.log('🚫 Cannot start speech recognition:', { 
           isListening, 
           isInterviewActive, 
+          isAISpeaking: isAISpeaking.current,
           hasRecognition: !!recognitionRef.current 
         });
       }
     } catch (error) {
       console.error('❌ Failed to start speech recognition:', error);
+      console.log('🔄 Resetting recognition due to error...');
+      
       // Reset and try again after delay if interview is still active
       if (isInterviewActive) {
+        recognitionRef.current = null;
+        setIsListening(false);
+        
         setTimeout(() => {
-          recognitionRef.current = null;
-          setIsListening(false);
-          if (!isListening) {
+          console.log('🔄 Retrying speech recognition after error...');
+          if (!isListening && isInterviewActive && !isAISpeaking.current) {
             initializeSpeechRecognition();
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+                console.log('🔄 Retry successful');
+              } catch (retryError) {
+                console.error('🔄 Retry failed:', retryError);
+              }
+            }
           }
         }, 2000);
       }
@@ -309,12 +331,29 @@ const Interview = () => {
         
         // Restart speech recognition after AI finishes speaking
         console.log('🔄 Attempting to restart speech recognition after AI response');
+        console.log('🔄 Current state:', { 
+          isInterviewActive, 
+          isListening, 
+          isAISpeaking: isAISpeaking.current,
+          hasRecognition: !!recognitionRef.current 
+        });
+        
         if (isInterviewActive && !isListening) {
           console.log('🔄 Restarting speech recognition after AI response');
           setTimeout(() => {
+            console.log('🔄 Timeout fired - checking conditions again');
+            console.log('🔄 Conditions check:', { 
+              isInterviewActive, 
+              isListening, 
+              isAISpeaking: isAISpeaking.current,
+              hasRecognition: !!recognitionRef.current 
+            });
+            
             if (isInterviewActive && !isListening && !isAISpeaking.current) {
               console.log('🔄 Actually restarting speech recognition now');
               startSpeechRecognition();
+            } else {
+              console.log('🚫 Cannot restart speech recognition - conditions not met');
             }
           }, 1000);
         }
@@ -790,17 +829,38 @@ const Interview = () => {
     const heartbeat = () => {
       if (!isInterviewActive) return;
       
+      console.log('💓 Speech heartbeat check:', { 
+        isListening, 
+        isMuted, 
+        isInterviewActive,
+        isAISpeaking: isAISpeaking.current,
+        hasRecognition: !!recognitionRef.current 
+      });
+      
       // Check if speech recognition is still active
-      if (!isListening && !isMuted && isInterviewActive) {
+      if (!isListening && !isMuted && isInterviewActive && !isAISpeaking.current) {
         console.log('💓 Heartbeat: Speech recognition not active, restarting...');
-        startSpeechRecognition();
+        // Force restart speech recognition
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch (e) {
+            console.log('💓 Error stopping recognition:', e);
+          }
+        }
+        setTimeout(() => {
+          if (!isListening && isInterviewActive && !isAISpeaking.current) {
+            console.log('💓 Heartbeat: Force restarting speech recognition');
+            startSpeechRecognition();
+          }
+        }, 500);
       }
       
       // Schedule next heartbeat
-      heartbeatRef.current = setTimeout(heartbeat, 5000);
+      heartbeatRef.current = setTimeout(heartbeat, 3000); // Check every 3 seconds
     };
     
-    heartbeatRef.current = setTimeout(heartbeat, 5000);
+    heartbeatRef.current = setTimeout(heartbeat, 3000);
   };
 
   // Toggle Functions
