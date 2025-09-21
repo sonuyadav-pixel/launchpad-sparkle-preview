@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/button";
 import interview4uLogo from "@/assets/interview4u-logo.png";
-// Temporarily disabled: import AI3DScene from "@/components/3d/AI3DScene";
+import Interactive3DBackground from "@/components/3d/Interactive3DBackground";
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
-      {/* Temporarily disabled 3D Background */}
-      {/* <AI3DScene /> */}
+      {/* Interactive 3D Background */}
+      <Interactive3DBackground />
       
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/20"></div>
+      <div className="absolute inset-0 bg-black/10"></div>
       
       {/* Brand Logo - Top Left */}
       <div className="absolute top-6 left-6 z-20 animate-fade-in">
