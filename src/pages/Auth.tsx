@@ -11,6 +11,8 @@ import { Loader2 } from "lucide-react";
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sentToEmail, setSentToEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -62,10 +64,8 @@ const Auth = () => {
           throw error;
         }
       } else {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your signup.",
-        });
+        setSentToEmail(email);
+        setEmailSent(true);
       }
     } catch (error: any) {
       toast({
@@ -113,84 +113,128 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">
-            {isSignUp ? "Create Your Account" : "Welcome to Interview4U"}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp 
-              ? "Sign up to start your AI interview journey" 
-              : "Sign in to access your AI-powered interview platform"
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+        {emailSent ? (
+          <>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
+              <CardDescription>
+                We've sent a verification link to your email address
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-green-800 mb-2">
+                  Email has been sent to:
+                </p>
+                <p className="font-semibold text-green-900 mb-3">
+                  {sentToEmail}
+                </p>
+                <p className="text-xs text-green-700">
+                  Please check your inbox and click the verification link to complete your registration.
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder={isSignUp ? "Choose a strong password" : "Enter your password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                  minLength={isSignUp ? 6 : undefined}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isSignUp ? "Creating account..." : "Signing in..."}
-                  </>
-                ) : (
-                  isSignUp ? "Create Account" : "Sign In"
-                )}
+              
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setEmailSent(false);
+                  setIsSignUp(false);
+                  setEmail("");
+                  setPassword("");
+                }}
+                className="w-full"
+              >
+                Back to Sign In
               </Button>
-            </form>
-            
-            <div className="text-center text-sm text-muted-foreground">
-              {isSignUp ? (
-                <>
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(false)}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Sign in here
-                  </button>
-                </>
-              ) : (
-                <>
-                  New user?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(true)}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Register now
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </CardContent>
+            </CardContent>
+          </>
+        ) : (
+          <>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold">
+                {isSignUp ? "Create Your Account" : "Welcome to Interview4U"}
+              </CardTitle>
+              <CardDescription>
+                {isSignUp 
+                  ? "Sign up to start your AI interview journey" 
+                  : "Sign in to access your AI-powered interview platform"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder={isSignUp ? "Choose a strong password" : "Enter your password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      minLength={isSignUp ? 6 : undefined}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {isSignUp ? "Creating account..." : "Signing in..."}
+                      </>
+                    ) : (
+                      isSignUp ? "Create Account" : "Sign In"
+                    )}
+                  </Button>
+                </form>
+                
+                <div className="text-center text-sm text-muted-foreground">
+                  {isSignUp ? (
+                    <>
+                      Already have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsSignUp(false)}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Sign in here
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      New user?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsSignUp(true)}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        Register now
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </>
+        )}
       </Card>
     </div>
   );
