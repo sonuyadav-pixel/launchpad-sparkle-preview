@@ -46,13 +46,13 @@ const HowItWorksSection = () => {
   ];
 
   return (
-    <section className="relative py-20 bg-background overflow-hidden">
+    <section className="relative py-12 md:py-20 bg-background overflow-hidden">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="timeline" />
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <AnimatedHeading className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             How It Works
           </AnimatedHeading>
@@ -68,7 +68,7 @@ const HowItWorksSection = () => {
           <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-primary via-primary to-primary/30 rounded-full hidden lg:block shadow-lg"></div>
           
           {/* Steps */}
-          <div className="space-y-16">
+          <div className="space-y-12 md:space-y-16">
             {steps.map((step, index) => (
               <div 
                 key={index}
@@ -79,7 +79,7 @@ const HowItWorksSection = () => {
               >
                 {/* Content Card */}
                 <div className={`flex-1 ${index % 2 === 0 ? 'lg:pr-16' : 'lg:pl-16'}`}>
-                  <div className="bg-card rounded-2xl p-8 shadow-2xl border hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 group-hover:shadow-primary/20 backdrop-blur-sm bg-card/90">
+                  <div className="bg-card rounded-2xl p-6 md:p-8 shadow-2xl border hover:shadow-3xl transition-all duration-500 hover:-translate-y-2 group-hover:shadow-primary/20 backdrop-blur-sm bg-card/90">
                     <div className="space-y-4">
                       {/* Step Number and Icon */}
                       <div className="flex items-center gap-4">

@@ -79,13 +79,13 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section className="relative py-20 bg-gradient-to-br from-slate-100 via-slate-200/50 to-slate-300/30 overflow-hidden shadow-inner before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/5 before:to-transparent after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/10 after:to-transparent">
+    <section className="relative py-12 md:py-20 bg-gradient-to-br from-slate-100 via-slate-200/50 to-slate-300/30 overflow-hidden shadow-inner before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/5 before:to-transparent after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/10 after:to-transparent">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="features" />
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <AnimatedHeading className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             Features You'll Love
           </AnimatedHeading>
@@ -98,9 +98,9 @@ const FeaturesSection = () => {
         {/* Main Feature Carousel */}
         <div className="relative max-w-7xl mx-auto group">
           <div className="bg-card/90 backdrop-blur-sm rounded-3xl shadow-2xl overflow-hidden border hover:shadow-3xl transition-all duration-500 group-hover:shadow-primary/20">
-            <div className="grid lg:grid-cols-5 min-h-[600px]">
+            <div className="grid lg:grid-cols-5 min-h-[400px] md:min-h-[600px]">
               {/* Image Side - Takes up 3 columns */}
-              <div className="lg:col-span-3 relative bg-gradient-to-br from-primary/5 to-accent/10 p-8 flex items-center justify-center">
+              <div className="lg:col-span-3 relative bg-gradient-to-br from-primary/5 to-accent/10 p-4 md:p-8 flex items-center justify-center">
                 <div className="relative w-full max-w-lg">
                   <div className="relative overflow-hidden rounded-2xl shadow-2xl group-hover:shadow-3xl transition-all duration-700">
                     <img
@@ -126,7 +126,7 @@ const FeaturesSection = () => {
               </div>
               
               {/* Content Side - Takes up 2 columns */}
-              <div className="lg:col-span-2 p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-background to-primary/5">
+              <div className="lg:col-span-2 p-6 md:p-8 lg:p-12 flex flex-col justify-center bg-gradient-to-br from-background to-primary/5">
                 <div key={currentFeature} className="animate-fade-in space-y-6">
                   {/* Feature Number */}
                   <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-shadow duration-300">

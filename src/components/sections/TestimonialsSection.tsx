@@ -64,13 +64,13 @@ const TestimonialsSection = () => {
   const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="relative py-20 bg-section-light">
+    <section className="relative py-12 md:py-20 bg-section-light">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="testimonials" />
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 md:mb-16">
           <AnimatedHeading className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             What Our Users Say
           </AnimatedHeading>

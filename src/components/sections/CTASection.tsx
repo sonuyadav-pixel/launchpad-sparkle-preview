@@ -10,7 +10,7 @@ const CTASection = () => {
   ];
 
   return (
-    <section className="relative py-20 bg-gradient-to-r from-gradient-start to-gradient-end overflow-hidden">
+    <section className="relative py-12 md:py-20 bg-gradient-to-r from-gradient-start to-gradient-end overflow-hidden">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="cta" />
       

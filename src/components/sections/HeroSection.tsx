@@ -87,11 +87,11 @@ const HeroSection = () => {
       <AIGraphBackground />
       
       {/* Brand Logo - Top Left */}
-      <div className="absolute top-6 left-6 z-20 animate-fade-in">
+      <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20 animate-fade-in">
         <img
           src={interview4uLogo}
           alt="Interview4You Logo"
-          className="h-16 w-auto hover:scale-105 transition-transform duration-300"
+          className="h-12 md:h-16 w-auto hover:scale-105 transition-transform duration-300"
         />
       </div>
       
@@ -115,9 +115,8 @@ const HeroSection = () => {
               </span>
             </div>
             
-            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Conduct intelligent interviews with AI that analyzes candidate responses, 
-              generates insights, and helps you identify top talent faster across all roles.
+            <p className="text-base md:text-lg text-white/80 max-w-3xl mx-auto leading-relaxed">
+              Conduct intelligent interviews with AI that analyzes candidate responses, generates insights, and helps you identify top talent faster across all roles.
             </p>
           </div>
           
@@ -152,11 +151,11 @@ const HeroSection = () => {
           </div>
           
           {/* Feature Highlights */}
-          <div className="grid md:grid-cols-3 gap-6 pt-12 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pt-8 md:pt-12 max-w-4xl mx-auto">
             {features.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-black/90 transition-all duration-500 animate-fade-in cursor-pointer group"
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 md:p-6 border border-white/20 hover:bg-black/90 transition-all duration-500 animate-fade-in cursor-pointer group"
                 style={{ animationDelay: `${index * 0.2}s` }}
                 onMouseEnter={() => handleMouseEnter(index)}
                 onMouseLeave={handleMouseLeave}
