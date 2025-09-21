@@ -7,6 +7,13 @@ import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackg
 const HeroSection = () => {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [hoverDescIndex, setHoverDescIndex] = useState(0);
+  const [smartTextIndex, setSmartTextIndex] = useState(0);
+
+  const smartPhrases = [
+    "Smart Hiring Decisions",
+    "Smart Candidate Assessment", 
+    "Smart Interview Analytics"
+  ];
 
   const features = [
     { 
@@ -43,6 +50,14 @@ const HeroSection = () => {
       ]
     }
   ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSmartTextIndex((prev) => (prev + 1) % smartPhrases.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [smartPhrases.length]);
 
   useEffect(() => {
     if (hoveredFeature === null) return;
@@ -93,8 +108,8 @@ const HeroSection = () => {
               </span>
             </h1>
             
-            <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white/90">
-              Smarter Hiring Decisions
+            <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white/90 transition-all duration-500">
+              {smartPhrases[smartTextIndex]}
             </div>
             
             <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
