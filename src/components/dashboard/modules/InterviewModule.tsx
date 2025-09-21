@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Users, Calendar, Clock, Play, RotateCcw, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { Video, Users, Calendar, Clock, Play, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type InterviewSession } from "@/hooks/useInterviewSession";
 import { supabase } from "@/integrations/supabase/client";
-import useEmblaCarousel from 'embla-carousel-react';
 
 const InterviewModule = () => {
   const navigate = useNavigate();
@@ -20,48 +19,6 @@ const InterviewModule = () => {
 
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
   const [error, setError] = useState("");
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Mock participants data - in real app this would come from the session
-  const participants = [
-    { id: 1, name: "John Doe", role: "Candidate", avatar: "👤" },
-    { id: 2, name: "AI Interviewer", role: "Interviewer", avatar: "🤖" }
-  ];
-
-  // Value propositions for carousel
-  const valuePropositions = [
-    {
-      title: "AI-Powered Questions",
-      description: "Smart adaptive questions that evolve based on your responses",
-      icon: "🤖"
-    },
-    {
-      title: "Real-time Feedback",
-      description: "Get instant insights on your performance and areas to improve",
-      icon: "📊"
-    },
-    {
-      title: "Industry-Specific",
-      description: "Tailored questions for your specific role and industry",
-      icon: "🎯"
-    },
-    {
-      title: "Practice Anytime",
-      description: "Available 24/7 to help you prepare at your own pace",
-      icon: "⏰"
-    }
-  ];
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
-
-  // Update current time every second for ongoing interviews
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     // Load user's sessions on component mount
@@ -177,54 +134,28 @@ const InterviewModule = () => {
         {/* Active Session - Prominent Display */}
         {activeSession ? (
           <div className="space-y-4">
-            {/* Ongoing Interview Details */}
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-6">
-              <div className="flex items-center justify-center mb-4">
+            {/* Main Rejoin CTA */}
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border-2 border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
+              <div className="flex items-center justify-center mb-3">
                 <div className={`${getStatusColor(activeSession.status)} w-3 h-3 rounded-full mr-2 animate-pulse`}></div>
                 <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">
                   {activeSession.status === 'active' ? 'Interview in Progress' : 'Interview Ready'}
                 </h3>
               </div>
-
-              {/* Interview Room Details */}
-              {activeSession.status === 'active' && (
-                <div className="space-y-4 mb-6">
-                  {/* Current Time & Duration */}
-                  <div className="flex items-center justify-center gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-mono">{currentTime.toLocaleTimeString()}</span>
-                    </div>
-                    <span className="text-green-600 dark:text-green-400">•</span>
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                      <span>Duration: {formatDuration(activeSession.duration_seconds)}</span>
-                    </div>
-                  </div>
-
-                  {/* Participants */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-sm text-green-600 dark:text-green-400">
-                      <Users className="h-4 w-4" />
-                      <span>{participants.length} Participants</span>
-                    </div>
-                    <div className="flex justify-center gap-4">
-                      {participants.map((participant) => (
-                        <div key={participant.id} className="flex items-center gap-2 bg-white/50 dark:bg-black/20 rounded-full px-3 py-1 text-xs">
-                          <span className="text-lg">{participant.avatar}</span>
-                          <div>
-                            <div className="font-medium text-green-900 dark:text-green-100">{participant.name}</div>
-                            <div className="text-green-600 dark:text-green-400">{participant.role}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-green-700 dark:text-green-300 mb-4 text-center">
+              <p className="text-green-700 dark:text-green-300 mb-4">
                 {activeSession.title}
               </p>
+              <div className="flex items-center justify-center gap-2 mb-4 text-sm text-green-600 dark:text-green-400">
+                <Calendar className="h-4 w-4" />
+                <span>{new Date(activeSession.created_at).toLocaleDateString()}</span>
+                {activeSession.duration_seconds > 0 && (
+                  <>
+                    <span>•</span>
+                    <Clock className="h-4 w-4" />
+                    <span>{formatDuration(activeSession.duration_seconds)}</span>
+                  </>
+                )}
+              </div>
               
               {/* Primary Action */}
               <Button 
@@ -257,45 +188,14 @@ const InterviewModule = () => {
             </div>
           </div>
         ) : (
-          /* No Active Session - Value Proposition Carousel */
-          <div className="space-y-4">
-            {/* Value Proposition Carousel */}
-            <div className="relative">
-              <div className="overflow-hidden rounded-lg" ref={emblaRef}>
-                <div className="flex">
-                  {valuePropositions.map((prop, index) => (
-                    <div key={index} className="flex-[0_0_100%] min-w-0">
-                      <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6 mx-2 text-center">
-                        <div className="text-4xl mb-3">{prop.icon}</div>
-                        <h3 className="text-lg font-semibold mb-2">{prop.title}</h3>
-                        <p className="text-muted-foreground text-sm">{prop.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Carousel controls */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8"
-                onClick={() => emblaApi?.scrollPrev()}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8"
-                onClick={() => emblaApi?.scrollNext()}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Start Interview CTA */}
-            <div className="text-center">
+          /* No Active Session - Start New */
+          <div className="text-center space-y-4">
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
+              <Video className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">Ready to Practice?</h3>
+              <p className="text-muted-foreground mb-4">
+                Start your AI interview session and get personalized feedback
+              </p>
               <Button 
                 onClick={handleStartNewInterview} 
                 size="lg"
