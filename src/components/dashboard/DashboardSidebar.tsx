@@ -94,10 +94,7 @@ export const DashboardSidebar = ({
   const handleItemClick = (moduleId: DashboardModule, comingSoon?: boolean) => {
     if (!comingSoon) {
       onModuleChange(moduleId);
-      // Close sidebar on mobile after selection only if not collapsed
-      if (window.innerWidth < 1024 && !isCollapsed) {
-        onClose();
-      }
+      // Don't auto-close sidebar - let user control it manually
     }
   };
 
@@ -105,13 +102,7 @@ export const DashboardSidebar = ({
 
   return (
     <>
-      {/* Mobile overlay - only show on mobile when sidebar is open and not collapsed */}
-      {isOpen && !isCollapsed && (
-        <div 
-          className="fixed left-64 top-16 right-0 bottom-0 z-40 bg-background/20 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Removed mobile overlay that was blocking clicks on main content */}
       
       {/* Sidebar */}
       <aside
