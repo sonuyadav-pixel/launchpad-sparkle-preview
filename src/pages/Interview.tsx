@@ -180,90 +180,169 @@ const Interview = () => {
         }))
       });
       
-      // Skip if AI is currently speaking to prevent loops
-      if (isAISpeaking.current) {
-        console.log('🚫 Skipping speech result: AI is speaking');
-        return;
-      }
-      
-      let finalTranscript = '';
-      let interimTranscript = '';
-      
-      // Only process NEW results (start from resultIndex to avoid reprocessing)
-      const resultIndex = event.resultIndex || 0;
-      for (let i = resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
+      recognitionRef.current.onresult = (event: any) => {
+        console.log('🎤 FORCE TRANSCRIBE - ALWAYS ON');
         
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript;
-          console.log('✅ Final result:', transcript);
-        } else {
-          interimTranscript += transcript;
-          console.log('⏳ Interim result:', transcript);
-        }
-      }
-      
-      // Always update current transcript to show live speech
-      const displayTranscript = finalTranscript || interimTranscript;
-      if (displayTranscript.trim()) {
-        setCurrentTranscript(displayTranscript);
-        lastSpeechTime.current = Date.now();
-        resetAutoCloseTimer();
-      }
-      
-      // Only process final transcript for AI response
-      if (finalTranscript.trim()) {
-        console.log('📝 Processing final transcript:', finalTranscript);
+        let finalTranscript = '';
+        let interimTranscript = '';
         
-        // Temporarily stop speech recognition while AI processes and responds
-        // It will auto-restart after AI finishes speaking
-        if (recognitionRef.current) {
-          console.log('🔄 Stopping recognition temporarily for AI response');
-          recognitionRef.current.stop();
+        // ALWAYS PROCESS - NO CONDITIONS
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+            console.log('✅ FINAL:', transcript);
+          } else {
+            interimTranscript += transcript;
+            console.log('⏳ INTERIM:', transcript);
+          }
         }
         
-        processUserSpeech(finalTranscript.trim());
-        setCurrentTranscript(''); // Clear after processing
-      }
-    };
+        // ALWAYS UPDATE DISPLAY
+        const displayTranscript = finalTranscript || interimTranscript;
+        if (displayTranscript.trim()) {
+          setCurrentTranscript(displayTranscript);
+          lastSpeechTime.current = Date.now();
+          resetAutoCloseTimer();
+        }
+        
+        // ALWAYS ADD TO TRANSCRIPT
+        if (finalTranscript.trim()) {
+          console.log('📝 FORCE ADD:', finalTranscript);
+          
+          const userMessage: TranscriptMessage = {
+            id: Date.now().toString(),
+            speaker: 'user',
+            message: finalTranscript.trim(),
+            timestamp: new Date()
+          };
+          
+          setLocalTranscript(prev => [userMessage, ...prev]);
+          
+          // Only trigger AI if not speaking and not rate limited
+          if (!isAISpeaking.current && (!lastProcessedTime.current || Date.now() - lastProcessedTime.current > 3000)) {
+            processUserSpeech(finalTranscript.trim());
+          }
+          
+          setCurrentTranscript('');
+        }
+      };
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+            console.log('✅ ALWAYS-ON FINAL result:', transcript);
+          } else {
+            interimTranscript += transcript;
+            console.log('⏳ ALWAYS-ON INTERIM result:', transcript);
+          }
+        }
+        
+        // ALWAYS update current transcript display - NO CONDITIONS
+        const displayTranscript = finalTranscript || interimTranscript;
+        if (displayTranscript.trim()) {
+          setCurrentTranscript(displayTranscript);
+          lastSpeechTime.current = Date.now();
+          resetAutoCloseTimer();
+        }
+        
+        // ALWAYS add final transcript - NO CONDITIONS
+        if (finalTranscript.trim()) {
+          console.log('📝 FORCE Adding to transcript:', finalTranscript);
+          
+          // Add user message to transcript immediately - ALWAYS
+          const userMessage: TranscriptMessage = {
+            id: Date.now().toString(),
+            speaker: 'user',
+            message: finalTranscript.trim(),
+            timestamp: new Date()
+          };
+          
+          setLocalTranscript(prev => [userMessage, ...prev]);
+          
+          // Determine if we should send AI response or just transcribe
+          const shouldSendResponse = shouldTriggerAIResponse(finalTranscript.trim());
+          
+          if (shouldSendResponse) {
+            console.log('🤖 Triggering AI response for:', finalTranscript);
+            processUserSpeechForAI(finalTranscript.trim());
+          } else {
+            console.log('📝 Just transcribing, not sending to AI');
+          }
+          
+          setCurrentTranscript(''); // Clear after processing
+        }
+      };
 
-    recognitionRef.current.onerror = (event: any) => {
-      console.error('🎤 Speech recognition error:', event.error);
-      console.error('🎤 Error details:', {
-        error: event.error,
-        type: event.type,
-        timeStamp: event.timeStamp,
-        currentState: {
-          isListening,
-          isInterviewActive,
-          isMuted,
-          hasRecognition: !!recognitionRef.current
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('🎤 ALWAYS-ON Speech recognition error:', event.error);
+        
+        // Handle different error types but ALWAYS KEEP TRYING
+        if (event.error === 'no-speech') {
+          console.log('🔇 No speech detected - CONTINUING ALWAYS-ON...');
+          return; // Don't show error, just continue
         }
-      });
-      
-      // Handle different error types
-      if (event.error === 'no-speech') {
-        console.log('🔇 No speech detected - continuing...');
-        return; // Don't show error for no-speech, let it auto-restart
-      }
-      
-      if (event.error === 'aborted') {
-        console.log('🔄 Speech recognition was aborted - will restart');
-        setIsListening(false);
-        return; // Let the onend handler restart it
-      }
-      
-      if (event.error === 'not-allowed') {
-        toast({
-          title: "Microphone Access Denied",
-          description: "Please allow microphone access to continue",
-          variant: "destructive"
-        });
-      }
-    };
+        
+        if (event.error === 'aborted') {
+          console.log('🔄 Speech recognition was aborted - FORCE RESTART');
+          return;
+        }
+        
+        if (event.error === 'not-allowed') {
+          toast({
+            title: "Microphone Access Denied",
+            description: "Please allow microphone access for continuous transcription",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // For other errors, FORCE restart
+        console.log('🔄 Error occurred, FORCE RESTARTING recognition...');
+      };
 
-    return true;
-  }, [isInterviewActive, isMuted]);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to initialize speech recognition:', error);
+      return false;
+    }
+  }, [isInterviewActive]);
+
+  // Smart logic to determine if we should send AI response
+  const shouldTriggerAIResponse = useCallback((transcript: string) => {
+    // Skip very short transcripts
+    if (transcript.length < 5) return false;
+    
+    // Skip if AI is currently speaking (but still transcribe)
+    if (isAISpeaking.current) {
+      console.log('🚫 AI is speaking, transcribing only');
+      return false;
+    }
+    
+    // Rate limiting - don't send responses too frequently
+    const now = Date.now();
+    if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
+      console.log('🚫 Rate limited, transcribing only');
+      return false;
+    }
+    
+    // Check for conversation markers (questions, statements, etc.)
+    const conversationMarkers = [
+      '?', // Questions
+      '.', // Statements
+      'hello', 'hi', 'hey', // Greetings
+      'tell me', 'what', 'how', 'why', 'when', 'where' // Conversation starters
+    ];
+    
+    const lowerTranscript = transcript.toLowerCase();
+    const hasMarker = conversationMarkers.some(marker => 
+      lowerTranscript.includes(marker) || transcript.includes('?')
+    );
+    
+    return hasMarker;
+  }, []);
 
   const startSpeechRecognition = useCallback(async () => {
     console.log('🚀 startSpeechRecognition called');
@@ -327,6 +406,51 @@ const Interview = () => {
     }
   }, [isListening]);
 
+  // Process user speech for AI response (separate from transcription)
+  const processUserSpeechForAI = async (transcript: string) => {
+    try {
+      console.log('🤖 Processing for AI response:', transcript);
+      
+      lastProcessedTime.current = Date.now();
+      
+      // Generate AI response
+      try {
+        console.log('🤖 Generating AI response...');
+        isAISpeaking.current = true; // Set immediately to prevent other speech processing
+        
+        const aiResponse = await generateAIResponse(transcript);
+        
+        if (aiResponse) {
+          const aiMessage: TranscriptMessage = {
+            id: (Date.now() + 1).toString(),
+            speaker: 'ai',
+            message: aiResponse,
+            timestamp: new Date()
+          };
+          
+          setLocalTranscript(prev => [aiMessage, ...prev]);
+          
+          // Speak the AI response
+          console.log('🔊 Speaking AI response...');
+          await speak(aiResponse, 'alloy');
+        }
+        
+        console.log('🤖 AI response completed, resetting speaking flag');
+        isAISpeaking.current = false;
+        
+        // Speech recognition will continue automatically since it's always on
+        console.log('🎤 Speech recognition continues automatically...');
+        
+      } catch (error) {
+        console.error('❌ Error in AI response:', error);
+        isAISpeaking.current = false;
+      }
+      
+    } catch (error) {
+      console.error('❌ Error processing user speech for AI:', error);
+    }
+  };
+
   // Process user speech and generate AI response
   const processUserSpeech = async (transcript: string) => {
     try {
@@ -335,12 +459,6 @@ const Interview = () => {
       // Skip if transcript is too short or AI is currently speaking
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
-        // Restart speech recognition for next input
-        setTimeout(async () => {
-          if (isInterviewActive && !isListening && !isAISpeaking.current) {
-            await startSpeechRecognition();
-          }
-        }, 1000);
         return;
       }
       
@@ -354,12 +472,6 @@ const Interview = () => {
       const now = Date.now();
       if (lastProcessedTime.current && now - lastProcessedTime.current < 1500) {
         console.log('🚫 Skipping: too soon after last response');
-        // Restart speech recognition for next input
-        setTimeout(async () => {
-          if (isInterviewActive && !isListening && !isAISpeaking.current) {
-            await startSpeechRecognition();
-          }
-        }, 1000);
         return;
       }
       
