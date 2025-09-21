@@ -40,7 +40,7 @@ export const DashboardContent = ({ activeModule, sidebarOpen }: DashboardContent
     <main 
       className={cn(
         "flex-1 transition-all duration-300 ease-in-out",
-        sidebarOpen ? "lg:ml-0" : "lg:ml-0"
+        sidebarOpen ? "lg:ml-64" : "lg:ml-0"
       )}
     >
       <div className="container mx-auto p-6 lg:p-8">

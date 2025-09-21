@@ -17,7 +17,7 @@ export type DashboardModule =
 const Dashboard = () => {
   const [activeModule, setActiveModule] = useState<DashboardModule>("interview");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
     <div className="min-h-screen bg-background">
