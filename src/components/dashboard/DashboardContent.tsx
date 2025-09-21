@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { DashboardModule } from "@/pages/Dashboard";
-import { InterviewModule } from "./modules/InterviewModule";
+import InterviewModule from "./modules/InterviewModule";
 import { ComingSoonModule } from "./modules/ComingSoonModule";
 import { ResumeBuilderModule } from "./modules/ResumeBuilderModule";
 import { LearningModule } from "./modules/LearningModule";

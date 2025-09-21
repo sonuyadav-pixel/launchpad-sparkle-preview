@@ -14,22 +14,35 @@ import {
   Circle,
   User
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import PermissionRequest from "@/components/interview/PermissionRequest";
-
-interface TranscriptMessage {
-  id: string;
-  speaker: 'user' | 'ai';
-  message: string;
-  timestamp: Date;
-}
+import { useInterviewSession, type TranscriptMessage } from "@/hooks/useInterviewSession";
+import { useToast } from "@/components/ui/use-toast";
 
 const Interview = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session');
+  
+  const {
+    currentSession,
+    transcripts,
+    loading: sessionLoading,
+    createSession,
+    joinSession,
+    updateSession,
+    addTranscriptMessage,
+    getTranscript,
+    setTranscripts
+  } = useInterviewSession();
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<HTMLDivElement>(null);
+  
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isAiSpeaking, setIsAiSpeaking] = useState(false);
@@ -40,7 +53,66 @@ const Interview = () => {
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [showPermissionRequest, setShowPermissionRequest] = useState(true);
-  const [transcript, setTranscript] = useState<TranscriptMessage[]>([
+
+  // Initialize session on component mount
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (sessionId) {
+        // Join existing session
+        try {
+          await joinSession(sessionId);
+          console.log('Joined existing session:', sessionId);
+        } catch (error) {
+          console.error('Failed to join session:', error);
+          toast({
+            title: "Error",
+            description: "Failed to join interview session. Starting new session.",
+            variant: "destructive",
+          });
+          // Create new session if joining fails
+          await createSession({
+            title: `Interview Session - ${new Date().toLocaleDateString()}`,
+            interview_type: 'general'
+          });
+        }
+      } else {
+        // Create new session
+        try {
+          await createSession({
+            title: `Interview Session - ${new Date().toLocaleDateString()}`,
+            interview_type: 'general'
+          });
+          console.log('Created new session');
+        } catch (error) {
+          console.error('Failed to create session:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create interview session.",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    initializeSession();
+  }, [sessionId, joinSession, createSession, toast]);
+
+  // Convert server transcripts to local format and sync
+  useEffect(() => {
+    if (transcripts.length > 0) {
+      const convertedTranscripts = transcripts.map(t => ({
+        id: t.id,
+        speaker: t.speaker as 'user' | 'ai',
+        message: t.message,
+        timestamp: new Date(t.timestamp)
+      }));
+      // Only update if transcripts are different to avoid loops
+      setLocalTranscript(convertedTranscripts);
+    }
+  }, [transcripts]);
+
+  // Local transcript state for UI
+  const [localTranscript, setLocalTranscript] = useState<any[]>([
     {
       id: '1',
       speaker: 'ai',
@@ -48,8 +120,6 @@ const Interview = () => {
       timestamp: new Date()
     }
   ]);
-
-  const transcriptRef = useRef<HTMLDivElement>(null);
 
   // Robust media initialization that works in all cases
   const initializeMedia = async () => {
@@ -199,7 +269,7 @@ const Interview = () => {
         
         if (finalTranscript.trim()) {
           console.log('Speech recognized:', finalTranscript);
-          addTranscriptMessage('user', finalTranscript.trim());
+          addLocalTranscriptMessage('user', finalTranscript.trim());
           
           // Simulate AI response after a delay
           setTimeout(() => {
@@ -219,19 +289,29 @@ const Interview = () => {
     }
   };
 
-  // Add transcript message function
-  const addTranscriptMessage = (speaker: 'user' | 'ai', message: string) => {
-    const newMessage: TranscriptMessage = {
+  // Add transcript message function for UI
+  const addLocalTranscriptMessage = async (speaker: 'user' | 'ai', message: string) => {
+    const newMessage = {
       id: Date.now().toString(),
       speaker,
       message,
       timestamp: new Date()
     };
-    setTranscript(prev => [...prev, newMessage]);
+    
+    setLocalTranscript(prev => [...prev, newMessage]);
+    
+    // Save to database if session exists
+    if (currentSession && speaker === 'user') {
+      try {
+        await addTranscriptMessage(currentSession.id, speaker, message);
+      } catch (error) {
+        console.error('Failed to save message to database:', error);
+      }
+    }
   };
 
-  // Simulate AI response
-  const simulateAIResponse = (userMessage: string) => {
+  // Simulate AI response and save to database
+  const simulateAIResponse = async (userMessage: string) => {
     const responses = [
       "That's interesting. Can you elaborate on that?",
       "Great point! Tell me more about your experience with that.",
@@ -242,7 +322,18 @@ const Interview = () => {
     ];
     
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    addTranscriptMessage('ai', randomResponse);
+    
+    // Add to local transcript immediately
+    addLocalTranscriptMessage('ai', randomResponse);
+    
+    // Save to database if session exists
+    if (currentSession) {
+      try {
+        await addTranscriptMessage(currentSession.id, 'ai', randomResponse);
+      } catch (error) {
+        console.error('Failed to save AI response to database:', error);
+      }
+    }
   };
 
   // Check existing permissions and auto-start if available
@@ -373,7 +464,14 @@ const Interview = () => {
     if (transcriptRef.current) {
       transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
     }
-  }, [transcript]);
+  }, [localTranscript]);
+
+  // Update session status to active when interview starts
+  useEffect(() => {
+    if (currentSession && currentSession.status === 'waiting' && hasVideoPermission) {
+      updateSession(currentSession.id, { status: 'active' }).catch(console.error);
+    }
+  }, [currentSession, hasVideoPermission, updateSession]);
 
   // Simulate AI speaking animation
   useEffect(() => {
@@ -390,7 +488,7 @@ const Interview = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleEndInterview = () => {
+  const handleEndInterview = async () => {
     // Stop all media tracks and speech recognition before leaving
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -398,6 +496,17 @@ const Interview = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
+
+    // Update session status to completed
+    if (currentSession) {
+      try {
+        await updateSession(currentSession.id, { status: 'completed' });
+        console.log('Interview session completed');
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
+    }
+
     navigate('/dashboard');
   };
 
@@ -428,7 +537,14 @@ const Interview = () => {
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background border-b">
         <div className="flex items-center gap-3">
           <Circle className="h-6 w-6 text-primary" />
-          <span className="font-semibold text-lg">AI Interview</span>
+          <span className="font-semibold text-lg">
+            {currentSession?.title || 'AI Interview'}
+          </span>
+          {currentSession && (
+            <span className="text-sm text-muted-foreground">
+              • Session: {currentSession.id.slice(0, 8)}
+            </span>
+          )}
         </div>
         <Button 
           variant="destructive" 
@@ -617,7 +733,7 @@ const Interview = () => {
               <TabsContent value="transcript" className="px-6 pb-6 h-64">
                 <ScrollArea className="h-full">
                   <div className="space-y-4 pr-4 pb-4">
-                    {transcript.map((message) => (
+                    {localTranscript.map((message) => (
                       <div
                         key={message.id}
                         className={cn(
