@@ -21,6 +21,7 @@ import PermissionRequest from "@/components/interview/PermissionRequest";
 import { useInterviewSession, type TranscriptMessage } from "@/hooks/useInterviewSession";
 import { Logo } from "@/components/ui/Logo";
 import { sessionManager } from "@/utils/SessionManager";
+import { useTextToSpeech } from "@/hooks/useTextToSpeech";
 
 const Interview = () => {
   const navigate = useNavigate();
@@ -56,6 +57,9 @@ const Interview = () => {
   const [isVideoLoading, setIsVideoLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [showPermissionRequest, setShowPermissionRequest] = useState(true);
+
+  // Text-to-speech hook
+  const { speak, stop: stopSpeech, isPlaying: isSpeechPlaying, loading: speechLoading } = useTextToSpeech();
 
   // Initialize session on component mount
   useEffect(() => {
@@ -115,6 +119,16 @@ const Interview = () => {
       timestamp: new Date()
     }
   ]);
+
+  // Speak the welcome message when interview starts
+  useEffect(() => {
+    if (hasVideoPermission && localTranscript.length === 1) {
+      const welcomeMessage = localTranscript[0].message;
+      setTimeout(() => {
+        speak(welcomeMessage, 'nova').catch(console.error);
+      }, 2000); // Wait 2 seconds after permissions granted
+    }
+  }, [hasVideoPermission, speak]);
 
   // Robust media initialization that works in all cases
   const initializeMedia = async () => {
@@ -315,7 +329,7 @@ const Interview = () => {
     }
   };
 
-  // Simulate AI response and save to database
+  // Simulate AI response and save to database with voice
   const simulateAIResponse = async (userMessage: string) => {
     const responses = [
       "That's interesting. Can you elaborate on that?",
@@ -323,13 +337,28 @@ const Interview = () => {
       "How did that make you feel?",
       "What would you do differently next time?",
       "Can you give me a specific example?",
-      "What challenges did you face in that situation?"
+      "What challenges did you face in that situation?",
+      "That's a valuable perspective. What skills did you use to handle that?",
+      "I see. How do you think that experience has prepared you for this role?",
+      "Excellent. Can you walk me through your thought process during that time?",
+      "That shows great problem-solving skills. What was the outcome?"
     ];
     
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
     
     // Add to local transcript immediately
     addLocalTranscriptMessage('ai', randomResponse);
+    
+    // Convert AI response to speech
+    try {
+      console.log('AI responding with voice:', randomResponse);
+      setIsAiSpeaking(true);
+      await speak(randomResponse, 'nova'); // Using 'nova' voice for AI (female voice)
+      setIsAiSpeaking(false);
+    } catch (error) {
+      console.error('Failed to speak AI response:', error);
+      setIsAiSpeaking(false);
+    }
     
     // Save to database if session exists
     if (currentSession) {
@@ -462,14 +491,10 @@ const Interview = () => {
     }
   }, [currentSession, hasVideoPermission, updateSession]);
 
-  // Simulate AI speaking animation
+  // Update AI speaking status based on actual speech
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAiSpeaking(prev => !prev);
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
+    setIsAiSpeaking(isSpeechPlaying || speechLoading);
+  }, [isSpeechPlaying, speechLoading]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
