@@ -11,7 +11,8 @@ import {
   Phone, 
   Download,
   Timer,
-  Circle
+  Circle,
+  User
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -323,14 +324,14 @@ const Interview = () => {
                 ) : !isCameraOn ? (
                   <div className="text-center">
                     <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 border-4 border-primary/30">
-                      <span className="text-4xl font-bold text-primary">You</span>
+                      <User className="h-16 w-16 text-primary" />
                     </div>
                     <p className="text-muted-foreground">Camera is off</p>
                   </div>
                 ) : (
                   <div className="text-center">
                     <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                      <span className="text-2xl font-bold text-primary">You</span>
+                      <User className="h-12 w-12 text-primary" />
                     </div>
                     <p className="text-muted-foreground">Loading camera...</p>
                   </div>
