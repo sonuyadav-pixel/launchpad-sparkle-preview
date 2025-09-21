@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
+import { useInterviewSession } from '@/hooks/useInterviewSession';
+import { sessionManager } from '@/utils/SessionManager';
 import { 
   Video, 
   VideoOff, 
@@ -32,6 +34,7 @@ const Interview = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
+  const { updateSession } = useInterviewSession();
 
   // Session state
   const sessionId = searchParams.get('session');
@@ -284,8 +287,13 @@ const Interview = () => {
     try {
       console.log('📹 Starting video...');
       
+      // Request permissions explicitly first
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 },
+        video: { 
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        },
         audio: false // We handle audio separately
       });
       
@@ -293,6 +301,10 @@ const Interview = () => {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Ensure video plays
+        videoRef.current.play().catch(error => {
+          console.error('Video play error:', error);
+        });
       }
       
       setIsVideoEnabled(true);
@@ -300,9 +312,18 @@ const Interview = () => {
       
     } catch (error) {
       console.error('❌ Error starting video:', error);
+      
+      // More specific error handling
+      let errorMessage = "Could not access camera. Please check permissions.";
+      if (error.name === 'NotAllowedError') {
+        errorMessage = "Camera access denied. Please allow camera permissions and try again.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "No camera found. Please ensure your camera is connected.";
+      }
+      
       toast({
         title: "Camera Access Error",
-        description: "Could not access camera. Please check permissions.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -330,8 +351,30 @@ const Interview = () => {
       
       setIsInterviewActive(true);
       
+      // Update session status in database
+      if (sessionId) {
+        try {
+          await updateSession(sessionId, { 
+            status: 'active', 
+            started_at: new Date().toISOString() 
+          });
+        } catch (error) {
+          console.error('Failed to update session status:', error);
+        }
+      }
+      
       // Start video
       await startVideo();
+      
+      // Set active session in session manager
+      if (sessionId) {
+        sessionManager.setActiveSession(
+          sessionId, 
+          streamRef.current, 
+          recognitionRef.current,
+          "AI Interview Session"
+        );
+      }
       
       // Start speech recognition immediately and aggressively
       console.log('🎯 Force starting speech recognition...');
@@ -398,7 +441,7 @@ const Interview = () => {
     }
   };
 
-  const endInterview = () => {
+  const endInterview = async () => {
     console.log('🏁 Ending interview...');
     
     setIsInterviewActive(false);
@@ -412,6 +455,21 @@ const Interview = () => {
     if (heartbeatRef.current) {
       clearTimeout(heartbeatRef.current);
     }
+    
+    // Update session status in database
+    if (sessionId) {
+      try {
+        await updateSession(sessionId, { 
+          status: 'completed', 
+          ended_at: new Date().toISOString() 
+        });
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
+    }
+    
+    // End session in manager
+    sessionManager.endSession();
     
     toast({
       title: "Interview Ended",
@@ -486,7 +544,15 @@ const Interview = () => {
   useEffect(() => {
     if (sessionId) {
       console.log('📁 Loading session:', sessionId);
-      // Load session data if needed
+      // Check if there's an active session in the manager
+      const hasActive = sessionManager.hasActiveSession();
+      const activeId = sessionManager.getActiveSessionId();
+      
+      if (hasActive && activeId === sessionId) {
+        console.log('🔄 Restoring active session from manager');
+        setIsInterviewActive(true);
+        // You could restore more state here if needed
+      }
     }
   }, [sessionId]);
 
