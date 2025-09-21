@@ -113,7 +113,7 @@ const HeroSection = () => {
               <span className="text-black transition-all duration-500">{smartPhrases[smartTextIndex]}</span>
             </div>
             
-            <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
               Conduct intelligent interviews with AI that analyzes candidate responses, 
               generates insights, and helps you identify top talent faster across all roles.
             </p>
