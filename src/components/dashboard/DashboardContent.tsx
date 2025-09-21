@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 import { DashboardModule } from "@/pages/Dashboard";
 import InterviewModule from "./modules/InterviewModule";
 import { ComingSoonModule } from "./modules/ComingSoonModule";
-import FeedbackPage from "@/pages/Feedback";
 import { ResumeBuilderModule } from "./modules/ResumeBuilderModule";
 import { LearningModule } from "./modules/LearningModule";
 import { JobsModule } from "./modules/JobsModule";
@@ -32,7 +31,7 @@ export const DashboardContent = ({ activeModule, sidebarOpen, sidebarCollapsed }
       case "calendar":
         return <ComingSoonModule title="Calendar" description="Calendar integration is coming soon. Stay tuned for updates!" />;
       case "feedback":
-        return <FeedbackPage />;
+        return <ComingSoonModule title="Feedback" description="Feedback system is coming soon. Stay tuned for updates!" />;
       default:
         return <InterviewModule />;
     }

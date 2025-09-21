@@ -40,9 +40,9 @@ const menuItems = [
       },
       {
         id: "feedback" as DashboardModule,
-        label: "Interview History",
+        label: "Feedback",
         icon: Star,
-        description: "View your past interview sessions and feedback.",
+        comingSoon: true,
       },
     ],
   },
