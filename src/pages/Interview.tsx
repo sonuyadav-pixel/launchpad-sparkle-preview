@@ -61,9 +61,6 @@ const Interview = () => {
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
-  const autoResponseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const accumulatedTranscript = useRef<string>('');
-  const lastPartialTranscript = useRef<string>('');
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -130,28 +127,13 @@ const Interview = () => {
       // Update interim transcript for live display
       setCurrentTranscript(interimTranscript);
       
-      // Handle continuous speech accumulation
+      // Process final transcript
       if (finalTranscript.trim()) {
-        console.log('📝 Final transcript chunk:', finalTranscript);
+        console.log('📝 Final transcript:', finalTranscript);
         lastSpeechTime.current = Date.now();
-        resetAutoCloseTimer();
-        
-        // Accumulate transcript chunks
-        accumulatedTranscript.current += (accumulatedTranscript.current ? ' ' : '') + finalTranscript.trim();
-        console.log('📝 Accumulated transcript:', accumulatedTranscript.current);
-        
-        // Reset the 5-second auto-response timer
-        resetAutoResponseTimer();
+        resetAutoCloseTimer(); // Reset auto-close timer on user activity
+        processUserSpeech(finalTranscript.trim());
         setCurrentTranscript('');
-      }
-      
-      // Handle interim results for real-time feedback
-      if (interimTranscript.trim() && interimTranscript !== lastPartialTranscript.current) {
-        lastPartialTranscript.current = interimTranscript;
-        lastSpeechTime.current = Date.now();
-        
-        // Reset auto-response timer on any speech activity
-        resetAutoResponseTimer();
       }
     };
 
@@ -209,95 +191,10 @@ const Interview = () => {
     }
   }, [isListening]);
 
-  // Auto-response timer management
-  const resetAutoResponseTimer = useCallback(() => {
-    console.log('⏰ Resetting auto-response timer');
-    
-    // Clear existing timer
-    if (autoResponseTimeoutRef.current) {
-      clearTimeout(autoResponseTimeoutRef.current);
-      autoResponseTimeoutRef.current = null;
-    }
-    
-    // Set new 5-second timer
-    autoResponseTimeoutRef.current = setTimeout(() => {
-      console.log('⏰ 5-second silence detected, triggering auto-response');
-      triggerAutoResponse();
-    }, 5000);
-  }, []);
-
-  // Trigger auto-response after silence
-  const triggerAutoResponse = async () => {
-    if (!isInterviewActive || isAISpeaking.current) {
-      console.log('🚫 Auto-response cancelled: interview inactive or AI speaking');
-      return;
-    }
-
-    const transcript = accumulatedTranscript.current.trim();
-    
-    if (!transcript || transcript.length < 3) {
-      console.log('🚫 Auto-response cancelled: no meaningful speech accumulated');
-      return;
-    }
-
-    console.log('🤖 Processing accumulated speech for auto-response:', transcript);
-    
-    // Clear accumulated transcript
-    accumulatedTranscript.current = '';
-    lastPartialTranscript.current = '';
-    
-    try {
-      // Check if we just processed speech recently (debounce)
-      const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
-        console.log('🚫 Skipping auto-response: too soon after last response');
-        return;
-      }
-      
-      lastProcessedTime.current = now;
-      
-      // Add user message to transcript
-      const userMessage: TranscriptMessage = {
-        id: Date.now().toString(),
-        speaker: 'user',
-        message: transcript,
-        timestamp: new Date()
-      };
-      
-      setLocalTranscript(prev => [userMessage, ...prev]);
-      await addTranscriptMessage(userMessage);
-      
-      // Generate AI response immediately
-      console.log('🤖 Generating auto AI response...');
-      const aiResponse = await generateAIResponse(transcript);
-      
-      if (aiResponse && !isAISpeaking.current) {
-        const aiMessage: TranscriptMessage = {
-          id: (Date.now() + 1).toString(),
-          speaker: 'ai',
-          message: aiResponse,
-          timestamp: new Date()
-        };
-        
-        setLocalTranscript(prev => [aiMessage, ...prev]);
-        await addTranscriptMessage(aiMessage);
-        
-        // Speak the AI response
-        console.log('🔊 Speaking auto AI response...');
-        isAISpeaking.current = true;
-        await speak(aiResponse, 'alloy');
-        isAISpeaking.current = false;
-      }
-    } catch (error) {
-      console.error('❌ Error in auto-response:', error);
-      isAISpeaking.current = false;
-    }
-  };
-
-  // Process user speech manually (for manual triggers if needed)
+  // Process user speech and generate AI response
   const processUserSpeech = async (transcript: string) => {
     try {
-      console.log('🧠 Processing user speech manually:', transcript);
+      console.log('🧠 Processing user speech:', transcript);
       
       // Skip if transcript is too short or AI is currently speaking
       if (transcript.length < 3) {
@@ -329,28 +226,41 @@ const Interview = () => {
       };
       
       setLocalTranscript(prev => [userMessage, ...prev]);
+      
+      // Add to database
       await addTranscriptMessage(userMessage);
       
-      // Generate AI response
-      const aiResponse = await generateAIResponse(transcript);
-      
-      if (aiResponse && !isAISpeaking.current) {
-        const aiMessage: TranscriptMessage = {
-          id: (Date.now() + 1).toString(),
-          speaker: 'ai',
-          message: aiResponse,
-          timestamp: new Date()
-        };
+      // Only generate AI response if user seems to have finished speaking
+      // Wait a moment to see if more speech is coming
+      setTimeout(async () => {
+        if (isAISpeaking.current) return; // Double check AI isn't speaking
         
-        setLocalTranscript(prev => [aiMessage, ...prev]);
-        await addTranscriptMessage(aiMessage);
-        
-        // Speak the AI response
-        console.log('🔊 Speaking AI response...');
-        isAISpeaking.current = true;
-        await speak(aiResponse, 'alloy');
-        isAISpeaking.current = false;
-      }
+        try {
+          console.log('🤖 Generating delayed AI response...');
+          const aiResponse = await generateAIResponse(transcript);
+          
+          if (aiResponse && !isAISpeaking.current) {
+            const aiMessage: TranscriptMessage = {
+              id: (Date.now() + 1).toString(),
+              speaker: 'ai',
+              message: aiResponse,
+              timestamp: new Date()
+            };
+            
+            setLocalTranscript(prev => [aiMessage, ...prev]);
+            await addTranscriptMessage(aiMessage);
+            
+            // Speak the AI response
+            console.log('🔊 Speaking AI response...');
+            isAISpeaking.current = true;
+            await speak(aiResponse, 'alloy');
+            isAISpeaking.current = false;
+          }
+        } catch (error) {
+          console.error('❌ Error in delayed AI response:', error);
+          isAISpeaking.current = false;
+        }
+      }, 2000); // Wait 2 seconds before responding
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
@@ -727,14 +637,6 @@ const Interview = () => {
       clearTimeout(autoCloseTimerRef.current);
     }
     
-    if (autoResponseTimeoutRef.current) {
-      clearTimeout(autoResponseTimeoutRef.current);
-    }
-    
-    // Clear accumulated speech
-    accumulatedTranscript.current = '';
-    lastPartialTranscript.current = '';
-    
     // Update session status in database
     if (sessionId) {
       try {
@@ -849,9 +751,6 @@ const Interview = () => {
       }
       if (autoCloseTimerRef.current) {
         clearTimeout(autoCloseTimerRef.current);
-      }
-      if (autoResponseTimeoutRef.current) {
-        clearTimeout(autoResponseTimeoutRef.current);
       }
     };
   }, []);
