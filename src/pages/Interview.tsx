@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import PermissionRequest from "@/components/interview/PermissionRequest";
 import { useInterviewSession, type TranscriptMessage } from "@/hooks/useInterviewSession";
 import { Logo } from "@/components/ui/Logo";
+import { sessionManager } from "@/utils/SessionManager";
 
 const Interview = () => {
   const navigate = useNavigate();
@@ -145,6 +146,9 @@ const Interview = () => {
       
       // Setup video element
       await setupVideo(stream);
+      
+      // Store session in session manager
+      sessionManager.setActiveSession(currentSession?.id || 'temp', stream, recognitionRef.current);
       
       // Initialize speech recognition
       initializeSpeechRecognition();
@@ -357,17 +361,28 @@ const Interview = () => {
 
   // Component mount effect
   useEffect(() => {
-    checkExistingPermissions();
+    // Check if there's already an active session
+    const activeSession = sessionManager.getActiveSession();
+    if (activeSession && activeSession.sessionId === sessionId) {
+      console.log('Resuming existing session');
+      // Resume existing session
+      streamRef.current = activeSession.stream;
+      recognitionRef.current = activeSession.recognition;
+      setHasVideoPermission(true);
+      setIsCameraOn(true);
+      setShowPermissionRequest(false);
+      
+      if (activeSession.stream && videoRef.current) {
+        setupVideo(activeSession.stream);
+      }
+      
+      sessionManager.resumeSession();
+    } else {
+      // Check for new permissions
+      checkExistingPermissions();
+    }
     
-    return () => {
-      // Cleanup on unmount
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
+    // No cleanup on unmount - session persists
   }, []);
 
   // Robust camera toggle that always works
@@ -458,13 +473,8 @@ const Interview = () => {
   };
 
   const handleEndInterview = async () => {
-    // Stop all media tracks and speech recognition before leaving
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    // End the session properly through session manager
+    sessionManager.endSession();
 
     // Update session status to completed
     if (currentSession) {
@@ -547,7 +557,10 @@ const Interview = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              sessionManager.pauseSession();
+              navigate('/dashboard');
+            }}
             className="p-2"
           >
             <ArrowLeft className="h-4 w-4" />

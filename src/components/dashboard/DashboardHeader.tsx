@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, DollarSign, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Menu, LogOut, DollarSign, PanelLeftClose, PanelLeft, Video, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
+import { sessionManager } from "@/utils/SessionManager";
+import { useState, useEffect } from "react";
 
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
@@ -12,6 +14,22 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSidebar, sidebarCollapsed }: DashboardHeaderProps) => {
   const navigate = useNavigate();
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  // Check for active session periodically
+  useEffect(() => {
+    const checkActiveSession = () => {
+      const hasSession = sessionManager.hasActiveSession();
+      const sessionId = sessionManager.getActiveSessionId();
+      setHasActiveSession(hasSession);
+      setActiveSessionId(sessionId);
+    };
+
+    checkActiveSession();
+    const interval = setInterval(checkActiveSession, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = () => {
     // Add sign out logic here
@@ -20,6 +38,12 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
 
   const handleLogoClick = () => {
     navigate("/");
+  };
+
+  const handleReturnToInterview = () => {
+    if (activeSessionId) {
+      navigate(`/interview?session=${activeSessionId}`);
+    }
   };
 
   return (
@@ -57,6 +81,20 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
               Hi, <span className="text-primary">John</span>
             </h2>
           </div>
+
+          {/* Active Interview Indicator */}
+          {hasActiveSession && (
+            <Button
+              onClick={handleReturnToInterview}
+              variant="default"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 animate-pulse"
+            >
+              <Video className="h-4 w-4" />
+              <span className="hidden md:inline">Return to Interview</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Right Side */}

@@ -1,0 +1,101 @@
+// Persistent session manager for maintaining interview sessions across navigation
+export class SessionManager {
+  private static instance: SessionManager;
+  private activeSession: {
+    sessionId: string;
+    stream: MediaStream | null;
+    recognition: any;
+    isActive: boolean;
+  } | null = null;
+
+  private constructor() {}
+
+  static getInstance(): SessionManager {
+    if (!SessionManager.instance) {
+      SessionManager.instance = new SessionManager();
+    }
+    return SessionManager.instance;
+  }
+
+  setActiveSession(sessionId: string, stream: MediaStream | null, recognition: any) {
+    console.log('Setting active session:', sessionId);
+    this.activeSession = {
+      sessionId,
+      stream,
+      recognition,
+      isActive: true
+    };
+  }
+
+  getActiveSession() {
+    return this.activeSession;
+  }
+
+  pauseSession() {
+    if (this.activeSession) {
+      console.log('Pausing session:', this.activeSession.sessionId);
+      this.activeSession.isActive = false;
+      
+      // Pause speech recognition but keep stream active
+      if (this.activeSession.recognition) {
+        try {
+          this.activeSession.recognition.stop();
+        } catch (error) {
+          console.warn('Error stopping recognition:', error);
+        }
+      }
+    }
+  }
+
+  resumeSession() {
+    if (this.activeSession) {
+      console.log('Resuming session:', this.activeSession.sessionId);
+      this.activeSession.isActive = true;
+      
+      // Resume speech recognition
+      if (this.activeSession.recognition) {
+        try {
+          this.activeSession.recognition.start();
+        } catch (error) {
+          console.warn('Error starting recognition:', error);
+        }
+      }
+    }
+  }
+
+  endSession() {
+    if (this.activeSession) {
+      console.log('Ending session:', this.activeSession.sessionId);
+      
+      // Stop all media tracks
+      if (this.activeSession.stream) {
+        this.activeSession.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      // Stop speech recognition
+      if (this.activeSession.recognition) {
+        try {
+          this.activeSession.recognition.stop();
+        } catch (error) {
+          console.warn('Error stopping recognition:', error);
+        }
+      }
+      
+      this.activeSession = null;
+    }
+  }
+
+  hasActiveSession(): boolean {
+    return this.activeSession !== null;
+  }
+
+  getActiveSessionId(): string | null {
+    return this.activeSession?.sessionId || null;
+  }
+
+  isSessionActive(): boolean {
+    return this.activeSession?.isActive || false;
+  }
+}
+
+export const sessionManager = SessionManager.getInstance();
