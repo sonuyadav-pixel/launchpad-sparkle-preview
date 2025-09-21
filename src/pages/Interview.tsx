@@ -649,8 +649,8 @@ const Interview = () => {
           </div>
         </div>
 
-        {/* Side by Side Layout: User and AI */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        {/* Side by Side Layout: User (Left) and AI (Right) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* User Video Section */}
           <Card>
             <CardHeader>
