@@ -96,7 +96,7 @@ const TestimonialsSection = () => {
                     alt={currentTestimonial.name}
                     className="w-16 h-16 rounded-full object-cover border-2 border-primary/20 animate-pulse-glow shadow-lg hover:scale-110 transition-transform duration-300"
                   />
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
                 </div>
                 <div className="text-left">
                   <div className="font-semibold text-card-foreground">
