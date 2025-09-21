@@ -128,11 +128,12 @@ const Interview = () => {
     
     // Event handlers
     recognitionRef.current.onstart = () => {
-      console.log('🎤 Speech recognition STARTED');
+      console.log('🎤 Speech recognition STARTED for continuous conversation');
       console.log('🎤 Recognition state:', {
         continuous: recognitionRef.current?.continuous,
         interimResults: recognitionRef.current?.interimResults,
-        lang: recognitionRef.current?.lang
+        lang: recognitionRef.current?.lang,
+        timestamp: new Date().toISOString()
       });
       setIsListening(true);
       lastSpeechTime.current = Date.now();
@@ -142,14 +143,27 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Only auto-restart if interview is active AND AI is not speaking
+      // Always auto-restart speech recognition for continuous conversation
+      // Only pause during AI speaking or when interview is not active
       if (isInterviewActive && !isAISpeaking.current) {
-        console.log('🔄 Auto-restarting speech recognition...');
+        console.log('🔄 Auto-restarting speech recognition for continuous conversation...');
         setTimeout(async () => {
           if (isInterviewActive && !isListening && !isAISpeaking.current) {
+            console.log('🔄 Restarting now...');
             await startSpeechRecognition();
+          } else {
+            console.log('🔄 Restart cancelled:', { 
+              isInterviewActive, 
+              isListening, 
+              isAISpeaking: isAISpeaking.current 
+            });
           }
-        }, 1000); // Reduced delay since we have better control now
+        }, 500); // Shorter delay for better responsiveness
+      } else {
+        console.log('🔄 Not restarting speech recognition:', { 
+          isInterviewActive, 
+          isAISpeaking: isAISpeaking.current 
+        });
       }
     };
 
@@ -201,8 +215,10 @@ const Interview = () => {
       if (finalTranscript.trim()) {
         console.log('📝 Processing final transcript:', finalTranscript);
         
-        // Stop speech recognition to prevent loops
+        // Temporarily stop speech recognition while AI processes and responds
+        // It will auto-restart after AI finishes speaking
         if (recognitionRef.current) {
+          console.log('🔄 Stopping recognition temporarily for AI response');
           recognitionRef.current.stop();
         }
         
