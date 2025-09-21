@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { useToast } from '@/components/ui/use-toast';
 
 interface UserProfile {
   id: string;
@@ -13,39 +13,22 @@ interface UserProfile {
 
 export const useUserProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const { toast } = useToast();
 
-  // Get current user and profile
   useEffect(() => {
+    // Get current user and their profile
     const getCurrentUser = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) {
-          setError(userError.message);
-          setLoading(false);
-          return;
-        }
-
+        const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
-
+        
         if (user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            setError(profileError.message);
-          } else {
-            setProfile(profileData);
-          }
+          await fetchProfile(user.id);
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+      } catch (error) {
+        console.error('Error getting user:', error);
       } finally {
         setLoading(false);
       }
@@ -58,16 +41,7 @@ export const useUserProfile = () => {
       async (event, session) => {
         if (session?.user) {
           setUser(session.user);
-          
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (!profileError) {
-            setProfile(profileData);
-          }
+          await fetchProfile(session.user.id);
         } else {
           setUser(null);
           setProfile(null);
@@ -79,33 +53,75 @@ export const useUserProfile = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const updateProfile = async (updates: Partial<Pick<UserProfile, 'first_name' | 'last_name'>>) => {
-    if (!user) {
-      throw new Error('No user logged in');
-    }
-
-    setLoading(true);
+  const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          ...updates
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setProfile(data);
+      } else {
+        // Create profile if it doesn't exist
+        await createProfile(userId);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const createProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: user?.email || null,
         })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error creating profile:', error);
+    }
+  };
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
         .select()
         .single();
 
       if (error) throw error;
 
       setProfile(data);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+
       return data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -113,8 +129,7 @@ export const useUserProfile = () => {
     profile,
     user,
     loading,
-    error,
     updateProfile,
-    hasFirstName: !!profile?.first_name
+    refetchProfile: () => user?.id && fetchProfile(user.id),
   };
 };

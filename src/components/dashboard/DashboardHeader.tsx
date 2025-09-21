@@ -1,26 +1,27 @@
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, DollarSign, PanelLeftClose, PanelLeft, Video, ArrowRight } from "lucide-react";
+import { Menu, LogOut, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { sessionManager } from "@/utils/SessionManager";
 import { useState, useEffect } from "react";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { FirstNameModal } from "@/components/profile/FirstNameModal";
+import { FirstNamePrompt } from "./FirstNamePrompt";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
   onToggleSidebar: () => void;
-  sidebarCollapsed?: boolean; // Keep for potential future use
+  sidebarCollapsed?: boolean;
 }
 
 export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollapsed }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [showFirstNameModal, setShowFirstNameModal] = useState(false);
+  const [showFirstNamePrompt, setShowFirstNamePrompt] = useState(false);
+  const [savingName, setSavingName] = useState(false);
   
-  const { profile, user, loading, updateProfile, hasFirstName } = useUserProfile();
+  const { profile, user, loading, updateProfile } = useUserProfile();
 
   // Check for active session periodically
   useEffect(() => {
@@ -36,24 +37,32 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
     return () => clearInterval(interval);
   }, []);
 
-  // Check if we need to ask for first name
+  // Show first name prompt if user doesn't have a first name
   useEffect(() => {
-    if (!loading && user && !hasFirstName) {
-      setShowFirstNameModal(true);
+    if (!loading && profile && user && !profile.first_name) {
+      setShowFirstNamePrompt(true);
     }
-  }, [loading, user, hasFirstName]);
+  }, [profile, user, loading]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  const handleLogoClick = () => {
-    navigate("/");
+  const handleFirstNameSubmit = async (firstName: string) => {
+    setSavingName(true);
+    try {
+      await updateProfile({ first_name: firstName });
+      setShowFirstNamePrompt(false);
+    } catch (error) {
+      console.error('Error saving first name:', error);
+    } finally {
+      setSavingName(false);
+    }
   };
 
-  const handleUpdateFirstName = async (firstName: string) => {
-    await updateProfile({ first_name: firstName });
+  const handleLogoClick = () => {
+    navigate("/");
   };
 
   const handleReturnToInterview = () => {
@@ -83,7 +92,7 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
           <div className="hidden sm:block">
             <h2 className="text-lg font-semibold text-foreground">
               Hi, <span className="text-primary">
-                {loading ? "..." : (profile?.first_name || "there")}
+                {loading ? '...' : profile?.first_name || 'there'}
               </span>
             </h2>
           </div>
@@ -113,10 +122,10 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, sidebarCollaps
         </div>
       </div>
       
-      <FirstNameModal 
-        open={showFirstNameModal}
-        onClose={() => setShowFirstNameModal(false)}
-        onSubmit={handleUpdateFirstName}
+      <FirstNamePrompt
+        open={showFirstNamePrompt}
+        onSubmit={handleFirstNameSubmit}
+        loading={savingName}
       />
     </header>
   );
