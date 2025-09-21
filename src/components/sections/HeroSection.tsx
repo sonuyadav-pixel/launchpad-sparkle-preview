@@ -1,9 +1,53 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import interview4uLogo from "@/assets/interview4u-logo.png";
 import AIGraphBackground from "@/components/3d/AIGraphBackground";
 import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackground";
 
 const HeroSection = () => {
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [currentDescIndex, setCurrentDescIndex] = useState(0);
+
+  const features = [
+    { 
+      icon: "🤖", 
+      title: "AI-Driven", 
+      descriptions: [
+        "Smart adaptive questions",
+        "Personalized interview flow",
+        "Real-time conversation analysis",
+        "Dynamic difficulty adjustment"
+      ]
+    },
+    { 
+      icon: "📊", 
+      title: "Data Insights", 
+      descriptions: [
+        "Actionable feedback reports",
+        "Comprehensive skill assessment",
+        "Performance trend analysis",
+        "Detailed competency mapping"
+      ]
+    },
+    { 
+      icon: "⚡", 
+      title: "Fast Process", 
+      descriptions: [
+        "Minutes, not hours",
+        "Instant result generation",
+        "Quick candidate screening",
+        "Rapid feedback delivery"
+      ]
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDescIndex((prev) => (prev + 1) % 4);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
       {/* Auto-scrolling AI Interview Background */}
@@ -76,19 +120,23 @@ const HeroSection = () => {
           
           {/* Feature Highlights */}
           <div className="grid md:grid-cols-3 gap-6 pt-12 max-w-4xl mx-auto">
-            {[
-              { icon: "🤖", title: "AI-Driven", desc: "Smart adaptive questions" },
-              { icon: "📊", title: "Data Insights", desc: "Actionable feedback reports" },
-              { icon: "⚡", title: "Fast Process", desc: "Minutes, not hours" }
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fade-in"
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-black/90 transition-all duration-500 animate-fade-in cursor-pointer group"
                 style={{ animationDelay: `${index * 0.2}s` }}
+                onMouseEnter={() => setHoveredFeature(index)}
+                onMouseLeave={() => setHoveredFeature(null)}
               >
-                <div className="text-3xl mb-3">{feature.icon}</div>
-                <h3 className="text-white font-bold text-lg mb-2">{feature.title}</h3>
-                <p className="text-white/80 text-sm">{feature.desc}</p>
+                <div className={`text-3xl mb-3 transition-all duration-300 ${hoveredFeature === index ? 'scale-125' : 'scale-100'}`}>
+                  {feature.icon}
+                </div>
+                <h3 className="text-white group-hover:text-white font-bold text-lg mb-2 transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-white/80 group-hover:text-white/90 text-sm transition-all duration-300">
+                  {feature.descriptions[currentDescIndex]}
+                </p>
               </div>
             ))}
           </div>
