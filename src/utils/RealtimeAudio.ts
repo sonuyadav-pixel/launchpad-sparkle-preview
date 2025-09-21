@@ -165,70 +165,82 @@ export class RealtimeInterviewClient {
       console.log('🔌 Connecting to WebSocket URL:', wsUrl);
       this.ws = new WebSocket(wsUrl);
       
-      this.ws.onopen = () => {
-        console.log('✅ WebSocket connected successfully');
-        this.isConnected = true;
-        this.onMessage({ type: 'connected' });
-      };
-      
-      this.ws.onmessage = async (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('📨 Received WebSocket message:', data.type);
-          
-          switch (data.type) {
-            case 'stt-partial':
-              this.onMessage({ type: 'transcript-partial', text: data.text });
-              break;
-            case 'stt-final':
-              this.onMessage({ type: 'transcript-final', text: data.text });
-              break;
-            case 'bot-text-final':
-              this.onMessage({ type: 'bot-response', text: data.text });
-              break;
-            case 'bot-audio-chunk':
-              if (this.audioQueue) {
-                const binaryString = atob(data.data);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
-                await this.audioQueue.addToQueue(bytes.buffer);
-              }
-              break;
-            case 'bot-audio-complete':
-              this.onMessage({ type: 'bot-audio-complete' });
-              break;
-            case 'connection-established':
-              console.log('🔗 Connection established:', data.message);
-              break;
-            case 'error':
-              console.error('❌ Server error:', data.error);
-              this.onMessage({ type: 'error', error: data.error });
-              break;
-            default:
-              this.onMessage(data);
-          }
-        } catch (error) {
-          console.error('❌ Error parsing WebSocket message:', error);
-        }
-      };
-      
-      this.ws.onclose = (event) => {
-        console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
-        this.isConnected = false;
-        this.onMessage({ type: 'disconnected' });
+      // Return a promise that resolves when connection is established
+      return new Promise<void>((resolve, reject) => {
+        const connectionTimeout = setTimeout(() => {
+          reject(new Error('WebSocket connection timeout'));
+        }, 10000); // 10 second timeout
         
-        // Attempt to reconnect if it wasn't a clean close
-        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.attemptReconnect();
-        }
-      };
-      
-      this.ws.onerror = (error) => {
-        console.error('❌ WebSocket connection error:', error);
-        this.onMessage({ type: 'error', error: 'WebSocket connection failed' });
-      };
+        this.ws!.onopen = () => {
+          clearTimeout(connectionTimeout);
+          console.log('✅ WebSocket connected successfully');
+          this.isConnected = true;
+          this.onMessage({ type: 'connected' });
+          resolve(); // Resolve the promise when connected
+        };
+        
+        this.ws!.onmessage = async (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📨 Received WebSocket message:', data.type);
+            
+            switch (data.type) {
+              case 'stt-partial':
+                this.onMessage({ type: 'transcript-partial', text: data.text });
+                break;
+              case 'stt-final':
+                this.onMessage({ type: 'transcript-final', text: data.text });
+                break;
+              case 'bot-text-final':
+                this.onMessage({ type: 'bot-response', text: data.text });
+                break;
+              case 'bot-audio-chunk':
+                if (this.audioQueue) {
+                  const binaryString = atob(data.data);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  await this.audioQueue.addToQueue(bytes.buffer);
+                }
+                break;
+              case 'bot-audio-complete':
+                this.onMessage({ type: 'bot-audio-complete' });
+                break;
+              case 'connection-established':
+                console.log('🔗 Connection established:', data.message);
+                break;
+              case 'error':
+                console.error('❌ Server error:', data.error);
+                this.onMessage({ type: 'error', error: data.error });
+                break;
+              default:
+                this.onMessage(data);
+            }
+          } catch (error) {
+            console.error('❌ Error parsing WebSocket message:', error);
+          }
+        };
+        
+        this.ws!.onclose = (event) => {
+          clearTimeout(connectionTimeout);
+          console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
+          this.isConnected = false;
+          this.onMessage({ type: 'disconnected' });
+          
+          // Attempt to reconnect if it wasn't a clean close
+          if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.attemptReconnect();
+          }
+        };
+        
+        this.ws!.onerror = (error) => {
+          clearTimeout(connectionTimeout);
+          console.error('❌ WebSocket connection error:', error);
+          this.onMessage({ type: 'error', error: 'WebSocket connection failed' });
+          reject(error);
+        };
+      });
       
     } catch (error) {
       console.error('❌ Connection error:', error);

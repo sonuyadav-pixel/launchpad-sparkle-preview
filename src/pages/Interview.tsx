@@ -202,15 +202,16 @@ const Interview = () => {
         handleRealtimeMessage
       );
 
-      // Connect to WebSocket
+      // Connect to WebSocket and wait for connection
       await realtimeClientRef.current.connect();
+      console.log('✅ WebSocket connection established, proceeding with interview setup');
 
       // Start video if enabled
       if (isVideoEnabled) {
         await startVideo();
       }
 
-      // Start audio recording
+      // Start audio recording - now that connection is confirmed
       await realtimeClientRef.current.startAudioRecording();
       setIsListening(true);
 
