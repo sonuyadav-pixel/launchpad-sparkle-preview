@@ -69,7 +69,10 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
             <Button
               variant="ghost"
               size="icon"
-              onClick={onCollapseSidebar}
+              onClick={() => {
+                console.log('Collapse button clicked, current state:', sidebarCollapsed);
+                onCollapseSidebar();
+              }}
               className="hidden lg:flex"
             >
               {sidebarCollapsed ? <PanelLeft className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}

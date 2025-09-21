@@ -21,6 +21,8 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  console.log('Dashboard render:', { isSidebarOpen, isSidebarCollapsed });
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader 

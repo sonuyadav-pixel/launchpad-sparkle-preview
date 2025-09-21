@@ -101,6 +101,8 @@ export const DashboardSidebar = ({
     }
   };
 
+  console.log('DashboardSidebar render:', { isCollapsed, isOpen });
+
   return (
     <>
       {/* Mobile overlay - only show on mobile when sidebar is open and not collapsed */}
@@ -125,6 +127,9 @@ export const DashboardSidebar = ({
               ? "block" 
               : "hidden lg:block"
         )}
+        style={{
+          backgroundColor: isCollapsed ? 'red' : 'blue', // Debug colors to see the difference
+        }}
       >
         <div className="flex h-full flex-col">
           {/* Close button for mobile - only show when expanded */}
