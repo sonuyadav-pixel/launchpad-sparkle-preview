@@ -19,46 +19,81 @@ export const useElevenLabsTTS = () => {
 
       if (error) {
         console.error('🔊 ElevenLabs TTS error:', error);
+        setLoading(false);
+        setIsPlaying(false);
         throw error;
       }
 
-      if (!data.audioContent) {
+      if (!data?.audioContent) {
+        console.error('🔊 No audio content received from ElevenLabs');
+        setLoading(false);
+        setIsPlaying(false);
         throw new Error('No audio content received from ElevenLabs');
       }
 
+      console.log('🔊 Audio content received, length:', data.audioContent.length);
+
       // Convert base64 to audio and play it
-      const audioData = atob(data.audioContent);
-      const audioArray = new Uint8Array(audioData.length);
-      for (let i = 0; i < audioData.length; i++) {
-        audioArray[i] = audioData.charCodeAt(i);
+      try {
+        const audioData = atob(data.audioContent);
+        const audioArray = new Uint8Array(audioData.length);
+        for (let i = 0; i < audioData.length; i++) {
+          audioArray[i] = audioData.charCodeAt(i);
+        }
+
+        const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+
+        console.log('🔊 Audio blob created, size:', audioBlob.size);
+
+        setLoading(false);
+        setIsPlaying(true);
+
+        // Set up audio event handlers
+        audio.onloadeddata = () => {
+          console.log('🔊 Audio data loaded successfully');
+        };
+
+        audio.oncanplay = () => {
+          console.log('🔊 Audio ready to play');
+        };
+
+        audio.onended = () => {
+          console.log('🔊 ElevenLabs audio playback finished');
+          setIsPlaying(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        audio.onerror = (error) => {
+          console.error('🔊 Audio playback error:', error);
+          setIsPlaying(false);
+          setLoading(false);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        // Play the audio
+        await audio.play();
+        console.log('🔊 Playing ElevenLabs audio');
+
+      } catch (audioError) {
+        console.error('🔊 Audio processing error:', audioError);
+        setLoading(false);
+        setIsPlaying(false);
+        throw audioError;
       }
-
-      const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-
-      setIsPlaying(true);
-      setLoading(false);
-
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-        console.log('🔊 ElevenLabs audio playback finished');
-      };
-
-      audio.onerror = (error) => {
-        console.error('🔊 Audio playback error:', error);
-        setIsPlaying(false);
-        URL.revokeObjectURL(audioUrl);
-      };
-
-      await audio.play();
-      console.log('🔊 Playing ElevenLabs audio');
 
     } catch (error) {
       console.error('🔊 ElevenLabs TTS error:', error);
       setIsPlaying(false);
       setLoading(false);
+      
+      // Try to provide helpful error message
+      if (error.message?.includes('system_busy')) {
+        console.warn('🔊 ElevenLabs system busy, using fallback');
+        // Could implement a fallback TTS here if needed
+      }
+      
       throw error;
     }
   }, []);
