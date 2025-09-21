@@ -88,13 +88,23 @@ const HeroSection = () => {
       {/* AI Graphs Background */}
       <AIGraphBackground />
       
-      {/* Brand Logo - Top Left */}
+      {/* Brand Logo and Auth - Top */}
       <div className="absolute top-4 left-4 md:top-6 md:left-6 z-20 animate-fade-in">
         <img
           src={interview4uLogo}
           alt="Interview4You Logo"
           className="h-12 md:h-16 w-auto hover:scale-105 transition-transform duration-300"
         />
+      </div>
+      
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20 animate-fade-in">
+        <Button 
+          variant="outline" 
+          className="border-white text-white hover:bg-white hover:text-primary backdrop-blur-sm bg-white/10"
+          onClick={() => navigate("/auth")}
+        >
+          Sign In
+        </Button>
       </div>
       
       {/* Main Content */}
@@ -127,7 +137,7 @@ const HeroSection = () => {
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/90 text-xl px-10 py-8 h-auto font-bold shadow-2xl transform hover:scale-105 transition-all duration-300 hover:shadow-white/20 group relative overflow-hidden"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/auth")}
             >
               <span className="relative z-10 flex items-center gap-3">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
