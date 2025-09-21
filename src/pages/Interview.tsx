@@ -55,6 +55,8 @@ const Interview = () => {
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSpeechTime = useRef<number>(Date.now());
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -125,6 +127,7 @@ const Interview = () => {
       if (finalTranscript.trim()) {
         console.log('📝 Final transcript:', finalTranscript);
         lastSpeechTime.current = Date.now();
+        resetAutoCloseTimer(); // Reset auto-close timer on user activity
         processUserSpeech(finalTranscript.trim());
         setCurrentTranscript('');
       }
@@ -344,12 +347,56 @@ const Interview = () => {
     setIsVideoEnabled(false);
   };
 
+  // Check for active sessions before starting
+  const checkForActiveSession = () => {
+    const hasActive = sessionManager.hasActiveSession();
+    const activeId = sessionManager.getActiveSessionId();
+    
+    if (hasActive && activeId !== sessionId) {
+      toast({
+        title: "Active Interview Detected",
+        description: "Please end your current interview before starting a new one.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Auto-close functionality
+  const resetAutoCloseTimer = () => {
+    lastActivityRef.current = Date.now();
+    
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+    }
+    
+    autoCloseTimerRef.current = setTimeout(() => {
+      const timeSinceActivity = Date.now() - lastActivityRef.current;
+      if (timeSinceActivity >= 300000 && isInterviewActive) { // 5 minutes
+        console.log('🔒 Auto-closing interview due to inactivity');
+        toast({
+          title: "Interview Auto-Closed",
+          description: "Session ended due to 5 minutes of inactivity",
+          variant: "default"
+        });
+        endInterview();
+      }
+    }, 300000); // 5 minutes
+  };
+
   // Interview Control Functions
   const startInterview = async () => {
     try {
       console.log('🎯 Starting interview...');
       
+      // Check for active sessions first
+      if (!checkForActiveSession()) {
+        return;
+      }
+      
       setIsInterviewActive(true);
+      resetAutoCloseTimer();
       
       // Update session status in database
       if (sessionId) {
@@ -454,6 +501,10 @@ const Interview = () => {
     
     if (heartbeatRef.current) {
       clearTimeout(heartbeatRef.current);
+    }
+    
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
     }
     
     // Update session status in database
@@ -568,6 +619,9 @@ const Interview = () => {
       if (heartbeatRef.current) {
         clearTimeout(heartbeatRef.current);
       }
+      if (autoCloseTimerRef.current) {
+        clearTimeout(autoCloseTimerRef.current);
+      }
     };
   }, []);
 
@@ -595,185 +649,209 @@ const Interview = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Video and Controls */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Video Feed */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                  {isVideoEnabled ? (
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-white">
-                      <div className="text-center">
-                        <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">Camera Off</p>
-                      </div>
+        {/* Side by Side Layout: User and AI */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          {/* User Video Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>You</span>
+                {isListening && (
+                  <Badge className="bg-red-500">
+                    <Mic className="w-3 h-3 mr-1" />
+                    Listening
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+                {isVideoEnabled ? (
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-white">
+                    <div className="text-center">
+                      <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg">Camera Off</p>
                     </div>
-                  )}
-                  
-                  {/* Status Indicators */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    {isListening && (
-                      <Badge className="bg-red-500">
-                        <Mic className="w-3 h-3 mr-1" />
-                        Listening
-                      </Badge>
-                    )}
-                    {isPlaying && (
-                      <Badge className="bg-blue-500">
-                        <Volume2 className="w-3 h-3 mr-1" />
-                        AI Speaking
-                      </Badge>
-                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Controls */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center gap-4">
-                  {!isInterviewActive ? (
-                    <Button 
-                      onClick={startInterview}
-                      size="lg"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Phone className="w-5 h-5 mr-2" />
-                      Start Interview
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        variant={isVideoEnabled ? "default" : "secondary"}
-                        size="lg"
-                        onClick={isVideoEnabled ? stopVideo : startVideo}
-                      >
-                        {isVideoEnabled ? (
-                          <Video className="w-5 h-5" />
-                        ) : (
-                          <VideoOff className="w-5 h-5" />
-                        )}
-                      </Button>
-                      
-                      <Button
-                        variant={isMuted ? "secondary" : "default"}
-                        size="lg"
-                        onClick={toggleMute}
-                      >
-                        {isMuted ? (
-                          <MicOff className="w-5 h-5" />
-                        ) : (
-                          <Mic className="w-5 h-5" />
-                        )}
-                      </Button>
-                      
-                      <Button
-                        onClick={endInterview}
-                        size="lg"
-                        variant="destructive"
-                      >
-                        <PhoneOff className="w-5 h-5 mr-2" />
-                        End Interview
-                      </Button>
-                      
-                      {/* Manual Speech Control for debugging */}
-                      <Button
-                        onClick={() => {
-                          console.log('🔧 Manual speech recognition start - Current state:', {
-                            isListening,
-                            isInterviewActive,
-                            isMuted,
-                            hasRecognition: !!recognitionRef.current
-                          });
-                          if (!isListening && !isMuted) {
-                            startSpeechRecognition();
-                          }
-                        }}
-                        variant="outline"
-                        size="sm"
-                      >
-                        {isListening ? '🎤 Listening' : '🔇 Start Mic'}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Transcript */}
-          <div className="space-y-4">
-            <Card className="h-[600px]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span>Live Transcript</span>
-                  {currentTranscript && (
-                    <Badge variant="outline" className="text-xs">
-                      Speaking...
-                    </Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-full px-6 pb-6">
-                  <div className="space-y-4">
-                    {/* Current interim transcript */}
-                    {currentTranscript && (
-                      <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">You (typing...)</Badge>
-                        </div>
-                        <p className="text-sm text-gray-600 italic">{currentTranscript}</p>
-                      </div>
-                    )}
-                    
-                    {/* Transcript messages */}
-                    {localTranscript.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`p-3 rounded-lg ${
-                          message.speaker === 'user'
-                            ? 'bg-blue-50 border-l-4 border-blue-400'
-                            : 'bg-green-50 border-l-4 border-green-400'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge 
-                            variant={message.speaker === 'user' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {message.speaker === 'user' ? 'You' : 'AI Interviewer'}
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            {message.timestamp.toLocaleTimeString()}
-                          </span>
-                        </div>
-                        <p className="text-sm leading-relaxed">{message.message}</p>
-                      </div>
-                    ))}
-                    
-                    {localTranscript.length === 0 && (
-                      <div className="text-center text-gray-500 py-8">
-                        <p>No conversation yet.</p>
-                        <p className="text-sm">Start the interview to begin.</p>
-                      </div>
-                    )}
+          {/* AI Avatar Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <span>AI Interviewer</span>
+                {isPlaying && (
+                  <Badge className="bg-blue-500">
+                    <Volume2 className="w-3 h-3 mr-1" />
+                    Speaking
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="relative aspect-video bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg overflow-hidden flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <span className="text-3xl">🤖</span>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+                  <p className="text-lg font-medium">AI Interviewer</p>
+                  <p className="text-sm opacity-80">
+                    {isPlaying ? 'Speaking...' : isInterviewActive ? 'Ready to listen' : 'Waiting to start'}
+                  </p>
+                </div>
+                
+                {/* AI Status Indicator */}
+                <div className="absolute bottom-4 right-4">
+                  <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Controls Section */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center gap-4">
+              {!isInterviewActive ? (
+                <Button 
+                  onClick={startInterview}
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Phone className="w-5 h-5 mr-2" />
+                  Start Interview
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant={isVideoEnabled ? "default" : "secondary"}
+                    size="lg"
+                    onClick={isVideoEnabled ? stopVideo : startVideo}
+                  >
+                    {isVideoEnabled ? (
+                      <Video className="w-5 h-5" />
+                    ) : (
+                      <VideoOff className="w-5 h-5" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant={isMuted ? "secondary" : "default"}
+                    size="lg"
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? (
+                      <MicOff className="w-5 h-5" />
+                    ) : (
+                      <Mic className="w-5 h-5" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={endInterview}
+                    size="lg"
+                    variant="destructive"
+                  >
+                    <PhoneOff className="w-5 h-5 mr-2" />
+                    End Interview
+                  </Button>
+                  
+                  {/* Manual Speech Control for debugging */}
+                  <Button
+                    onClick={() => {
+                      console.log('🔧 Manual speech recognition start - Current state:', {
+                        isListening,
+                        isInterviewActive,
+                        isMuted,
+                        hasRecognition: !!recognitionRef.current
+                      });
+                      if (!isListening && !isMuted) {
+                        startSpeechRecognition();
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isListening ? '🎤 Listening' : '🔇 Start Mic'}
+                  </Button>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Transcript Section - Full Width Below */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>Live Transcript</span>
+              {currentTranscript && (
+                <Badge variant="outline" className="text-xs">
+                  Speaking...
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[400px] px-6 pb-6">
+              <div className="space-y-4">
+                {/* Current interim transcript */}
+                {currentTranscript && (
+                  <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs">You (typing...)</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">{currentTranscript}</p>
+                  </div>
+                )}
+                
+                {/* Transcript messages */}
+                {localTranscript.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`p-3 rounded-lg ${
+                      message.speaker === 'user'
+                        ? 'bg-blue-50 border-l-4 border-blue-400'
+                        : 'bg-green-50 border-l-4 border-green-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge 
+                        variant={message.speaker === 'user' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {message.speaker === 'user' ? 'You' : 'AI Interviewer'}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {message.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed">{message.message}</p>
+                  </div>
+                ))}
+                
+                {localTranscript.length === 0 && (
+                  <div className="text-center text-gray-500 py-8">
+                    <p>No conversation yet.</p>
+                    <p className="text-sm">Start the interview to begin.</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
