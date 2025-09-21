@@ -129,6 +129,11 @@ const Interview = () => {
     // Event handlers
     recognitionRef.current.onstart = () => {
       console.log('🎤 Speech recognition STARTED');
+      console.log('🎤 Recognition state:', {
+        continuous: recognitionRef.current?.continuous,
+        interimResults: recognitionRef.current?.interimResults,
+        lang: recognitionRef.current?.lang
+      });
       setIsListening(true);
       lastSpeechTime.current = Date.now();
     };
@@ -150,6 +155,16 @@ const Interview = () => {
 
     recognitionRef.current.onresult = (event: any) => {
       console.log('🎤 Speech result received');
+      console.log('🎤 Event details:', {
+        resultsLength: event.results.length,
+        resultIndex: event.resultIndex,
+        results: Array.from(event.results).map((result: any, i: number) => ({
+          index: i,
+          transcript: result[0].transcript,
+          confidence: result[0].confidence,
+          isFinal: result.isFinal
+        }))
+      });
       
       // Skip if AI is currently speaking to prevent loops
       if (isAISpeaking.current) {
@@ -198,6 +213,17 @@ const Interview = () => {
 
     recognitionRef.current.onerror = (event: any) => {
       console.error('🎤 Speech recognition error:', event.error);
+      console.error('🎤 Error details:', {
+        error: event.error,
+        type: event.type,
+        timeStamp: event.timeStamp,
+        currentState: {
+          isListening,
+          isInterviewActive,
+          isMuted,
+          hasRecognition: !!recognitionRef.current
+        }
+      });
       
       // Handle different error types
       if (event.error === 'no-speech') {
