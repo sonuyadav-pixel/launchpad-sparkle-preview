@@ -51,6 +51,7 @@ const Interview = () => {
   const recognitionRef = useRef<any>(null);
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSpeechTime = useRef<number>(Date.now());
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -88,11 +89,14 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active
+      // Auto-restart if interview is active and not manually stopped
       if (isInterviewActive && !isMuted) {
+        console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          startSpeechRecognition();
-        }, 500);
+          if (isInterviewActive && !isMuted && !isListening) {
+            startSpeechRecognition();
+          }
+        }, 1000); // Increased delay to prevent rapid restarts
       }
     };
 
@@ -150,14 +154,25 @@ const Interview = () => {
     }
 
     try {
-      if (!isListening) {
+      if (!isListening && isInterviewActive && !isMuted) {
         console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
       }
     } catch (error) {
       console.error('❌ Failed to start speech recognition:', error);
+      // If failed, try to reinitialize and restart
+      setTimeout(() => {
+        if (isInterviewActive && !isMuted) {
+          console.log('🔄 Reinitializing speech recognition after error...');
+          recognitionRef.current = null;
+          initializeSpeechRecognition();
+          if (recognitionRef.current) {
+            recognitionRef.current.start();
+          }
+        }
+      }, 2000);
     }
-  }, [isListening, initializeSpeechRecognition]);
+  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
@@ -320,8 +335,9 @@ const Interview = () => {
       // Start speech recognition  
       await startSpeechRecognition();
       
-      // Setup silence detection
+      // Setup silence detection and heartbeat
       setupSilenceDetection();
+      setupSpeechHeartbeat();
       
       // Welcome message
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
@@ -361,6 +377,10 @@ const Interview = () => {
     
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
+    }
+    
+    if (heartbeatRef.current) {
+      clearTimeout(heartbeatRef.current);
     }
     
     toast({
@@ -403,6 +423,24 @@ const Interview = () => {
     silenceTimeoutRef.current = setTimeout(checkForSilence, 10000);
   };
 
+  // Speech Recognition Heartbeat to ensure it stays active
+  const setupSpeechHeartbeat = () => {
+    const heartbeat = () => {
+      if (!isInterviewActive) return;
+      
+      // Check if speech recognition is still active
+      if (!isListening && !isMuted && isInterviewActive) {
+        console.log('💓 Heartbeat: Speech recognition not active, restarting...');
+        startSpeechRecognition();
+      }
+      
+      // Schedule next heartbeat
+      heartbeatRef.current = setTimeout(heartbeat, 5000);
+    };
+    
+    heartbeatRef.current = setTimeout(heartbeat, 5000);
+  };
+
   // Toggle Functions
   const toggleMute = () => {
     setIsMuted(!isMuted);
@@ -430,6 +468,9 @@ const Interview = () => {
       stopSpeechRecognition();
       if (silenceTimeoutRef.current) {
         clearTimeout(silenceTimeoutRef.current);
+      }
+      if (heartbeatRef.current) {
+        clearTimeout(heartbeatRef.current);
       }
     };
   }, []);
