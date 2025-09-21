@@ -12,7 +12,8 @@ import {
   Download,
   Timer,
   Circle,
-  User
+  User,
+  ArrowLeft
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -543,6 +544,14 @@ const Interview = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background border-b">
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/dashboard')}
+            className="p-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <Logo size="sm" clickable={false} />
           <span className="font-semibold text-lg">
             {currentSession?.title || 'AI Interview'}
