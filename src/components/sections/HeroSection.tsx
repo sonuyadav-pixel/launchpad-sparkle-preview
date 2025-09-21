@@ -87,19 +87,19 @@ const HeroSection = () => {
           <div className="space-y-6">
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
-              AI Interview{" "}
+              AI-Powered{" "}
               <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                Intelligence
+                Interview Platform
               </span>
             </h1>
             
             <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white/90">
-              Master Every Interview
+              Smarter Hiring Decisions
             </div>
             
             <p className="text-xl md:text-2xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-              Real-time AI coaching that analyzes questions, provides personalized responses, 
-              and builds your confidence across 100+ industries and interview formats.
+              Conduct intelligent interviews with AI that analyzes candidate responses, 
+              generates insights, and helps you identify top talent faster across all roles.
             </p>
           </div>
           
