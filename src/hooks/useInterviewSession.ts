@@ -47,17 +47,27 @@ export const useInterviewSession = () => {
         throw new Error('Not authenticated');
       }
 
+      console.log('Creating session with data:', sessionData);
+      console.log('Auth token available:', !!authSession.access_token);
+
       const { data, error } = await supabase.functions.invoke('interview-session', {
-        body: {
-          action: 'create',
-          ...sessionData
-        },
+        body: sessionData,
         headers: {
-          Authorization: `Bearer ${authSession.access_token}`
+          Authorization: `Bearer ${authSession.access_token}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (error) throw error;
+      console.log('Function response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      if (!data || !data.session) {
+        throw new Error('Invalid response from server');
+      }
 
       const newSession = data.session;
       setCurrentSession(newSession);
@@ -73,7 +83,7 @@ export const useInterviewSession = () => {
       console.error('Error creating session:', error);
       toast({
         title: "Error",
-        description: "Failed to create interview session.",
+        description: `Failed to create interview session: ${error.message}`,
         variant: "destructive",
       });
       throw error;

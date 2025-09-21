@@ -6,6 +6,7 @@ import { Video, Users, Calendar, Clock, Play, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type InterviewSession } from "@/hooks/useInterviewSession";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const InterviewModule = () => {
   const navigate = useNavigate();
@@ -35,15 +36,33 @@ const InterviewModule = () => {
 
   const handleStartNewInterview = async () => {
     try {
+      console.log('Starting new interview...');
+      
+      // Test edge function connectivity first
+      try {
+        const testResponse = await supabase.functions.invoke('test-function');
+        console.log('Test function response:', testResponse);
+      } catch (testError) {
+        console.error('Test function failed:', testError);
+      }
+      
       const session = await createSession({
         title: `Interview Session - ${new Date().toLocaleDateString()}`,
         interview_type: 'general'
       });
       
+      console.log('Session created successfully:', session);
+      
       // Navigate to interview page with session ID
       navigate(`/interview?session=${session.id}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
+      
+      toast({
+        title: "Error",
+        description: `Failed to start interview: ${error.message}`,
+        variant: "destructive",
+      });
     }
   };
 

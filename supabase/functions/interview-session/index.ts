@@ -30,22 +30,37 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting interview-session function');
+    console.log('Method:', method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Service key available:', !!supabaseKey);
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get user from JWT
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header');
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, length:', token.length);
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    console.log('Auth result:', { user: user?.id, error: authError?.message });
 
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       throw new Error('Invalid authentication');
     }
 
@@ -55,13 +70,35 @@ serve(async (req) => {
 
     console.log(`Processing ${method} request with action: ${action}`);
 
-    switch (action) {
+    // For POST requests without action parameter, check the body
+    let bodyAction = null;
+    let body = null;
+    
+    if (method === 'POST') {
+      try {
+        body = await req.json();
+        bodyAction = body?.action;
+        console.log('Request body:', body);
+      } catch (e) {
+        console.error('Failed to parse request body:', e);
+      }
+    }
+
+    const finalAction = action || bodyAction || (method === 'POST' ? 'create' : 'get');
+    console.log('Final action determined:', finalAction);
+
+    switch (finalAction) {
       case 'create': {
+        console.log('Creating new session for user:', user.id);
+        
         if (method !== 'POST') {
-          throw new Error('Method not allowed');
+          throw new Error('Method not allowed for create action');
         }
 
-        const body = await req.json();
+        if (!body) {
+          console.log('No body provided, using defaults');
+          body = {};
+        }
         const sessionData: InterviewSession = {
           user_id: user.id,
           title: body.title || 'AI Interview Session',
@@ -250,13 +287,17 @@ serve(async (req) => {
       }
 
       default:
-        throw new Error('Invalid action');
+        console.error('Invalid action provided:', finalAction);
+        throw new Error(`Invalid action: ${finalAction}`);
     }
 
   } catch (error) {
     console.error('Error in interview-session function:', error);
+    console.error('Error stack:', error.stack);
+    
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error' 
+      error: error.message || 'Internal server error',
+      details: error.stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
