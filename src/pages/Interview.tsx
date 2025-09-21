@@ -348,19 +348,29 @@ const Interview = () => {
                     size="icon"
                     variant={isMuted ? "destructive" : "secondary"}
                     onClick={toggleMicrophone}
-                    className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    className={cn(
+                      "backdrop-blur-sm transition-all duration-200",
+                      isMuted 
+                        ? "bg-destructive/90 hover:bg-destructive text-destructive-foreground" 
+                        : "bg-background/80 hover:bg-background/90"
+                    )}
                     disabled={!hasVideoPermission}
                   >
                     {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                   </Button>
                   <Button
                     size="icon"
-                    variant={isCameraOn ? "secondary" : "destructive"}
+                    variant={!isCameraOn ? "destructive" : "secondary"}
                     onClick={toggleCamera}
-                    className="bg-background/80 backdrop-blur-sm hover:bg-background/90"
+                    className={cn(
+                      "backdrop-blur-sm transition-all duration-200",
+                      !isCameraOn 
+                        ? "bg-destructive/90 hover:bg-destructive text-destructive-foreground" 
+                        : "bg-background/80 hover:bg-background/90"
+                    )}
                     disabled={!hasVideoPermission}
                   >
-                    {isCameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                    {!isCameraOn ? <VideoOff className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                   </Button>
                 </div>
 
