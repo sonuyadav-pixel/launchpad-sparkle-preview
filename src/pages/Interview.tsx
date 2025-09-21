@@ -89,72 +89,19 @@ const Interview = () => {
         throw new Error('No video tracks available');
       }
       
-      if (audioTracks.length === 0) {
-        throw new Error('No audio tracks available');
-      }
+      console.log('Video track state:', videoTracks[0].readyState);
+      console.log('Video track enabled:', videoTracks[0].enabled);
       
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
       setRetryCount(0);
       
+      // Wait a bit before setting up video element to ensure it's ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Set up video element with robust handling
-      if (videoRef.current) {
-        console.log('Setting video source...');
-        
-        // Clear any existing source first
-        videoRef.current.srcObject = null;
-        
-        // Small delay to ensure clean state
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Set the new stream
-        videoRef.current.srcObject = stream;
-        
-        // Add comprehensive event listeners
-        videoRef.current.onloadedmetadata = async () => {
-          console.log('Video metadata loaded, dimensions:', 
-            videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
-          setIsVideoLoading(false);
-        };
-        
-        videoRef.current.oncanplay = async () => {
-          console.log('Video can play');
-          try {
-            if (videoRef.current && videoRef.current.paused) {
-              await videoRef.current.play();
-              console.log('Video started playing');
-              setIsVideoLoading(false);
-            }
-          } catch (err) {
-            console.error('Play on canplay failed:', err);
-          }
-        };
-        
-        videoRef.current.onplaying = () => {
-          console.log('Video is playing');
-          setIsVideoLoading(false);
-        };
-        
-        videoRef.current.onerror = (e) => {
-          console.error('Video element error:', e);
-          setIsVideoLoading(false);
-        };
-        
-        // Force play with timeout
-        setTimeout(async () => {
-          try {
-            if (videoRef.current && videoRef.current.paused) {
-              await videoRef.current.play();
-              console.log('Video force played');
-              setIsVideoLoading(false);
-            }
-          } catch (err) {
-            console.error('Force play failed:', err);
-            setIsVideoLoading(false);
-          }
-        }, 1000);
-      }
+      await setupVideoElement(stream);
       
       // Initialize speech recognition
       initializeSpeechRecognition();
@@ -174,6 +121,84 @@ const Interview = () => {
         setHasVideoPermission(false);
         setRetryCount(0);
       }
+    }
+  };
+
+  // Separate function to set up video element
+  const setupVideoElement = async (stream: MediaStream) => {
+    if (!videoRef.current) {
+      console.error('Video element not found');
+      setIsVideoLoading(false);
+      return;
+    }
+
+    console.log('Setting up video element...');
+    
+    try {
+      // Clear any existing source
+      videoRef.current.srcObject = null;
+      
+      // Wait a moment
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Set the stream
+      videoRef.current.srcObject = stream;
+      
+      // Wait for metadata to load
+      await new Promise((resolve, reject) => {
+        const video = videoRef.current!;
+        
+        const onLoadedMetadata = () => {
+          console.log('Video metadata loaded, dimensions:', video.videoWidth, 'x', video.videoHeight);
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          resolve(void 0);
+        };
+        
+        const onError = (e: any) => {
+          console.error('Video element error:', e);
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          reject(new Error('Video element failed to load'));
+        };
+        
+        video.addEventListener('loadedmetadata', onLoadedMetadata);
+        video.addEventListener('error', onError);
+        
+        // Timeout fallback
+        setTimeout(() => {
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          console.log('Video setup timeout, continuing anyway...');
+          resolve(void 0);
+        }, 5000);
+      });
+      
+      // Try to play the video
+      try {
+        await videoRef.current.play();
+        console.log('Video is now playing');
+        setIsVideoLoading(false);
+      } catch (playError) {
+        console.error('Video play error:', playError);
+        // Try again after a moment
+        setTimeout(async () => {
+          try {
+            if (videoRef.current) {
+              await videoRef.current.play();
+              console.log('Video play retry successful');
+              setIsVideoLoading(false);
+            }
+          } catch (retryError) {
+            console.error('Video play retry failed:', retryError);
+            setIsVideoLoading(false);
+          }
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('Failed to setup video element:', error);
+      setIsVideoLoading(false);
     }
   };
 
@@ -414,40 +439,49 @@ const Interview = () => {
                       muted
                       playsInline
                       controls={false}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className={cn(
+                        "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+                        isVideoLoading ? "opacity-0" : "opacity-100"
+                      )}
                       style={{ 
                         transform: 'scaleX(-1)', // Mirror the video like a selfie camera
                         borderRadius: '0.5rem'
                       }}
-                      onLoadStart={() => console.log('Video load started')}
+                      onLoadStart={() => {
+                        console.log('Video load started');
+                        setIsVideoLoading(true);
+                      }}
                       onLoadedData={() => {
                         console.log('Video data loaded');
-                        // Ensure video plays when data is loaded
-                        if (videoRef.current) {
-                          videoRef.current.play().catch(err => console.error('Play on data loaded failed:', err));
-                        }
+                        setIsVideoLoading(false);
                       }}
                       onLoadedMetadata={() => {
-                        console.log('Video metadata loaded');
-                        if (videoRef.current) {
-                          console.log('Video dimensions:', videoRef.current.videoWidth, 'x', videoRef.current.videoHeight);
-                        }
+                        console.log('Video metadata loaded, ready to play');
                         setIsVideoLoading(false);
+                        // Ensure video plays
+                        if (videoRef.current && videoRef.current.paused) {
+                          videoRef.current.play().catch(err => console.error('Play after metadata failed:', err));
+                        }
+                      }}
+                      onCanPlay={() => {
+                        console.log('Video can play now');
+                        setIsVideoLoading(false);
+                        // Auto-play when ready
+                        if (videoRef.current && videoRef.current.paused) {
+                          videoRef.current.play().catch(err => console.error('Auto-play failed:', err));
+                        }
                       }}
                       onPlay={() => {
                         console.log('Video is playing');
                         setIsVideoLoading(false);
                       }}
+                      onPlaying={() => {
+                        console.log('Video playing event');
+                        setIsVideoLoading(false);
+                      }}
                       onPause={() => console.log('Video paused')}
                       onError={(e) => {
                         console.error('Video error:', e);
-                        setIsVideoLoading(false);
-                      }}
-                      onCanPlay={() => {
-                        console.log('Video can play');
-                        if (videoRef.current && videoRef.current.paused) {
-                          videoRef.current.play().catch(err => console.error('Play on can play failed:', err));
-                        }
                         setIsVideoLoading(false);
                       }}
                     />
