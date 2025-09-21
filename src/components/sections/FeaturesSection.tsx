@@ -79,7 +79,7 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section className="relative py-20 bg-section-light overflow-hidden">
+    <section className="relative py-20 bg-gradient-to-br from-slate-100 via-slate-200/50 to-slate-300/30 overflow-hidden shadow-inner before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/5 before:to-transparent after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/10 after:to-transparent">
       {/* 3D Decorative Elements */}
       <Section3DDecor sectionType="features" />
       

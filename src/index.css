@@ -42,6 +42,7 @@ All colors MUST be HSL.
     
     /* Custom section backgrounds */
     --section-light: 210 40% 97%;
+    --section-grey-3d: 220 15% 93%;
     --section-dark: 0 0% 13%;
 
     --radius: 0.5rem;

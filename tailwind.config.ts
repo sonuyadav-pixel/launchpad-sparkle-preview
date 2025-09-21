@@ -53,6 +53,7 @@ export default {
         },
         section: {
           light: "hsl(var(--section-light))",
+          "grey-3d": "hsl(var(--section-grey-3d))",
           dark: "hsl(var(--section-dark))",
         },
         sidebar: {
