@@ -370,7 +370,19 @@ const Interview = () => {
           }, 1000);
         }
       } else {
-        console.error('❌ Video ref is null');
+        console.error('❌ Video ref is null - waiting for element to render...');
+        // Wait for video element to be available
+        setTimeout(() => {
+          if (videoRef.current && streamRef.current) {
+            console.log('📺 Retrying video setup after delay...');
+            videoRef.current.srcObject = streamRef.current;
+            videoRef.current.play().catch(error => {
+              console.error('❌ Delayed video play error:', error);
+            });
+          } else {
+            console.error('❌ Video ref or stream still null after delay');
+          }
+        }, 500);
       }
       
       setIsVideoEnabled(true);
