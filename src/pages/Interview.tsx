@@ -214,9 +214,9 @@ const Interview = () => {
     };
   }, []);
 
-  // Simple camera toggle that actually works
+  // Fixed camera toggle that refreshes video properly
   const toggleCamera = () => {
-    if (!streamRef.current) return;
+    if (!streamRef.current || !videoRef.current) return;
     
     const videoTrack = streamRef.current.getVideoTracks()[0];
     if (!videoTrack) return;
@@ -225,21 +225,38 @@ const Interview = () => {
     setIsCameraOn(newCameraState);
     
     if (newCameraState) {
-      // Turning camera ON
-      console.log('Turning camera ON');
+      // Turning camera ON - refresh video completely
+      console.log('Turning camera ON - refreshing video');
+      setIsVideoLoading(true);
+      
+      // Re-enable the track
       videoTrack.enabled = true;
       
-      // Ensure video plays
-      if (videoRef.current) {
-        setIsVideoLoading(true);
-        videoRef.current.play().then(() => {
-          console.log('Video playing after camera enabled');
-          setIsVideoLoading(false);
-        }).catch(err => {
-          console.error('Failed to play video after enabling camera:', err);
-          setIsVideoLoading(false);
-        });
-      }
+      // Refresh the video element
+      setTimeout(() => {
+        if (videoRef.current && streamRef.current) {
+          // Clear and reset the video source
+          videoRef.current.srcObject = null;
+          
+          setTimeout(() => {
+            if (videoRef.current && streamRef.current) {
+              videoRef.current.srcObject = streamRef.current;
+              
+              videoRef.current.onloadedmetadata = () => {
+                if (videoRef.current) {
+                  videoRef.current.play().then(() => {
+                    console.log('Video restarted successfully');
+                    setIsVideoLoading(false);
+                  }).catch(err => {
+                    console.error('Failed to play video:', err);
+                    setIsVideoLoading(false);
+                  });
+                }
+              };
+            }
+          }, 50);
+        }
+      }, 50);
     } else {
       // Turning camera OFF
       console.log('Turning camera OFF');
