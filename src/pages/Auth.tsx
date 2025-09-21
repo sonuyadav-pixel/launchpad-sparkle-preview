@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -98,7 +99,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
+      {/* Logo at the top */}
+      <div className="mb-8">
+        <Logo size="lg" />
+      </div>
+      
       <div className="w-full max-w-md space-y-4">
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">

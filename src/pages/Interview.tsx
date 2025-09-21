@@ -18,6 +18,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import PermissionRequest from "@/components/interview/PermissionRequest";
 import { useInterviewSession, type TranscriptMessage } from "@/hooks/useInterviewSession";
+import { Logo } from "@/components/ui/Logo";
 
 const Interview = () => {
   const navigate = useNavigate();
@@ -528,7 +529,7 @@ const Interview = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-background border-b">
         <div className="flex items-center gap-3">
-          <Circle className="h-6 w-6 text-primary" />
+          <Logo size="sm" clickable={false} />
           <span className="font-semibold text-lg">
             {currentSession?.title || 'AI Interview'}
           </span>

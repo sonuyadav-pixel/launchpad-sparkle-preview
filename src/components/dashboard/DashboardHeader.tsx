@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, LogOut, DollarSign, PanelLeftClose, PanelLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import companyLogo from "@/assets/interview4u-logo.png";
+import { Logo } from "@/components/ui/Logo";
 
 interface DashboardHeaderProps {
   onOpenPricing: () => void;
@@ -68,16 +68,7 @@ export const DashboardHeader = ({ onOpenPricing, onToggleSidebar, onCollapseSide
             Pricing
           </Button>
           
-          <button 
-            onClick={handleLogoClick}
-            className="flex items-center"
-          >
-            <img 
-              src={companyLogo} 
-              alt="Interview4U" 
-              className="h-8 w-auto hover:opacity-80 transition-opacity"
-            />
-          </button>
+          <Logo size="md" />
           
           <Button
             variant="outline"
