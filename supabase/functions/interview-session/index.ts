@@ -126,12 +126,13 @@ serve(async (req) => {
       }
 
       case 'update': {
-        if (method !== 'PUT') {
+        if (method !== 'PUT' && method !== 'POST') {
           throw new Error('Method not allowed');
         }
 
-        const body = await req.json();
-        const { session_id, ...updates } = body;
+        // For POST requests, we already have the body. For PUT requests, parse it.
+        const requestBody = method === 'POST' ? body : await req.json();
+        const { session_id, ...updates } = requestBody;
 
         if (!session_id) {
           throw new Error('Session ID is required');
