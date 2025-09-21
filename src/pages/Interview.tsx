@@ -107,7 +107,7 @@ const Interview = () => {
       <main className="pt-20 pb-4 px-4 h-screen flex flex-col">
         <div className="flex-1 grid grid-rows-2 gap-4 max-w-7xl mx-auto w-full">
           {/* Top Section - Video Panels */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Candidate Video Panel */}
             <Card className="relative overflow-hidden bg-muted">
               <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
