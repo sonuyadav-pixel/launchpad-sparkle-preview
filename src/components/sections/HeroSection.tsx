@@ -26,10 +26,6 @@ const HeroSection = () => {
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
           {/* Main Headline */}
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-              <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-              <span className="text-white/90 font-medium">Powered by Advanced AI</span>
-            </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight">
               AI-Powered{" "}
