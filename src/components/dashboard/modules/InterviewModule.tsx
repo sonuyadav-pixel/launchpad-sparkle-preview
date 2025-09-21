@@ -206,7 +206,7 @@ const InterviewModule = () => {
                 <Button 
                   onClick={handleStartNewInterview} 
                   size="lg"
-                  className="w-full"
+                  className="px-8"
                   disabled={loading}
                 >
                   <Video className="h-4 w-4 mr-2" />
