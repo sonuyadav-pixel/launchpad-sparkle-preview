@@ -15,6 +15,7 @@ const Auth = () => {
   const [sentToEmail, setSentToEmail] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -41,6 +42,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
       const redirectUrl = `${window.location.origin}/dashboard`;
@@ -55,24 +57,16 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("User already registered")) {
-          toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please sign in instead.",
-            variant: "destructive",
-          });
+          setError("An account with this email already exists. Please sign in instead.");
         } else {
-          throw error;
+          setError(error.message);
         }
       } else {
         setSentToEmail(email);
         setEmailSent(true);
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      setError(error.message || "An error occurred during signup");
     } finally {
       setLoading(false);
     }
@@ -81,6 +75,7 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -90,21 +85,13 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
-          toast({
-            title: "Invalid credentials",
-            description: "Please check your email and password and try again.",
-            variant: "destructive",
-          });
+          setError("Invalid email or password. Please check your credentials and try again.");
         } else {
-          throw error;
+          setError(error.message);
         }
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      setError(error.message || "An error occurred during sign in");
     } finally {
       setLoading(false);
     }
@@ -112,7 +99,19 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
-      <Card className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+        
+      <Card className="w-full">
         {emailSent ? (
           <>
             <CardHeader className="text-center">
@@ -139,16 +138,17 @@ const Auth = () => {
                 </p>
               </div>
               
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setEmailSent(false);
-                  setIsSignUp(false);
-                  setEmail("");
-                  setPassword("");
-                }}
-                className="w-full"
-              >
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEmailSent(false);
+                    setIsSignUp(false);
+                    setEmail("");
+                    setPassword("");
+                    setError("");
+                  }}
+                  className="w-full"
+                >
                 Back to Sign In
               </Button>
             </CardContent>
@@ -212,7 +212,10 @@ const Auth = () => {
                       Already have an account?{" "}
                       <button
                         type="button"
-                        onClick={() => setIsSignUp(false)}
+                        onClick={() => {
+                          setIsSignUp(false);
+                          setError("");
+                        }}
                         className="text-primary hover:underline font-medium"
                       >
                         Sign in here
@@ -223,7 +226,10 @@ const Auth = () => {
                       New user?{" "}
                       <button
                         type="button"
-                        onClick={() => setIsSignUp(true)}
+                        onClick={() => {
+                          setIsSignUp(true);
+                          setError("");
+                        }}
                         className="text-primary hover:underline font-medium"
                       >
                         Register now
@@ -236,6 +242,7 @@ const Auth = () => {
           </>
         )}
       </Card>
+      </div>
     </div>
   );
 };
