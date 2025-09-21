@@ -10,7 +10,7 @@ import {
   BookOpen, 
   Briefcase, 
   Sparkles,
-  X
+  ChevronLeft
 } from "lucide-react";
 import { DashboardModule } from "@/pages/Dashboard";
 
@@ -121,7 +121,7 @@ export const DashboardSidebar = ({
           <div className="flex items-center justify-between p-4 lg:hidden">
             <h3 className="text-lg font-semibold">Menu</h3>
             <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
+              <ChevronLeft className="h-5 w-5" />
             </Button>
           </div>
 
