@@ -18,11 +18,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import PermissionRequest from "@/components/interview/PermissionRequest";
 import { useInterviewSession, type TranscriptMessage } from "@/hooks/useInterviewSession";
-import { useToast } from "@/components/ui/use-toast";
 
 const Interview = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session');
   
@@ -30,6 +28,8 @@ const Interview = () => {
     currentSession,
     transcripts,
     loading: sessionLoading,
+    error: sessionError,
+    setError: setSessionError,
     createSession,
     joinSession,
     updateSession,
@@ -64,11 +64,7 @@ const Interview = () => {
           console.log('Joined existing session:', sessionId);
         } catch (error) {
           console.error('Failed to join session:', error);
-          toast({
-            title: "Error",
-            description: "Failed to join interview session. Starting new session.",
-            variant: "destructive",
-          });
+          setSessionError("Failed to join interview session. Starting new session.");
           // Create new session if joining fails
           await createSession({
             title: `Interview Session - ${new Date().toLocaleDateString()}`,
@@ -85,17 +81,13 @@ const Interview = () => {
           console.log('Created new session');
         } catch (error) {
           console.error('Failed to create session:', error);
-          toast({
-            title: "Error",
-            description: "Failed to create interview session.",
-            variant: "destructive",
-          });
+          setSessionError("Failed to create interview session.");
         }
       }
     };
 
     initializeSession();
-  }, [sessionId, joinSession, createSession, toast]);
+  }, [sessionId, joinSession, createSession, setSessionError]);
 
   // Convert server transcripts to local format and sync
   useEffect(() => {
@@ -555,6 +547,18 @@ const Interview = () => {
           End Interview
         </Button>
       </header>
+
+      {/* Error Display */}
+      {(sessionError || permissionError) && (
+        <div className="fixed top-16 left-0 right-0 z-40 mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-red-800">{sessionError || permissionError}</p>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="pt-20 pb-4 px-4 h-screen flex flex-col">

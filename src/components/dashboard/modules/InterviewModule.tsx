@@ -5,12 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Video, Users, Calendar, Clock, Play, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type InterviewSession } from "@/hooks/useInterviewSession";
-import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const InterviewModule = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const {
     sessions,
     loading,
@@ -20,6 +18,7 @@ const InterviewModule = () => {
   } = useInterviewSession();
 
   const [activeSession, setActiveSession] = useState<InterviewSession | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // Load user's sessions on component mount
@@ -36,6 +35,7 @@ const InterviewModule = () => {
 
   const handleStartNewInterview = async () => {
     try {
+      setError("");
       console.log('Starting new interview...');
       
       // Test edge function connectivity first
@@ -57,12 +57,7 @@ const InterviewModule = () => {
       navigate(`/interview?session=${session.id}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
-      
-      toast({
-        title: "Error",
-        description: `Failed to start interview: ${error.message}`,
-        variant: "destructive",
-      });
+      setError(`Failed to start interview: ${error.message}`);
     }
   };
 
@@ -109,6 +104,16 @@ const InterviewModule = () => {
 
   return (
     <Card className="h-full">
+      {error && (
+        <div className="mx-6 mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        </div>
+      )}
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

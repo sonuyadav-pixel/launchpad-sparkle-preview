@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 
 export interface InterviewSession {
   id: string;
@@ -30,7 +29,7 @@ export const useInterviewSession = () => {
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [transcripts, setTranscripts] = useState<TranscriptMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const [error, setError] = useState("");
 
   // Create new interview session
   const createSession = useCallback(async (sessionData: {
@@ -41,6 +40,7 @@ export const useInterviewSession = () => {
   }) => {
     try {
       setLoading(true);
+      setError("");
       
       const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
       console.log('Auth session check:', { 
@@ -80,25 +80,16 @@ export const useInterviewSession = () => {
       const newSession = data.session;
       setCurrentSession(newSession);
       setSessions(prev => [newSession, ...prev]);
-      
-      toast({
-        title: "Interview Session Created",
-        description: "Your interview session is ready to start.",
-      });
 
       return newSession;
     } catch (error) {
       console.error('Error creating session:', error);
-      toast({
-        title: "Error",
-        description: `Failed to create interview session: ${error.message}`,
-        variant: "destructive",
-      });
+      setError(`Failed to create interview session: ${error.message}`);
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   // Update session status
   const updateSession = useCallback(async (sessionId: string, updates: Partial<InterviewSession>) => {
@@ -128,14 +119,10 @@ export const useInterviewSession = () => {
       return updatedSession;
     } catch (error) {
       console.error('Error updating session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update interview session.",
-        variant: "destructive",
-      });
+      setError("Failed to update interview session.");
       throw error;
     }
-  }, [toast]);
+  }, []);
 
   // Get sessions for current user
   const getSessions = useCallback(async (status?: string) => {
@@ -166,16 +153,12 @@ export const useInterviewSession = () => {
       return data.sessions || [];
     } catch (error) {
       console.error('Error fetching sessions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load interview sessions.",
-        variant: "destructive",
-      });
+      setError("Failed to load interview sessions.");
       return [];
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   // Join existing session
   const joinSession = useCallback(async (sessionId: string) => {
@@ -210,16 +193,12 @@ export const useInterviewSession = () => {
       return session;
     } catch (error) {
       console.error('Error joining session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to join interview session.",
-        variant: "destructive",
-      });
+      setError("Failed to join interview session.");
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   // Add transcript message
   const addTranscriptMessage = useCallback(async (sessionId: string, speaker: 'user' | 'ai', message: string, metadata?: any) => {
@@ -330,6 +309,8 @@ export const useInterviewSession = () => {
     sessions,
     transcripts,
     loading,
+    error,
+    setError,
     createSession,
     updateSession,
     getSessions,
