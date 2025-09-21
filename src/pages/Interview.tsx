@@ -868,7 +868,9 @@ const Interview = () => {
               <TabsContent value="transcript" className="px-6 pb-6 h-64">
                 <ScrollArea className="h-full">
                   <div className="space-y-4 pr-4 pb-4">
-                    {localTranscript.map((message) => (
+                    {localTranscript
+                      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+                      .map((message) => (
                       <div
                         key={message.id}
                         className={cn(
