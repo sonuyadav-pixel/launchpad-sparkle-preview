@@ -392,36 +392,9 @@ const Interview = () => {
       videoTrack.enabled = false;
       setIsCameraOn(false);
     } else {
-      // Turn ON - reinitialize everything for reliability
-      console.log('Turning camera ON - reinitializing stream');
-      setIsVideoLoading(true);
-      
-      try {
-        // Stop current stream
-        streamRef.current.getTracks().forEach(track => track.stop());
-        
-        // Get fresh stream
-        const newStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            facingMode: 'user'
-          },
-          audio: true
-        });
-        
-        console.log('Fresh stream obtained for camera ON');
-        streamRef.current = newStream;
-        setIsCameraOn(true);
-        
-        // Setup video with new stream
-        await setupVideo(newStream);
-        
-      } catch (error) {
-        console.error('Failed to turn camera ON:', error);
-        setIsVideoLoading(false);
-        setPermissionError('Failed to restart camera');
-      }
+      // Turn ON - use the same reliable logic as debug function
+      console.log('Turning camera ON - using full reinitialize like debug');
+      await debugVideoLogic();
     }
   };
 
@@ -518,8 +491,8 @@ const Interview = () => {
     setShowPermissionRequest(false);
   };
 
-  // Debug function to manually test video
-  const debugVideo = async () => {
+  // Debug function to manually test video (extracted logic for reuse)
+  const debugVideoLogic = async () => {
     console.log('=== DEBUG VIDEO START ===');
     console.log('videoRef.current:', !!videoRef.current);
     console.log('streamRef.current:', !!streamRef.current);
@@ -548,6 +521,11 @@ const Interview = () => {
     } catch (e) {
       console.error('Debug reinitialize failed:', e);
     }
+  };
+
+  // Public debug function for the button
+  const debugVideo = async () => {
+    await debugVideoLogic();
   };
 
   if (showPermissionRequest) {
