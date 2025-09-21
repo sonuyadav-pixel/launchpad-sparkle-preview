@@ -25,7 +25,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import TranscriptPanel from '@/components/interview/TranscriptPanel';
-import SimpleVoiceModule from '@/components/interview/SimpleVoiceModule';
+import { AIInterviewer } from '@/components/interview/AIInterviewer';
 import InterviewProgress from '@/components/interview/InterviewProgress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -583,25 +583,28 @@ const Interview = () => {
             </Card>
           </div>
 
-          {/* Transcript and Voice-to-Text */}
+          {/* AI Interviewer */}
           <div className="space-y-6">
-            {/* Enhanced Transcript Panel */}
-            <TranscriptPanel
-              transcript={transcript}
-              currentTranscript={currentTranscript}
-              isListening={isListening}
-              isAISpeaking={isAISpeaking}
-            />
-
-            {/* Voice to Text Module */}
-            <SimpleVoiceModule
-              onTranscriptUpdate={handleVoiceToTextUpdate}
-              isActive={isInterviewActive && !isMuted}
+            {/* AI Interviewer Component with Text-to-Speech */}
+            <AIInterviewer 
+              sessionId={sessionId}
+              onTranscriptUpdate={(messages) => {
+                // Convert AI Interviewer messages to transcript format
+                const convertedTranscript = messages.map(msg => ({
+                  id: msg.id,
+                  speaker: msg.speaker,
+                  message: msg.message,
+                  timestamp: msg.timestamp,
+                  metadata: {}
+                }));
+                setTranscript(convertedTranscript);
+              }}
+              onInterviewComplete={endInterview}
             />
 
             {/* Interview Progress */}
             <InterviewProgress
-              currentPhase="introduction"
+              currentPhase="conversation"
               questionCount={transcript.filter(m => m.speaker === 'ai').length}
               duration={interviewDuration}
             />
