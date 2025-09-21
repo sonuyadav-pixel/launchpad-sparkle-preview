@@ -63,13 +63,25 @@ const Interview = () => {
       });
       
       console.log('Media access granted:', stream);
+      console.log('Video tracks:', stream.getVideoTracks());
+      console.log('Audio tracks:', stream.getAudioTracks());
+      
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
       
+      // Set up video element with proper handling
       if (videoRef.current) {
+        console.log('Setting video source...');
         videoRef.current.srcObject = stream;
-        console.log('Video element updated with stream');
+        
+        // Force video to play
+        try {
+          await videoRef.current.play();
+          console.log('Video is now playing');
+        } catch (playError) {
+          console.error('Video play error:', playError);
+        }
       }
       
       // Initialize speech recognition
@@ -277,14 +289,22 @@ const Interview = () => {
           <div className="grid grid-cols-2 gap-4">
             {/* Candidate Video Panel */}
             <Card className="relative overflow-hidden bg-muted">
-              <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+              <div className="aspect-video w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50 relative">
                 {hasVideoPermission && isCameraOn ? (
                   <video
                     ref={videoRef}
                     autoPlay
                     muted
                     playsInline
-                    className="w-full h-full object-cover rounded-lg"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ 
+                      transform: 'scaleX(-1)', // Mirror the video like a selfie camera
+                      borderRadius: '0.5rem'
+                    }}
+                    onLoadStart={() => console.log('Video load started')}
+                    onLoadedData={() => console.log('Video data loaded')}
+                    onPlay={() => console.log('Video is playing')}
+                    onError={(e) => console.error('Video error:', e)}
                   />
                 ) : permissionError ? (
                   <div className="text-center p-4">
