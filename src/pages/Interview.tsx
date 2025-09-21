@@ -10,7 +10,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
 import { sessionManager } from '@/utils/SessionManager';
-import FeedbackForm from '@/components/interview/FeedbackForm';
 import { 
   Video, 
   VideoOff, 
@@ -47,7 +46,6 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -771,24 +769,16 @@ const Interview = () => {
     // End session in manager
     sessionManager.endSession();
     
-    // Show feedback form instead of immediately navigating
-    setShowFeedback(true);
+    // Navigate directly to dashboard 
+    navigate('/dashboard');
     
     toast({
       title: "Interview Ended",
-      description: "Please share your feedback to help us improve!",
+      description: "Share your feedback in the dashboard to help us improve!",
     });
   };
-
-  const handleFeedbackSubmit = () => {
-    setShowFeedback(false);
-    navigate('/dashboard');
-  };
-
-  const handleSkipFeedback = () => {
-    setShowFeedback(false);
-    navigate('/dashboard');
-  };
+  
+  // Remove feedback handlers since we're not using popup anymore
 
   // Silence Detection for Fallback Logic
   const setupSilenceDetection = () => {
@@ -1146,16 +1136,6 @@ const Interview = () => {
           </CardContent>
         </Card>
 
-        {/* Feedback Form Overlay */}
-        {showFeedback && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <FeedbackForm
-              sessionId={sessionId || ''}
-              onClose={handleSkipFeedback}
-              onSubmit={handleFeedbackSubmit}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
