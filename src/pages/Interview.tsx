@@ -663,13 +663,13 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition immediately and aggressively
-      console.log('🎯 Force starting speech recognition...');
+      // Auto-start speech recognition when interview starts
+      console.log('🎯 Auto-starting speech recognition...');
       if (!recognitionRef.current) {
         initializeSpeechRecognition();
       }
       
-      // Ensure speech recognition is properly reset before starting
+      // Ensure speech recognition starts immediately
       const forceStart = async () => {
         // First, stop any existing recognition
         if (recognitionRef.current) {
@@ -686,16 +686,16 @@ const Interview = () => {
           initializeSpeechRecognition();
         }
         
-        // Try to start with proper error handling
+        // Start speech recognition automatically
         try {
-          if (recognitionRef.current && !isListening) {
-            console.log('🚀 Starting speech recognition');
+          if (recognitionRef.current && !isListening && !isMuted) {
+            console.log('🚀 Auto-starting speech recognition');
             recognitionRef.current.start();
             await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log('✅ Speech recognition started successfully');
+            console.log('✅ Speech recognition auto-started successfully');
           }
         } catch (error) {
-          console.log('❌ Speech recognition start failed:', error);
+          console.log('❌ Speech recognition auto-start failed:', error);
           // Continue anyway - the interview can still work without perfect speech recognition
         }
       };
@@ -722,7 +722,7 @@ const Interview = () => {
       
       toast({
         title: "Interview Started",
-        description: "You can now begin speaking",
+        description: "Microphone is active - you can begin speaking",
       });
       
     } catch (error) {
@@ -827,10 +827,10 @@ const Interview = () => {
         hasRecognition: !!recognitionRef.current 
       });
       
-      // Check if speech recognition is still active
+      // Keep microphone always active unless muted
       if (!isListening && !isMuted && isInterviewActive && !isAISpeaking.current) {
-        console.log('💓 Heartbeat: Speech recognition not active, restarting...');
-        // Force restart speech recognition
+        console.log('💓 Heartbeat: Microphone not active, force restarting...');
+        // Force restart speech recognition to keep it always on
         if (recognitionRef.current) {
           try {
             recognitionRef.current.stop();
@@ -839,8 +839,8 @@ const Interview = () => {
           }
         }
         setTimeout(() => {
-          if (!isListening && isInterviewActive && !isAISpeaking.current) {
-            console.log('💓 Heartbeat: Force restarting speech recognition');
+          if (!isListening && !isMuted && isInterviewActive && !isAISpeaking.current) {
+            console.log('💓 Heartbeat: Force restarting speech recognition to keep mic always on');
             startSpeechRecognition();
           }
         }, 500);
@@ -855,12 +855,21 @@ const Interview = () => {
 
   // Toggle Functions
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
     
-    if (!isMuted) {
+    if (newMutedState) {
+      // Muting - stop speech recognition
+      console.log('🔇 Muting microphone - stopping speech recognition');
       stopSpeechRecognition();
     } else if (isInterviewActive) {
-      startSpeechRecognition();
+      // Unmuting - restart speech recognition immediately
+      console.log('🎤 Unmuting microphone - restarting speech recognition');
+      setTimeout(() => {
+        if (isInterviewActive && !isListening && !isAISpeaking.current) {
+          startSpeechRecognition();
+        }
+      }, 500);
     }
   };
 
@@ -1051,24 +1060,6 @@ const Interview = () => {
                     End Interview
                   </Button>
                   
-                  {/* Manual Speech Control for debugging */}
-                  <Button
-                    onClick={() => {
-                      console.log('🔧 Manual speech recognition start - Current state:', {
-                        isListening,
-                        isInterviewActive,
-                        isMuted,
-                        hasRecognition: !!recognitionRef.current
-                      });
-                      if (!isListening && !isMuted) {
-                        startSpeechRecognition();
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    {isListening ? '🎤 Listening' : '🔇 Start Mic'}
-                  </Button>
                 </>
               )}
             </div>
