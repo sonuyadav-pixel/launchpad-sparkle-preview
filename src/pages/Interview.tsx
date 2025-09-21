@@ -250,6 +250,28 @@ const Interview = () => {
     }
   };
 
+  // Safe speech recognition initialization with proper cleanup
+  const safeSpeechRecognitionStart = () => {
+    if (recognitionRef.current) {
+      try {
+        // Ensure we're not already listening
+        if (isListening) {
+          console.log('Speech recognition already active, skipping start');
+          return;
+        }
+        
+        console.log('🚀 Starting speech recognition...');
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        // If it failed because it's already started, that's actually okay
+        if (error.message?.includes('already started')) {
+          console.log('Speech recognition was already started - continuing');
+        }
+      }
+    }
+  };
+
   // Initialize speech recognition
   const initializeSpeechRecognition = () => {
     console.log('=== INITIALIZING SPEECH RECOGNITION ===');
@@ -277,13 +299,16 @@ const Interview = () => {
         console.log('🎤 Speech recognition ENDED');
         setIsListening(false);
         
-        // Restart recognition if not muted and has permission
-        if (!isMuted && hasVideoPermission) {
+        // Restart recognition if not muted and has permission (with better state checking)
+        if (!isMuted && hasVideoPermission && recognitionRef.current) {
           console.log('🔄 Restarting speech recognition...');
           setTimeout(() => {
             if (recognitionRef.current) {
               try {
-                recognitionRef.current.start();
+                // Check if recognition is not already active
+                if (!isListening) {
+                  recognitionRef.current.start();
+                }
               } catch (error) {
                 console.error('Failed to restart recognition:', error);
               }
@@ -322,10 +347,12 @@ const Interview = () => {
       
       recognitionRef.current.onerror = (event: any) => {
         console.error('❌ Speech recognition ERROR:', event.error, event);
-        if (event.error !== 'aborted') {
-          // Only restart if it's not an intentional abort
+        setIsListening(false);
+        
+        if (event.error !== 'aborted' && event.error !== 'not-allowed') {
+          // Only restart for recoverable errors, with better state management
           setTimeout(() => {
-            if (recognitionRef.current && !isMuted && hasVideoPermission) {
+            if (recognitionRef.current && !isMuted && hasVideoPermission && !isListening) {
               try {
                 recognitionRef.current.start();
               } catch (error) {
@@ -336,13 +363,8 @@ const Interview = () => {
         }
       };
       
-      // Start recognition
-      try {
-        console.log('🚀 Starting speech recognition...');
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-      }
+      // Start recognition safely
+      safeSpeechRecognitionStart();
     } else {
       console.warn('❌ Speech recognition not supported in this browser');
     }
@@ -605,7 +627,85 @@ const Interview = () => {
     }
   };
 
-  // Public debug function for the button
+  
+  // Auto-monitoring system that checks and fixes video/speech every 5 seconds
+  useEffect(() => {
+    let monitoringInterval: NodeJS.Timeout;
+    
+    const checkAndFixSystems = async () => {
+      console.log('🔍 Auto-monitoring: Checking video and speech status...');
+      
+      // Check video status
+      if (hasVideoPermission) {
+        const videoElement = videoRef.current;
+        const stream = streamRef.current;
+        
+        // Check if video is not working properly
+        if (!videoElement || !stream || videoElement.srcObject !== stream || !isCameraOn) {
+          console.log('🔧 Auto-fix: Video needs restart');
+          try {
+            await debugVideoLogic();
+          } catch (error) {
+            console.error('Auto-fix video failed:', error);
+          }
+        }
+        
+        // Check if video tracks are disabled
+        if (stream) {
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack && !videoTrack.enabled) {
+            console.log('🔧 Auto-fix: Enabling video track');
+            videoTrack.enabled = true;
+            setIsCameraOn(true);
+          }
+        }
+      }
+      
+      // Check speech recognition status
+      if (hasVideoPermission && !isMuted) {
+        const recognition = recognitionRef.current;
+        
+        // Check if speech recognition is not working
+        if (!recognition || !isListening) {
+          console.log('🔧 Auto-fix: Speech recognition needs restart');
+          try {
+            if (recognition) {
+              recognition.abort(); // Stop any existing instance
+            }
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+            initializeSpeechRecognition();
+          } catch (error) {
+            console.error('Auto-fix speech failed:', error);
+          }
+        }
+      }
+    };
+    
+    // Start monitoring if user has permissions
+    if (hasVideoPermission) {
+      // Initial check
+      checkAndFixSystems();
+      
+      // Set up monitoring interval
+      monitoringInterval = setInterval(checkAndFixSystems, 5000);
+    }
+    
+    return () => {
+      if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+      }
+    };
+  }, [hasVideoPermission, isMuted, isListening, isCameraOn]);
+
+  // Auto-start systems when permissions are granted
+  useEffect(() => {
+    if (hasVideoPermission && !streamRef.current) {
+      console.log('🚀 Auto-starting video and speech...');
+      initializeMedia();
+    }
+  }, [hasVideoPermission]);
+
+  // Public debug function for the button (keeping for fallback)
   const debugVideo = async () => {
     await debugVideoLogic();
   };
@@ -778,29 +878,23 @@ const Interview = () => {
                       {hasVideoPermission ? "Connected" : "No Access"}
                     </span>
                    </div>
-                   
-                    {/* Debug Button - Temporary */}
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={debugVideo}
-                       className="bg-background/80 backdrop-blur-sm text-xs"
-                     >
-                       Turn video on
-                     </Button>
-
-                    {/* Speech Test Button */}
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => {
-                         console.log('Testing speech - adding test message');
-                         addLocalTranscriptMessage('user', 'Test message from speech button');
-                       }}
-                       className="bg-background/80 backdrop-blur-sm text-xs"
-                     >
-                       Test Speech
-                     </Button>
+                    
+                     {/* Auto-monitoring Status */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          isCameraOn ? "bg-green-500" : "bg-red-500"
+                        )}></div>
+                        Video: {isCameraOn ? "Active" : "Starting..."}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          isListening ? "bg-green-500" : "bg-red-500"
+                        )}></div>
+                        Speech: {isListening ? "Active" : "Starting..."}
+                      </div>
                   
                   {/* Audio Status */}
                   {hasVideoPermission && (
