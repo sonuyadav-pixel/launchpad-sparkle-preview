@@ -322,7 +322,9 @@ const Interview = () => {
                   </div>
                 ) : !isCameraOn ? (
                   <div className="text-center">
-                    <VideoOff className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4 border-4 border-primary/30">
+                      <span className="text-4xl font-bold text-primary">You</span>
+                    </div>
                     <p className="text-muted-foreground">Camera is off</p>
                   </div>
                 ) : (
