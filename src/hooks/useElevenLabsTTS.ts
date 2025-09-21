@@ -50,45 +50,31 @@ export const useElevenLabsTTS = () => {
         setLoading(false);
         setIsPlaying(true);
 
-        // Create a promise that resolves when audio finishes playing
-        return new Promise<void>((resolve, reject) => {
-          // Set up audio event handlers
-          audio.onloadeddata = () => {
-            console.log('🔊 Audio data loaded successfully');
-          };
+        // Set up audio event handlers
+        audio.onloadeddata = () => {
+          console.log('🔊 Audio data loaded successfully');
+        };
 
-          audio.oncanplay = () => {
-            console.log('🔊 Audio ready to play');
-          };
+        audio.oncanplay = () => {
+          console.log('🔊 Audio ready to play');
+        };
 
-          audio.onended = () => {
-            console.log('🔊 ElevenLabs audio playback finished - resolving promise');
-            setIsPlaying(false);
-            URL.revokeObjectURL(audioUrl);
-            resolve(); // Resolve the promise when audio finishes
-          };
+        audio.onended = () => {
+          console.log('🔊 ElevenLabs audio playback finished');
+          setIsPlaying(false);
+          URL.revokeObjectURL(audioUrl);
+        };
 
-          audio.onerror = (error) => {
-            console.error('🔊 Audio playback error:', error);
-            setIsPlaying(false);
-            setLoading(false);
-            URL.revokeObjectURL(audioUrl);
-            reject(error); // Reject the promise on error
-          };
+        audio.onerror = (error) => {
+          console.error('🔊 Audio playback error:', error);
+          setIsPlaying(false);
+          setLoading(false);
+          URL.revokeObjectURL(audioUrl);
+        };
 
-          // Play the audio
-          audio.play()
-            .then(() => {
-              console.log('🔊 Playing ElevenLabs audio - waiting for completion');
-            })
-            .catch((playError) => {
-              console.error('🔊 Audio play error:', playError);
-              setIsPlaying(false);
-              setLoading(false);
-              URL.revokeObjectURL(audioUrl);
-              reject(playError);
-            });
-        });
+        // Play the audio
+        await audio.play();
+        console.log('🔊 Playing ElevenLabs audio');
 
       } catch (audioError) {
         console.error('🔊 Audio processing error:', audioError);
