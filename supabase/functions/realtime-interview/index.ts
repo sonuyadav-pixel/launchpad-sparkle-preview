@@ -22,6 +22,9 @@ interface SessionData {
   conversationContext: Array<{role: string, content: string}>;
   lastProcessed: number;
   isProcessing: boolean;
+  interviewPhase: 'introduction' | 'background' | 'technical' | 'behavioral' | 'closing';
+  questionCount: number;
+  startTime: number;
 }
 
 // Store active sessions
@@ -59,21 +62,44 @@ serve(async (req) => {
     ws: socket,
     conversationContext: [{
       role: 'system',
-      content: 'You are a professional AI interviewer. Ask relevant follow-up questions, provide constructive feedback, and maintain a professional but friendly tone. Keep responses concise and conversational.'
+      content: `You are a professional AI interviewer conducting a structured interview. Your goal is to:
+
+1. Ask thoughtful, relevant questions based on the candidate's responses
+2. Progress through different interview phases naturally
+3. Provide encouraging feedback and follow-up questions
+4. Keep responses conversational and concise (2-3 sentences max)
+5. Adapt questions based on the candidate's background and experience
+
+Interview Structure:
+- Introduction: Welcome and basic background questions
+- Experience: Previous work, achievements, and relevant experience
+- Technical: Role-specific skills and problem-solving scenarios
+- Behavioral: Teamwork, challenges, and soft skills
+- Closing: Questions for the company and next steps
+
+Always be professional, encouraging, and genuinely interested in the candidate's responses.`
     }],
     lastProcessed: 0,
-    isProcessing: false
+    isProcessing: false,
+    interviewPhase: 'introduction',
+    questionCount: 0,
+    startTime: Date.now()
   };
 
   activeSessions.set(sessionId, sessionData);
 
-  socket.onopen = () => {
+  socket.onopen = async () => {
     console.log(`✅ WebSocket opened for session: ${sessionId}`);
     socket.send(JSON.stringify({
       type: 'connection-established',
       sessionId,
       message: 'Real-time interview session ready'
     }));
+
+    // Start the interview with a welcome message
+    setTimeout(async () => {
+      await startInterview(sessionData);
+    }, 1000);
   };
 
   socket.onmessage = async (event) => {
@@ -251,8 +277,8 @@ async function processTranscriptForAI(sessionData: SessionData, text: string) {
       content: text
     });
 
-    // Generate AI response
-    const aiResponse = await generateAIResponse(sessionData.conversationContext);
+    // Generate contextual AI response based on interview phase
+    const aiResponse = await generateInterviewResponse(sessionData, text);
     
     if (aiResponse) {
       // Add AI response to context
@@ -260,6 +286,10 @@ async function processTranscriptForAI(sessionData: SessionData, text: string) {
         role: 'assistant',
         content: aiResponse
       });
+
+      // Update interview progress
+      sessionData.questionCount++;
+      updateInterviewPhase(sessionData);
 
       // Send bot text
       sessionData.ws?.send(JSON.stringify({
@@ -283,13 +313,52 @@ async function processTranscriptForAI(sessionData: SessionData, text: string) {
     sessionData.isProcessing = false;
   }
 }
+}
 
-async function generateAIResponse(context: Array<{role: string, content: string}>): Promise<string | null> {
+async function startInterview(sessionData: SessionData) {
+  try {
+    const welcomeMessage = "Hello! Welcome to your AI interview session. I'm excited to get to know you better. Let's start with the basics - could you please introduce yourself and tell me a bit about your background?";
+    
+    // Add to conversation context
+    sessionData.conversationContext.push({
+      role: 'assistant',
+      content: welcomeMessage
+    });
+
+    // Send welcome message
+    sessionData.ws?.send(JSON.stringify({
+      type: 'bot-text-final',
+      text: welcomeMessage
+    }));
+
+    // Save to database
+    await saveTranscriptMessage(sessionData.sessionId, 'ai', welcomeMessage);
+
+    // Generate TTS
+    await generateAndStreamTTS(sessionData, welcomeMessage);
+  } catch (error) {
+    console.error('❌ Error starting interview:', error);
+  }
+}
+
+async function generateInterviewResponse(sessionData: SessionData, userText: string): Promise<string | null> {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
+
+    // Get phase-specific context
+    const phasePrompt = getPhasePrompt(sessionData);
+    
+    // Add phase context to conversation
+    const contextWithPhase = [
+      ...sessionData.conversationContext,
+      {
+        role: 'system',
+        content: phasePrompt
+      }
+    ];
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -299,9 +368,9 @@ async function generateAIResponse(context: Array<{role: string, content: string}
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: context.slice(-10), // Keep last 10 messages for context
-        max_tokens: 150,
-        temperature: 0.7,
+        messages: contextWithPhase.slice(-12), // Keep last 12 messages for context
+        max_tokens: 120,
+        temperature: 0.8,
         stream: false
       }),
     });
@@ -314,12 +383,54 @@ async function generateAIResponse(context: Array<{role: string, content: string}
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
-    console.log(`🤖 Generated response: "${aiResponse}"`);
+    console.log(`🤖 Generated response (${sessionData.interviewPhase}): "${aiResponse}"`);
     return aiResponse;
   } catch (error) {
     console.error('❌ AI response generation error:', error);
     return null;
   }
+}
+
+function getPhasePrompt(sessionData: SessionData): string {
+  const { interviewPhase, questionCount } = sessionData;
+  
+  switch (interviewPhase) {
+    case 'introduction':
+      return "You're in the introduction phase. Ask about their background, education, current role, or what brings them to this interview. Keep it warm and welcoming.";
+    
+    case 'background':
+      return "You're exploring their professional background. Ask about their work experience, key achievements, projects they're proud of, or career progression.";
+    
+    case 'technical':
+      return "Now focus on technical or role-specific questions. Ask about their skills, problem-solving approaches, tools they use, or specific challenges they've faced in their field.";
+    
+    case 'behavioral':
+      return "This is the behavioral portion. Ask about teamwork, leadership, handling challenges, conflicts, learning from failures, or working under pressure.";
+    
+    case 'closing':
+      return "You're wrapping up the interview. Ask if they have questions about the role/company, what excites them about this opportunity, or provide positive closing remarks.";
+    
+    default:
+      return "Continue the conversation naturally based on their responses.";
+  }
+}
+
+function updateInterviewPhase(sessionData: SessionData) {
+  const { questionCount } = sessionData;
+  
+  if (questionCount <= 2) {
+    sessionData.interviewPhase = 'introduction';
+  } else if (questionCount <= 5) {
+    sessionData.interviewPhase = 'background';
+  } else if (questionCount <= 8) {
+    sessionData.interviewPhase = 'technical';
+  } else if (questionCount <= 11) {
+    sessionData.interviewPhase = 'behavioral';
+  } else {
+    sessionData.interviewPhase = 'closing';
+  }
+  
+  console.log(`📊 Interview phase: ${sessionData.interviewPhase} (Question ${questionCount})`);
 }
 
 async function generateAndStreamTTS(sessionData: SessionData, text: string) {
