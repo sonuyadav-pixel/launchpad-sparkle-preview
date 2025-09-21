@@ -8,7 +8,6 @@ import { useInterviewSession, type InterviewSession } from "@/hooks/useInterview
 import { supabase } from "@/integrations/supabase/client";
 import { OngoingInterviewSection } from "./OngoingInterviewSection";
 import ProductValueProposition from "./ProductValueProposition";
-import InterviewFeedbackModule from "./InterviewFeedbackModule";
 
 const InterviewModule = () => {
   const navigate = useNavigate();
@@ -252,9 +251,6 @@ const InterviewModule = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Interview Feedback Module */}
-      <InterviewFeedbackModule />
 
       {/* Product Value Proposition */}
       <ProductValueProposition />

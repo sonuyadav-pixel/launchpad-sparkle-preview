@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
@@ -18,9 +18,16 @@ import {
   Phone, 
   PhoneOff,
   Volume2,
+  VolumeX,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  Send,
+  Star
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface TranscriptMessage {
   id: string;
@@ -46,6 +53,13 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({
+    rating: 0,
+    experience: '',
+    improvements: [],
+    comments: ''
+  });
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -425,7 +439,7 @@ const Interview = () => {
           context: context,
           userId: sessionId // Use session ID as user identifier for rate limiting
         }
-      });
+        });
 
       if (error) {
         console.error('🤖 ElevenLabs API error:', error);
@@ -787,11 +801,14 @@ const Interview = () => {
       }
     }
     
+    // Show feedback modal after ending
+    setShowFeedbackModal(true);
+    
     // End session in manager
     sessionManager.endSession();
     
     // Navigate directly to dashboard 
-    navigate('/dashboard');
+      navigate('/dashboard');
     
     toast({
       title: "Interview Ended",
@@ -927,6 +944,34 @@ const Interview = () => {
       }
     };
   }, []);
+
+  // Feedback functions
+  const handleFeedbackSubmit = async () => {
+    try {
+      console.log('Submitting feedback:', feedbackData);
+      
+      // Here you could save feedback to database
+      toast({
+        title: "Thank you!",
+        description: "Your feedback has been submitted successfully.",
+      });
+      
+      setShowFeedbackModal(false);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSkipFeedback = () => {
+    setShowFeedbackModal(false);
+    navigate('/dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
@@ -1149,6 +1194,81 @@ const Interview = () => {
         </Card>
 
       </div>
+
+      {/* Feedback Modal */}
+      <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>How was your interview experience?</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Rating */}
+            <div>
+              <Label className="text-base font-medium">Overall Rating</Label>
+              <div className="flex gap-1 mt-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setFeedbackData(prev => ({ ...prev, rating: star }))}
+                    className="p-1"
+                  >
+                    <Star
+                      className={`w-8 h-8 ${
+                        star <= feedbackData.rating
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Experience Type */}
+            <div>
+              <Label className="text-base font-medium">Experience Type</Label>
+              <Select 
+                value={feedbackData.experience} 
+                onValueChange={(value) => setFeedbackData(prev => ({ ...prev, experience: value }))}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select experience type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="smooth">Smooth & Natural</SelectItem>
+                  <SelectItem value="challenging">Challenging but Fair</SelectItem>
+                  <SelectItem value="technical-issues">Had Technical Issues</SelectItem>
+                  <SelectItem value="too-easy">Too Easy</SelectItem>
+                  <SelectItem value="too-difficult">Too Difficult</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Comments */}
+            <div>
+              <Label className="text-base font-medium">Additional Comments</Label>
+              <Textarea
+                placeholder="Share your thoughts about the interview experience..."
+                value={feedbackData.comments}
+                onChange={(e) => setFeedbackData(prev => ({ ...prev, comments: e.target.value }))}
+                className="mt-2 min-h-[100px]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleSkipFeedback} variant="outline" className="flex-1">
+                Skip
+              </Button>
+              <Button onClick={handleFeedbackSubmit} className="flex-1">
+                <Send className="w-4 h-4 mr-2" />
+                Submit Feedback
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
