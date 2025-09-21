@@ -42,9 +42,17 @@ export const useInterviewSession = () => {
     try {
       setLoading(true);
       
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.access_token) {
-        throw new Error('Not authenticated');
+      const { data: { session: authSession }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Auth session check:', { 
+        hasSession: !!authSession, 
+        hasAccessToken: !!authSession?.access_token,
+        hasUser: !!authSession?.user,
+        error: sessionError 
+      });
+      
+      if (!authSession?.access_token || !authSession?.user) {
+        console.error('Authentication failed:', { authSession, sessionError });
+        throw new Error('Not authenticated - please log in first');
       }
 
       console.log('Creating session with data:', sessionData);
