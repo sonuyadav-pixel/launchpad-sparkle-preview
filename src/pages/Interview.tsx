@@ -51,62 +51,45 @@ const Interview = () => {
 
   const transcriptRef = useRef<HTMLDivElement>(null);
 
-  // Initialize camera and microphone - simplified and fast
-  const initializeMedia = async (attempt = 1) => {
-    const maxRetries = 3;
-    setIsVideoLoading(true);
-    
+  // Simple and reliable media initialization
+  const initializeMedia = async () => {
     try {
-      console.log(`Getting media stream (attempt ${attempt})`);
+      console.log('Starting media initialization...');
       
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        },
+        video: true,
         audio: true
       });
       
-      console.log('Stream obtained:', stream.active);
+      console.log('Media stream obtained, setting up video...');
       
-      // Immediately set stream and update states
       streamRef.current = stream;
       setHasVideoPermission(true);
       setPermissionError(null);
-      setRetryCount(0);
       
-      // Set video source immediately
+      // Direct video setup
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        
-        // Force immediate play
-        videoRef.current.play().then(() => {
-          console.log('Video playing immediately');
-          setIsVideoLoading(false);
-        }).catch(err => {
-          console.log('Immediate play failed, will auto-play:', err);
-          setIsVideoLoading(false);
-        });
-      } else {
-        setIsVideoLoading(false);
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded, playing...');
+          videoRef.current?.play().then(() => {
+            console.log('Video is now playing!');
+            setIsVideoLoading(false);
+          }).catch(err => {
+            console.error('Play failed:', err);
+            setIsVideoLoading(false);
+          });
+        };
       }
       
       // Initialize speech recognition
       initializeSpeechRecognition();
       
     } catch (error) {
-      console.error(`Media access failed (attempt ${attempt}):`, error);
+      console.error('Media initialization failed:', error);
+      setPermissionError(`Camera access failed: ${error.message}`);
+      setHasVideoPermission(false);
       setIsVideoLoading(false);
-      
-      if (attempt < maxRetries) {
-        setRetryCount(attempt);
-        setTimeout(() => initializeMedia(attempt + 1), 1000);
-      } else {
-        setPermissionError(`Camera access failed: ${error.message}`);
-        setHasVideoPermission(false);
-        setRetryCount(0);
-      }
     }
   };
 
@@ -231,32 +214,14 @@ const Interview = () => {
     };
   }, []);
 
-  // Handle camera toggle - fixed and simplified
+  // Simple camera toggle
   const toggleCamera = () => {
-    if (streamRef.current && videoRef.current) {
+    if (streamRef.current) {
       const videoTrack = streamRef.current.getVideoTracks()[0];
       if (videoTrack) {
-        const willBeEnabled = !videoTrack.enabled;
-        videoTrack.enabled = willBeEnabled;
-        setIsCameraOn(willBeEnabled);
-        
-        if (willBeEnabled) {
-          console.log('Camera enabled, restarting video...');
-          setIsVideoLoading(true);
-          
-          // Simple restart without async complications
-          setTimeout(() => {
-            if (videoRef.current) {
-              videoRef.current.play().then(() => {
-                console.log('Video restarted');
-                setIsVideoLoading(false);
-              }).catch((error) => {
-                console.error('Video restart failed:', error);
-                setIsVideoLoading(false);
-              });
-            }
-          }, 100);
-        }
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsCameraOn(videoTrack.enabled);
+        console.log('Camera toggled:', videoTrack.enabled);
       }
     }
   };
@@ -373,7 +338,7 @@ const Interview = () => {
                 {hasVideoPermission && isCameraOn ? (
                   <>
                     {isVideoLoading && (
-                      <div className="absolute inset-0 bg-muted/80 flex items-center justify-center z-10">
+                      <div className="absolute inset-0 bg-muted/50 flex items-center justify-center z-10">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       </div>
                     )}
@@ -386,18 +351,6 @@ const Interview = () => {
                       style={{ 
                         transform: 'scaleX(-1)',
                         borderRadius: '0.5rem'
-                      }}
-                      onLoadedMetadata={() => {
-                        console.log('Video ready');
-                        setIsVideoLoading(false);
-                      }}
-                      onPlay={() => {
-                        console.log('Video playing');
-                        setIsVideoLoading(false);
-                      }}
-                      onError={(e) => {
-                        console.error('Video error:', e);
-                        setIsVideoLoading(false);
                       }}
                     />
                   </>
