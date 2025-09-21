@@ -6,12 +6,13 @@ import AutoScrollingBackground from "@/components/backgrounds/AutoScrollingBackg
 
 const HeroSection = () => {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
-  const [currentDescIndex, setCurrentDescIndex] = useState(0);
+  const [hoverDescIndex, setHoverDescIndex] = useState(0);
 
   const features = [
     { 
       icon: "🤖", 
       title: "AI-Driven", 
+      defaultDesc: "Smart adaptive questions",
       descriptions: [
         "Smart adaptive questions",
         "Personalized interview flow",
@@ -22,6 +23,7 @@ const HeroSection = () => {
     { 
       icon: "📊", 
       title: "Data Insights", 
+      defaultDesc: "Actionable feedback reports",
       descriptions: [
         "Actionable feedback reports",
         "Comprehensive skill assessment",
@@ -32,6 +34,7 @@ const HeroSection = () => {
     { 
       icon: "⚡", 
       title: "Fast Process", 
+      defaultDesc: "Minutes, not hours",
       descriptions: [
         "Minutes, not hours",
         "Instant result generation",
@@ -42,12 +45,24 @@ const HeroSection = () => {
   ];
 
   useEffect(() => {
+    if (hoveredFeature === null) return;
+
     const interval = setInterval(() => {
-      setCurrentDescIndex((prev) => (prev + 1) % 4);
+      setHoverDescIndex((prev) => (prev + 1) % 4);
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hoveredFeature]);
+
+  const handleMouseEnter = (index: number) => {
+    setHoveredFeature(index);
+    setHoverDescIndex(0);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredFeature(null);
+    setHoverDescIndex(0);
+  };
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gradient-start to-gradient-end flex items-center justify-center px-4 py-20">
       {/* Auto-scrolling AI Interview Background */}
@@ -125,8 +140,8 @@ const HeroSection = () => {
                 key={index}
                 className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-black/90 transition-all duration-500 animate-fade-in cursor-pointer group"
                 style={{ animationDelay: `${index * 0.2}s` }}
-                onMouseEnter={() => setHoveredFeature(index)}
-                onMouseLeave={() => setHoveredFeature(null)}
+                onMouseEnter={() => handleMouseEnter(index)}
+                onMouseLeave={handleMouseLeave}
               >
                 <div className={`text-3xl mb-3 transition-all duration-300 ${hoveredFeature === index ? 'scale-125' : 'scale-100'}`}>
                   {feature.icon}
@@ -135,7 +150,7 @@ const HeroSection = () => {
                   {feature.title}
                 </h3>
                 <p className="text-white/80 group-hover:text-white/90 text-sm transition-all duration-300">
-                  {feature.descriptions[currentDescIndex]}
+                  {hoveredFeature === index ? feature.descriptions[hoverDescIndex] : feature.defaultDesc}
                 </p>
               </div>
             ))}
