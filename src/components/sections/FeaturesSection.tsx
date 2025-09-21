@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Brain, Target, BarChart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// Temporarily disabled: import Section3DBackground from "@/components/3d/Section3DBackground";
+import Section3DDecor from "@/components/3d/Section3DDecor";
 import { AnimatedHeading, RotatingText, MultiLineAnimatedText } from "@/components/animations/TextAnimations";
 import featureAiQuestions from "@/assets/feature-ai-questions.jpg";
 import featureScoring from "@/assets/feature-scoring.jpg";
@@ -80,8 +80,8 @@ const FeaturesSection = () => {
 
   return (
     <section className="relative py-20 bg-section-light overflow-hidden">
-      {/* Temporarily disabled 3D Background */}
-      {/* <Section3DBackground type="features" /> */}
+      {/* 3D Decorative Elements */}
+      <Section3DDecor sectionType="features" />
       
       {/* Content Overlay */}
       <div className="relative z-10 container mx-auto px-4">

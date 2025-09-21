@@ -3,7 +3,12 @@ import { AnimatedHeading, MultiLineAnimatedText } from "@/components/animations/
 import interview4uLogo from "@/assets/interview4u-logo.png";
 
 const Footer = () => {
-  const companyLinks = ["About", "Contact", "Privacy Policy", "Terms of Service"];
+  const companyLinks = [
+    { name: "About", href: "#about" },
+    { name: "Contact", href: "#contact" },
+    { name: "Privacy Policy", href: "#privacy" },
+    { name: "Terms of Service", href: "#terms" }
+  ];
 
   return (
     <footer className="relative bg-section-dark text-white py-16 overflow-hidden">
@@ -21,42 +26,48 @@ const Footer = () => {
             <img
               src={interview4uLogo}
               alt="Interview4You Logo"
-              className="h-12 w-auto hover:scale-105 transition-transform duration-300 drop-shadow-2xl"
+              className="h-12 w-auto hover:scale-105 transition-transform duration-300 drop-shadow-2xl cursor-pointer"
             />
-            <p className="text-white/80 max-w-md">
+            <p className="text-white/80 max-w-md hover-text-brand">
               AI-powered interview platform revolutionizing the hiring process for modern companies.
             </p>
           </div>
           
-          {/* Quick Links */}
+          {/* Company Links */}
           <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <AnimatedHeading delay={200}>
-              <h4 className="font-semibold text-lg">Company</h4>
+              <h4 className="font-semibold text-lg hover-text-brand">Company</h4>
             </AnimatedHeading>
-            <MultiLineAnimatedText 
-              lines={companyLinks.map(link => (
-                `<a href="#" class="text-white/80 hover:text-white transition-colors duration-300 hover:translate-x-1 inline-block transform hover:drop-shadow-lg">${link}</a>`
+            <ul className="space-y-3">
+              {companyLinks.map((link, index) => (
+                <li key={link.name}>
+                  <a 
+                    href={link.href}
+                    className="company-link text-white/80 hover:text-primary transition-all duration-300 hover:translate-x-2 inline-block transform hover:drop-shadow-lg"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    {link.name}
+                  </a>
+                </li>
               ))}
-              className="space-y-2"
-              lineDelay={100}
-            />
+            </ul>
           </div>
           
           {/* Social Media */}
           <div className="space-y-4 animate-fade-in-right" style={{ animationDelay: '0.4s' }}>
             <AnimatedHeading delay={400}>
-              <h4 className="font-semibold text-lg">Follow Us</h4>
+              <h4 className="font-semibold text-lg hover-text-brand">Follow Us</h4>
             </AnimatedHeading>
             <div className="flex space-x-4">
               {[
-                { icon: Linkedin, href: "#", label: "LinkedIn" },
-                { icon: Twitter, href: "#", label: "Twitter" },
-                { icon: Youtube, href: "#", label: "YouTube" }
+                { icon: Linkedin, href: "#linkedin", label: "LinkedIn" },
+                { icon: Twitter, href: "#twitter", label: "Twitter" },
+                { icon: Youtube, href: "#youtube", label: "YouTube" }
               ].map(({ icon: Icon, href, label }, index) => (
                 <a 
                   key={label}
                   href={href} 
-                  className="text-white/80 hover:text-white transition-all duration-300 p-3 rounded-lg hover:bg-white/10 hover:scale-110 group shadow-lg hover:shadow-2xl hover:shadow-white/20"
+                  className="text-white/80 hover:text-primary transition-all duration-300 p-3 rounded-lg hover:bg-white/10 hover:scale-110 group shadow-lg hover:shadow-2xl hover:shadow-primary/30 btn-hover-scale"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <Icon className="w-5 h-5 group-hover:animate-bounce-gentle drop-shadow-lg" />
@@ -67,7 +78,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-white/10 mt-12 pt-8 text-center animate-fade-in">
-          <p className="text-white/60 drop-shadow-lg">
+          <p className="text-white/60 drop-shadow-lg hover-text-brand">
             © 2025 Interview4You. All rights reserved.
           </p>
         </div>

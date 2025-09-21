@@ -110,4 +110,35 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Enhanced hover effects for text elements */
+  .hover-text-primary {
+    @apply transition-colors duration-300 hover:text-primary;
+  }
+
+  .hover-text-dark {
+    @apply transition-colors duration-300 hover:text-foreground;
+  }
+
+  .hover-text-brand {
+    @apply transition-colors duration-300 hover:text-primary hover:drop-shadow-lg;
+  }
+
+  .interactive-text {
+    @apply transition-all duration-300 hover:text-primary hover:scale-105 hover:drop-shadow-lg cursor-pointer;
+  }
+
+  .company-link {
+    @apply transition-all duration-300 hover:text-primary hover:translate-x-2 hover:drop-shadow-lg;
+  }
+
+  /* Enhanced button hover effects */
+  .btn-hover-scale {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/30;
+  }
+
+  /* Card hover effects */
+  .card-hover-lift {
+    @apply transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/20;
+  }
 }
