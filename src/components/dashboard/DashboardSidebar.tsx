@@ -106,7 +106,7 @@ export const DashboardSidebar = ({
       {/* Mobile overlay - only show on mobile when sidebar is open and not collapsed */}
       {isOpen && !isCollapsed && (
         <div 
-          className="fixed inset-0 z-40 bg-background/20 lg:hidden"
+          className="fixed left-64 top-16 right-0 bottom-0 z-40 bg-background/20 lg:hidden"
           onClick={onClose}
         />
       )}
