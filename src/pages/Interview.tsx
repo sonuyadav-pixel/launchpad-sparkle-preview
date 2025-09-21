@@ -119,6 +119,7 @@ const Interview = () => {
       
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
+        console.log(`🔍 Result ${i}: "${transcript}", isFinal: ${event.results[i].isFinal}`);
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
@@ -126,6 +127,8 @@ const Interview = () => {
           interimTranscript += transcript;
         }
       }
+      
+      console.log(`📊 Final: "${finalTranscript}", Interim: "${interimTranscript}"`);
       
       // Update interim transcript for live display
       setCurrentTranscript(interimTranscript);
@@ -143,6 +146,8 @@ const Interview = () => {
         // Reset the 5-second auto-response timer
         resetAutoResponseTimer();
         setCurrentTranscript('');
+      } else if (interimTranscript.trim()) {
+        console.log('🗣️ Interim speech detected:', interimTranscript.trim());
       }
       
       // Handle interim results for real-time feedback
@@ -152,6 +157,7 @@ const Interview = () => {
         
         // Reset auto-response timer on any speech activity
         resetAutoResponseTimer();
+        console.log('⏰ Auto-response timer reset due to interim speech');
       }
     };
 
@@ -233,14 +239,24 @@ const Interview = () => {
       return;
     }
 
-    const transcript = accumulatedTranscript.current.trim();
+    // Check both accumulated transcript and last partial transcript
+    let transcript = accumulatedTranscript.current.trim();
+    const partialTranscript = lastPartialTranscript.current.trim();
+    
+    // If we have accumulated transcript, use it; otherwise use the last partial transcript
+    if (!transcript && partialTranscript) {
+      transcript = partialTranscript;
+      console.log('📝 Using partial transcript for auto-response:', transcript);
+    }
     
     if (!transcript || transcript.length < 3) {
       console.log('🚫 Auto-response cancelled: no meaningful speech accumulated');
+      console.log('📊 Debug - Accumulated:', accumulatedTranscript.current);
+      console.log('📊 Debug - Partial:', lastPartialTranscript.current);
       return;
     }
 
-    console.log('🤖 Processing accumulated speech for auto-response:', transcript);
+    console.log('🤖 Processing speech for auto-response:', transcript);
     
     // Clear accumulated transcript
     accumulatedTranscript.current = '';
