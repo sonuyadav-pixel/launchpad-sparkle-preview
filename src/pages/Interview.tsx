@@ -687,14 +687,14 @@ const Interview = () => {
                    </div>
                    
                    {/* Debug Button - Temporary */}
-                   <Button
-                     size="sm"
-                     variant="outline"
-                     onClick={debugVideo}
-                     className="bg-background/80 backdrop-blur-sm text-xs"
-                   >
-                     Debug Video
-                   </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={debugVideo}
+                      className="bg-background/80 backdrop-blur-sm text-xs"
+                    >
+                      Turn video on
+                    </Button>
                   
                   {/* Audio Status */}
                   {hasVideoPermission && (
