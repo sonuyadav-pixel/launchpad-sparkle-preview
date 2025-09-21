@@ -252,6 +252,8 @@ const Interview = () => {
 
   // Initialize speech recognition
   const initializeSpeechRecognition = () => {
+    console.log('=== INITIALIZING SPEECH RECOGNITION ===');
+    
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -260,34 +262,55 @@ const Interview = () => {
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
       
+      console.log('Speech recognition configured:', {
+        continuous: recognitionRef.current.continuous,
+        interimResults: recognitionRef.current.interimResults,
+        lang: recognitionRef.current.lang
+      });
+      
       recognitionRef.current.onstart = () => {
-        console.log('Speech recognition started');
+        console.log('🎤 Speech recognition STARTED');
         setIsListening(true);
       };
       
       recognitionRef.current.onend = () => {
-        console.log('Speech recognition ended');
+        console.log('🎤 Speech recognition ENDED');
         setIsListening(false);
-        // Restart recognition if not muted
+        
+        // Restart recognition if not muted and has permission
         if (!isMuted && hasVideoPermission) {
+          console.log('🔄 Restarting speech recognition...');
           setTimeout(() => {
-            recognitionRef.current?.start();
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (error) {
+                console.error('Failed to restart recognition:', error);
+              }
+            }
           }, 100);
         }
       };
       
       recognitionRef.current.onresult = (event: any) => {
+        console.log('🎤 Speech recognition RESULT event:', event);
         let finalTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
+          console.log(`Result ${i}:`, {
+            transcript,
+            isFinal: event.results[i].isFinal,
+            confidence: event.results[i][0].confidence
+          });
+          
           if (event.results[i].isFinal) {
             finalTranscript += transcript;
           }
         }
         
         if (finalTranscript.trim()) {
-          console.log('Speech recognized:', finalTranscript);
+          console.log('✅ Final transcript captured:', finalTranscript);
           addLocalTranscriptMessage('user', finalTranscript.trim());
           
           // Simulate AI response after a delay
@@ -298,18 +321,36 @@ const Interview = () => {
       };
       
       recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('❌ Speech recognition ERROR:', event.error, event);
+        if (event.error !== 'aborted') {
+          // Only restart if it's not an intentional abort
+          setTimeout(() => {
+            if (recognitionRef.current && !isMuted && hasVideoPermission) {
+              try {
+                recognitionRef.current.start();
+              } catch (error) {
+                console.error('Failed to restart after error:', error);
+              }
+            }
+          }, 1000);
+        }
       };
       
       // Start recognition
-      recognitionRef.current.start();
+      try {
+        console.log('🚀 Starting speech recognition...');
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+      }
     } else {
-      console.warn('Speech recognition not supported in this browser');
+      console.warn('❌ Speech recognition not supported in this browser');
     }
   };
 
   // Add transcript message function for UI
   const addLocalTranscriptMessage = async (speaker: 'user' | 'ai', message: string) => {
+    console.log('Adding transcript message:', { speaker, message });
     const newMessage = {
       id: Date.now().toString(),
       speaker,
@@ -738,15 +779,28 @@ const Interview = () => {
                     </span>
                    </div>
                    
-                   {/* Debug Button - Temporary */}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={debugVideo}
-                      className="bg-background/80 backdrop-blur-sm text-xs"
-                    >
-                      Turn video on
-                    </Button>
+                    {/* Debug Button - Temporary */}
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={debugVideo}
+                       className="bg-background/80 backdrop-blur-sm text-xs"
+                     >
+                       Turn video on
+                     </Button>
+
+                    {/* Speech Test Button */}
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => {
+                         console.log('Testing speech - adding test message');
+                         addLocalTranscriptMessage('user', 'Test message from speech button');
+                       }}
+                       className="bg-background/80 backdrop-blur-sm text-xs"
+                     >
+                       Test Speech
+                     </Button>
                   
                   {/* Audio Status */}
                   {hasVideoPermission && (
