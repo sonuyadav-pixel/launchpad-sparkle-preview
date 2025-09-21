@@ -51,6 +51,8 @@ const Interview = () => {
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingTranscriptRef = useRef<string>('');
   
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -127,12 +129,29 @@ const Interview = () => {
       // Update interim transcript for live display
       setCurrentTranscript(interimTranscript);
       
-      // Process final transcript
+      // Handle speech accumulation and 10-second wait
       if (finalTranscript.trim()) {
         console.log('📝 Final transcript:', finalTranscript);
         lastSpeechTime.current = Date.now();
         resetAutoCloseTimer(); // Reset auto-close timer on user activity
-        processUserSpeech(finalTranscript.trim());
+        
+        // Accumulate transcript
+        pendingTranscriptRef.current += ' ' + finalTranscript.trim();
+        
+        // Clear existing timeout
+        if (speechTimeoutRef.current) {
+          clearTimeout(speechTimeoutRef.current);
+        }
+        
+        // Set 10-second timeout to process complete sentence
+        speechTimeoutRef.current = setTimeout(() => {
+          if (pendingTranscriptRef.current.trim()) {
+            console.log('⏱️ 10-second silence detected, processing complete statement:', pendingTranscriptRef.current);
+            processUserSpeech(pendingTranscriptRef.current.trim());
+            pendingTranscriptRef.current = '';
+          }
+        }, 10000); // 10 seconds
+        
         setCurrentTranscript('');
       }
     };
@@ -208,14 +227,7 @@ const Interview = () => {
         return;
       }
       
-      // Check if we just processed speech recently (debounce)
-      const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
-        console.log('🚫 Skipping: too soon after last response');
-        return;
-      }
-      
-      lastProcessedTime.current = now;
+      lastProcessedTime.current = Date.now();
       
       // Add user message to transcript
       const userMessage: TranscriptMessage = {
@@ -230,37 +242,32 @@ const Interview = () => {
       // Add to database
       await addTranscriptMessage(userMessage);
       
-      // Only generate AI response if user seems to have finished speaking
-      // Wait a moment to see if more speech is coming
-      setTimeout(async () => {
-        if (isAISpeaking.current) return; // Double check AI isn't speaking
+      // Generate AI response immediately since we've already waited 10 seconds
+      try {
+        console.log('🤖 Generating AI response...');
+        const aiResponse = await generateAIResponse(transcript);
         
-        try {
-          console.log('🤖 Generating delayed AI response...');
-          const aiResponse = await generateAIResponse(transcript);
+        if (aiResponse && !isAISpeaking.current) {
+          const aiMessage: TranscriptMessage = {
+            id: (Date.now() + 1).toString(),
+            speaker: 'ai',
+            message: aiResponse,
+            timestamp: new Date()
+          };
           
-          if (aiResponse && !isAISpeaking.current) {
-            const aiMessage: TranscriptMessage = {
-              id: (Date.now() + 1).toString(),
-              speaker: 'ai',
-              message: aiResponse,
-              timestamp: new Date()
-            };
-            
-            setLocalTranscript(prev => [aiMessage, ...prev]);
-            await addTranscriptMessage(aiMessage);
-            
-            // Speak the AI response
-            console.log('🔊 Speaking AI response...');
-            isAISpeaking.current = true;
-            await speak(aiResponse, 'alloy');
-            isAISpeaking.current = false;
-          }
-        } catch (error) {
-          console.error('❌ Error in delayed AI response:', error);
+          setLocalTranscript(prev => [aiMessage, ...prev]);
+          await addTranscriptMessage(aiMessage);
+          
+          // Speak the AI response
+          console.log('🔊 Speaking AI response...');
+          isAISpeaking.current = true;
+          await speak(aiResponse, 'alloy');
           isAISpeaking.current = false;
         }
-      }, 2000); // Wait 2 seconds before responding
+      } catch (error) {
+        console.error('❌ Error in AI response:', error);
+        isAISpeaking.current = false;
+      }
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
