@@ -42,6 +42,7 @@ const Interview = () => {
   
   // UI state
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
@@ -100,11 +101,11 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active
-      if (isInterviewActive) {
+      // Auto-restart if interview is active and not manually stopped
+      if (isInterviewActive && !isMuted) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isListening) {
+          if (isInterviewActive && !isMuted && !isListening) {
             startSpeechRecognition();
           }
         }, 1000); // Increased delay to prevent rapid restarts
@@ -173,7 +174,7 @@ const Interview = () => {
     };
 
     return true;
-  }, [isInterviewActive]);
+  }, [isInterviewActive, isMuted]);
 
   const startSpeechRecognition = useCallback(() => {
     if (!recognitionRef.current) {
@@ -181,7 +182,7 @@ const Interview = () => {
     }
 
     try {
-      if (!isListening && isInterviewActive) {
+      if (!isListening && isInterviewActive && !isMuted) {
         console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
       }
@@ -189,7 +190,7 @@ const Interview = () => {
       console.error('❌ Failed to start speech recognition:', error);
       // If failed, try to reinitialize and restart
       setTimeout(() => {
-        if (isInterviewActive) {
+        if (isInterviewActive && !isMuted) {
           console.log('🔄 Reinitializing speech recognition after error...');
           recognitionRef.current = null;
           initializeSpeechRecognition();
@@ -199,7 +200,7 @@ const Interview = () => {
         }
       }, 2000);
     }
-  }, [isListening, initializeSpeechRecognition, isInterviewActive]);
+  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
@@ -795,7 +796,7 @@ const Interview = () => {
       if (!isInterviewActive) return;
       
       // Check if speech recognition is still active
-      if (!isListening && isInterviewActive) {
+      if (!isListening && !isMuted && isInterviewActive) {
         console.log('💓 Heartbeat: Speech recognition not active, restarting...');
         startSpeechRecognition();
       }
@@ -807,6 +808,16 @@ const Interview = () => {
     heartbeatRef.current = setTimeout(heartbeat, 5000);
   };
 
+  // Toggle Functions
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    
+    if (!isMuted) {
+      stopSpeechRecognition();
+    } else if (isInterviewActive) {
+      startSpeechRecognition();
+    }
+  };
 
   // Load session on mount
   useEffect(() => {
@@ -977,6 +988,17 @@ const Interview = () => {
                     )}
                   </Button>
                   
+                  <Button
+                    variant={isMuted ? "secondary" : "default"}
+                    size="lg"
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? (
+                      <MicOff className="w-5 h-5" />
+                    ) : (
+                      <Mic className="w-5 h-5" />
+                    )}
+                  </Button>
                   
                   <Button
                     onClick={endInterview}
@@ -987,6 +1009,24 @@ const Interview = () => {
                     End Interview
                   </Button>
                   
+                  {/* Manual Speech Control for debugging */}
+                  <Button
+                    onClick={() => {
+                      console.log('🔧 Manual speech recognition start - Current state:', {
+                        isListening,
+                        isInterviewActive,
+                        isMuted,
+                        hasRecognition: !!recognitionRef.current
+                      });
+                      if (!isListening && !isMuted) {
+                        startSpeechRecognition();
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {isListening ? '🎤 Listening' : '🔇 Start Mic'}
+                  </Button>
                 </>
               )}
             </div>
