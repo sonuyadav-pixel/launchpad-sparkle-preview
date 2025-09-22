@@ -57,6 +57,10 @@ const Interview = () => {
   const interimSpeechRef = useRef('');
   const [isMerged, setIsMerged] = useState(false);
   
+  // Speech finalization timer
+  const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
+  const pendingTranscript = useRef('');
+  
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -132,11 +136,51 @@ const Interview = () => {
       // Update interim transcript for live display
       setCurrentTranscript(interimTranscript);
       
-      // Process final transcript
+      // Handle interim speech - reset timer and store pending transcript
+      if (interimTranscript.trim()) {
+        pendingTranscript.current = interimTranscript;
+        
+        // Clear existing timer and start new 5-second timer
+        if (speechFinalizationTimer.current) {
+          clearTimeout(speechFinalizationTimer.current);
+        }
+        
+        speechFinalizationTimer.current = setTimeout(() => {
+          if (pendingTranscript.current.trim()) {
+            console.log('📝 5-second silence detected, finalizing transcript:', pendingTranscript.current);
+            const textToFinalize = pendingTranscript.current.trim();
+            pendingTranscript.current = '';
+            setCurrentTranscript('');
+            
+            lastSpeechTime.current = Date.now();
+            resetAutoCloseTimer();
+            
+            // Check if AI is speaking - if yes, store in interim state
+            if (isAISpeaking.current) {
+              console.log('🔄 AI is speaking - storing speech in interim state:', textToFinalize);
+              interimSpeechRef.current += ' ' + textToFinalize;
+              setInterimSpeech(interimSpeechRef.current.trim());
+            } else {
+              // Normal processing when AI is not speaking
+              processUserSpeech(textToFinalize);
+            }
+          }
+        }, 5000); // 5 seconds
+      }
+      
+      // Process final transcript from speech recognition engine
       if (finalTranscript.trim()) {
-        console.log('📝 Final transcript:', finalTranscript);
+        console.log('📝 Final transcript from engine:', finalTranscript);
+        
+        // Clear any pending timer since we got a final result
+        if (speechFinalizationTimer.current) {
+          clearTimeout(speechFinalizationTimer.current);
+          speechFinalizationTimer.current = null;
+        }
+        
+        pendingTranscript.current = '';
         lastSpeechTime.current = Date.now();
-        resetAutoCloseTimer(); // Reset auto-close timer on user activity
+        resetAutoCloseTimer();
         
         // Check if AI is speaking - if yes, store in interim state
         if (isAISpeaking.current) {
@@ -671,6 +715,10 @@ const Interview = () => {
       clearTimeout(autoCloseTimerRef.current);
     }
     
+    if (speechFinalizationTimer.current) {
+      clearTimeout(speechFinalizationTimer.current);
+    }
+    
     // Update session status in database
     if (sessionId) {
       try {
@@ -785,6 +833,9 @@ const Interview = () => {
       }
       if (autoCloseTimerRef.current) {
         clearTimeout(autoCloseTimerRef.current);
+      }
+      if (speechFinalizationTimer.current) {
+        clearTimeout(speechFinalizationTimer.current);
       }
     };
   }, []);
