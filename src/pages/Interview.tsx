@@ -52,6 +52,11 @@ const Interview = () => {
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   
+  // Interim speech storage for when AI is speaking
+  const [interimSpeech, setInterimSpeech] = useState('');
+  const interimSpeechRef = useRef('');
+  const [isMerged, setIsMerged] = useState(false);
+  
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -132,7 +137,17 @@ const Interview = () => {
         console.log('📝 Final transcript:', finalTranscript);
         lastSpeechTime.current = Date.now();
         resetAutoCloseTimer(); // Reset auto-close timer on user activity
-        processUserSpeech(finalTranscript.trim());
+        
+        // Check if AI is speaking - if yes, store in interim state
+        if (isAISpeaking.current) {
+          console.log('🔄 AI is speaking - storing speech in interim state:', finalTranscript);
+          interimSpeechRef.current += ' ' + finalTranscript.trim();
+          setInterimSpeech(interimSpeechRef.current.trim());
+        } else {
+          // Normal processing when AI is not speaking
+          processUserSpeech(finalTranscript.trim());
+        }
+        
         setCurrentTranscript('');
       }
     };
@@ -208,9 +223,9 @@ const Interview = () => {
         return;
       }
       
-      // Check if we just processed speech recently (debounce)
+      // Check if we just processed speech recently (debounce - 1 second)
       const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 3000) {
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 1000) {
         console.log('🚫 Skipping: too soon after last response');
         return;
       }
@@ -231,7 +246,7 @@ const Interview = () => {
       await addTranscriptMessage(userMessage);
       
       // Only generate AI response if user seems to have finished speaking
-      // Wait a moment to see if more speech is coming
+      // Wait a moment to see if more speech is coming (1 second response delay)
       setTimeout(async () => {
         if (isAISpeaking.current) return; // Double check AI isn't speaking
         
@@ -254,13 +269,32 @@ const Interview = () => {
             console.log('🔊 Speaking AI response...');
             isAISpeaking.current = true;
             await speak(aiResponse, 'alloy');
+            
+            // After AI finishes speaking, check for interim speech and merge
+            console.log('🤖 AI finished speaking, checking for interim speech...');
             isAISpeaking.current = false;
+            
+            if (interimSpeechRef.current.trim()) {
+              console.log('🔄 Merging interim speech:', interimSpeechRef.current);
+              const mergedText = interimSpeechRef.current.trim();
+              
+              // Clear interim state
+              interimSpeechRef.current = '';
+              setInterimSpeech('');
+              setIsMerged(true);
+              
+              // Process the merged speech with normal flow
+              setTimeout(() => {
+                processUserSpeech(mergedText);
+                setIsMerged(false);
+              }, 500); // Short delay before processing merged speech
+            }
           }
         } catch (error) {
           console.error('❌ Error in delayed AI response:', error);
           isAISpeaking.current = false;
         }
-      }, 2000); // Wait 2 seconds before responding
+      }, 1000); // Wait 1 second before responding
       
     } catch (error) {
       console.error('❌ Error processing speech:', error);
@@ -954,6 +988,26 @@ const Interview = () => {
                       <Badge variant="outline" className="text-xs">You (typing...)</Badge>
                     </div>
                     <p className="text-sm text-gray-600 italic">{currentTranscript}</p>
+                  </div>
+                )}
+                
+                {/* Interim speech during AI talking */}
+                {interimSpeech && isAISpeaking.current && (
+                  <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs bg-yellow-100">You (waiting for AI...)</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">{interimSpeech}</p>
+                  </div>
+                )}
+                
+                {/* Merged speech indicator */}
+                {isMerged && (
+                  <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs bg-green-100">Merged & Processing...</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">Merging previous speech with current flow...</p>
                   </div>
                 )}
                 
