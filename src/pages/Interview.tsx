@@ -788,29 +788,11 @@ const Interview = () => {
       clearTimeout(autoCloseTimerRef.current);
     }
     
-    if (speechFinalizationTimer.current) {
-      clearTimeout(speechFinalizationTimer.current);
-    }
-    
-    // Update session status in database
-    if (sessionId) {
-      try {
-        await updateSession(sessionId, { 
-          status: 'completed', 
-          ended_at: new Date().toISOString() 
-        });
-      } catch (error) {
-        console.error('Failed to update session status:', error);
-      }
-    }
-    
-    // End session in manager
+    // Clean up session manager
     sessionManager.endSession();
     
-    toast({
-      title: "Interview Ended",
-      description: "Thank you for your time!",
-    });
+    // Navigate to dashboard with feedback popup
+    navigate('/dashboard?showFeedback=true');
   };
 
   // Silence Detection for Fallback Logic
