@@ -161,8 +161,8 @@ const Interview = () => {
               interimSpeechRef.current += ' ' + textToFinalize;
               setInterimSpeech(interimSpeechRef.current.trim());
             } else {
-              // Normal processing when AI is not speaking
-              processUserSpeech(textToFinalize);
+              // Normal processing when AI is not speaking - process complete user speech
+              processCompleteUserSpeech(textToFinalize);
             }
           }
         }, 5000); // 5 seconds
@@ -224,20 +224,14 @@ const Interview = () => {
     }
   }, [isListening]);
 
-  // Process user speech and generate AI response
-  const processUserSpeech = async (transcript: string) => {
+  // Process complete user speech with parallel transcript saving and AI response generation
+  const processCompleteUserSpeech = async (transcript: string) => {
     try {
-      console.log('🧠 Processing user speech:', transcript);
+      console.log('🧠 Processing complete user speech:', transcript);
       
-      // Skip if transcript is too short or AI is currently speaking
+      // Skip if transcript is too short
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
-        return;
-      }
-      
-      // Check if AI is currently speaking or processing
-      if (isAISpeaking.current) {
-        console.log('🚫 Skipping: AI is currently speaking');
         return;
       }
       
@@ -260,68 +254,72 @@ const Interview = () => {
       
       setLocalTranscript(prev => [userMessage, ...prev]);
       
-      // Add to database
-      await addTranscriptMessage(userMessage);
+      // PARALLEL: Add to transcript database AND generate AI response
+      const [, aiResponse] = await Promise.all([
+        addTranscriptMessage(userMessage),
+        generateAIResponse(transcript)
+      ]);
       
-      // Only generate AI response if user seems to have finished speaking
-      // Wait a moment to see if more speech is coming (1 second response delay)
-      setTimeout(async () => {
-        if (isAISpeaking.current) return; // Double check AI isn't speaking
+      if (aiResponse && !isAISpeaking.current) {
+        // Mark AI as speaking before starting TTS
+        isAISpeaking.current = true;
+        
+        const aiMessage: TranscriptMessage = {
+          id: (Date.now() + 1).toString(),
+          speaker: 'ai',
+          message: aiResponse,
+          timestamp: new Date()
+        };
+        
+        setLocalTranscript(prev => [aiMessage, ...prev]);
         
         try {
-          console.log('🤖 Generating delayed AI response...');
-          const aiResponse = await generateAIResponse(transcript);
+          // PARALLEL: Add AI response to database AND start TTS conversion
+          const [, ] = await Promise.all([
+            addTranscriptMessage(aiMessage),
+            speak(aiResponse, 'alloy') // ElevenLabs TTS conversion and playback
+          ]);
           
-          if (aiResponse && !isAISpeaking.current) {
-            const aiMessage: TranscriptMessage = {
-              id: (Date.now() + 1).toString(),
-              speaker: 'ai',
-              message: aiResponse,
-              timestamp: new Date()
-            };
+          console.log('🤖 AI finished speaking, checking for interim speech...');
+          isAISpeaking.current = false;
+          
+          // Continue listening loop - check for user speech during AI speaking
+          if (interimSpeechRef.current.trim()) {
+            console.log('🔄 Processing user speech that occurred during AI speaking:', interimSpeechRef.current);
+            const userSpeechDuringAI = interimSpeechRef.current.trim();
             
-            setLocalTranscript(prev => [aiMessage, ...prev]);
-            await addTranscriptMessage(aiMessage);
+            // Clear interim state
+            interimSpeechRef.current = '';
+            setInterimSpeech('');
+            setIsMerged(true);
             
-            // Speak the AI response
-            console.log('🔊 Speaking AI response...');
-            isAISpeaking.current = true;
-            await speak(aiResponse, 'alloy');
-            
-            // After AI finishes speaking, check for interim speech and merge
-            console.log('🤖 AI finished speaking, checking for interim speech...');
-            isAISpeaking.current = false;
-            
-            if (interimSpeechRef.current.trim()) {
-              console.log('🔄 Merging interim speech:', interimSpeechRef.current);
-              const mergedText = interimSpeechRef.current.trim();
-              
-              // Clear interim state
-              interimSpeechRef.current = '';
-              setInterimSpeech('');
-              setIsMerged(true);
-              
-              // Process the merged speech with normal flow
-              setTimeout(() => {
-                processUserSpeech(mergedText);
-                setIsMerged(false);
-              }, 500); // Short delay before processing merged speech
-            }
+            // Process the user speech that occurred during AI speaking
+            setTimeout(() => {
+              processCompleteUserSpeech(userSpeechDuringAI);
+              setIsMerged(false);
+            }, 500); // Short delay before processing
           }
+          
         } catch (error) {
-          console.error('❌ Error in delayed AI response:', error);
+          console.error('❌ Error in AI response or TTS:', error);
           isAISpeaking.current = false;
         }
-      }, 1000); // Wait 1 second before responding
+      }
       
     } catch (error) {
-      console.error('❌ Error processing speech:', error);
+      console.error('❌ Error processing complete speech:', error);
+      isAISpeaking.current = false;
       toast({
         title: "Processing Error",
         description: "Failed to process speech. Please try again.",
         variant: "destructive"
       });
     }
+  };
+
+  // Legacy function for backward compatibility - now redirects to complete speech processing
+  const processUserSpeech = async (transcript: string) => {
+    await processCompleteUserSpeech(transcript);
   };
 
   // Generate AI response based on user input using ElevenLabs
