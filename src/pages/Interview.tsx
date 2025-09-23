@@ -168,32 +168,6 @@ const Interview = () => {
         }, 5000); // 5 seconds
       }
       
-      // Process final transcript from speech recognition engine
-      if (finalTranscript.trim()) {
-        console.log('📝 Final transcript from engine:', finalTranscript);
-        
-        // Clear any pending timer since we got a final result
-        if (speechFinalizationTimer.current) {
-          clearTimeout(speechFinalizationTimer.current);
-          speechFinalizationTimer.current = null;
-        }
-        
-        pendingTranscript.current = '';
-        lastSpeechTime.current = Date.now();
-        resetAutoCloseTimer();
-        
-        // Check if AI is speaking - if yes, store in interim state
-        if (isAISpeaking.current) {
-          console.log('🔄 AI is speaking - storing speech in interim state:', finalTranscript);
-          interimSpeechRef.current += ' ' + finalTranscript.trim();
-          setInterimSpeech(interimSpeechRef.current.trim());
-        } else {
-          // Normal processing when AI is not speaking
-          processUserSpeech(finalTranscript.trim());
-        }
-        
-        setCurrentTranscript('');
-      }
     };
 
     recognitionRef.current.onerror = (event: any) => {
