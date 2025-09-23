@@ -105,14 +105,16 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Auto-restart if interview is active and not manually stopped
-      if (isInterviewActive && !isMuted) {
+      // Auto-restart if interview is active, not muted, and AI is not speaking
+      if (isInterviewActive && !isMuted && !isAISpeaking.current) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isMuted && !isListening) {
+          if (isInterviewActive && !isMuted && !isListening && !isAISpeaking.current) {
             startSpeechRecognition();
           }
-        }, 1000); // Increased delay to prevent rapid restarts
+        }, 1000); // Delay to prevent rapid restarts
+      } else if (isAISpeaking.current) {
+        console.log('🤐 Not restarting - AI is speaking');
       }
     };
 
@@ -274,6 +276,12 @@ const Interview = () => {
       ]);
       
       if (aiResponse && !isAISpeaking.current) {
+        // Stop speech recognition before AI speaks
+        if (recognitionRef.current && isListening) {
+          console.log('🤐 Stopping speech recognition for AI response');
+          recognitionRef.current.stop();
+        }
+        
         // Mark AI as speaking before starting TTS
         isAISpeaking.current = true;
         
@@ -296,15 +304,45 @@ const Interview = () => {
           console.log('🤖 AI finished speaking');
           isAISpeaking.current = false;
           
+          // Restart speech recognition after AI finishes
+          if (isInterviewActive && !isMuted) {
+            console.log('🎤 Restarting speech recognition after AI response');
+            setTimeout(() => {
+              if (!isListening && isInterviewActive && !isMuted) {
+                startSpeechRecognition();
+              }
+            }, 500); // Small delay to ensure clean restart
+          }
+          
         } catch (error) {
           console.error('❌ Error in AI response or TTS:', error);
           isAISpeaking.current = false;
+          
+          // Restart speech recognition even if there's an error
+          if (isInterviewActive && !isMuted) {
+            console.log('🎤 Restarting speech recognition after error');
+            setTimeout(() => {
+              if (!isListening && isInterviewActive && !isMuted) {
+                startSpeechRecognition();
+              }
+            }, 500);
+          }
         }
       }
       
     } catch (error) {
       console.error('❌ Error processing complete speech:', error);
       isAISpeaking.current = false;
+      
+      // Restart speech recognition if there's a processing error
+      if (isInterviewActive && !isMuted) {
+        console.log('🎤 Restarting speech recognition after processing error');
+        setTimeout(() => {
+          if (!isListening && isInterviewActive && !isMuted) {
+            startSpeechRecognition();
+          }
+        }, 500);
+      }
       toast({
         title: "Processing Error",
         description: "Failed to process speech. Please try again.",
