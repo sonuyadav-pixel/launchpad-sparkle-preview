@@ -52,10 +52,6 @@ const Interview = () => {
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   
-  // Interim speech storage for when AI is speaking
-  const [interimSpeech, setInterimSpeech] = useState('');
-  const interimSpeechRef = useRef('');
-  const [isMerged, setIsMerged] = useState(false);
   
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
@@ -155,15 +151,8 @@ const Interview = () => {
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
             
-            // Check if AI is speaking - if yes, store in interim state
-            if (isAISpeaking.current) {
-              console.log('🔄 AI is speaking - storing speech in interim state:', textToFinalize);
-              interimSpeechRef.current += ' ' + textToFinalize;
-              setInterimSpeech(interimSpeechRef.current.trim());
-            } else {
-              // Normal processing when AI is not speaking - process complete user speech
-              processCompleteUserSpeech(textToFinalize);
-            }
+            // Process complete user speech regardless of AI speaking state
+            processCompleteUserSpeech(textToFinalize);
           }
         }, 5000); // 5 seconds
       }
@@ -280,25 +269,8 @@ const Interview = () => {
             speak(aiResponse, 'alloy') // ElevenLabs TTS conversion and playback
           ]);
           
-          console.log('🤖 AI finished speaking, checking for interim speech...');
+          console.log('🤖 AI finished speaking');
           isAISpeaking.current = false;
-          
-          // Continue listening loop - check for user speech during AI speaking
-          if (interimSpeechRef.current.trim()) {
-            console.log('🔄 Processing user speech that occurred during AI speaking:', interimSpeechRef.current);
-            const userSpeechDuringAI = interimSpeechRef.current.trim();
-            
-            // Clear interim state
-            interimSpeechRef.current = '';
-            setInterimSpeech('');
-            setIsMerged(true);
-            
-            // Process the user speech that occurred during AI speaking
-            setTimeout(() => {
-              processCompleteUserSpeech(userSpeechDuringAI);
-              setIsMerged(false);
-            }, 500); // Short delay before processing
-          }
           
         } catch (error) {
           console.error('❌ Error in AI response or TTS:', error);
@@ -1014,25 +986,6 @@ const Interview = () => {
                   </div>
                 )}
                 
-                {/* Interim speech during AI talking */}
-                {interimSpeech && isAISpeaking.current && (
-                  <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs bg-yellow-100">You (waiting for AI...)</Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 italic">{interimSpeech}</p>
-                  </div>
-                )}
-                
-                {/* Merged speech indicator */}
-                {isMerged && (
-                  <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs bg-green-100">Merged & Processing...</Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 italic">Merging previous speech with current flow...</p>
-                  </div>
-                )}
                 
                 {/* Transcript messages */}
                 {localTranscript.map((message) => (
