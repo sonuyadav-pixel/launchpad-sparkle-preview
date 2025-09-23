@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
@@ -32,7 +32,7 @@ interface TranscriptMessage {
 const Interview = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast(); // Keep for potential future use
+  const { toast } = useToast();
   const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
   const { updateSession } = useInterviewSession();
 
@@ -46,16 +46,6 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
-  
-  // Timer and status state
-  const [interviewStartTime, setInterviewStartTime] = useState<Date | null>(null);
-  const [interviewDuration, setInterviewDuration] = useState(0);
-  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
-  const [currentSpeaker, setCurrentSpeaker] = useState<'user' | 'ai' | 'none'>('none');
-  
-  // Error state for inline display
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -79,32 +69,6 @@ const Interview = () => {
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const ensuringSpeechRef = useRef(false);
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const aiCheckInTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Inline error management
-  const showInlineError = useCallback((message: string) => {
-    setInlineError(message);
-    
-    // Clear any existing timeout
-    if (errorTimeout) {
-      clearTimeout(errorTimeout);
-    }
-    
-    // Auto-clear error after 5 seconds
-    const timeout = setTimeout(() => {
-      setInlineError(null);
-    }, 5000);
-    
-    setErrorTimeout(timeout);
-  }, [errorTimeout]);
-
-  const clearInlineError = useCallback(() => {
-    setInlineError(null);
-    if (errorTimeout) {
-      clearTimeout(errorTimeout);
-    }
-  }, [errorTimeout]);
 
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
@@ -116,10 +80,14 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.error('❌ Microphone permission denied:', error);
-      showInlineError("Microphone access required for speech recognition. Please allow microphone access.");
+      toast({
+        title: "Microphone Access Required",
+        description: "Please allow microphone access to use speech recognition",
+        variant: "destructive"
+      });
       return false;
     }
-  }, [showInlineError]);
+  }, [toast]);
 
   const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
     const maxRetries = 3;
@@ -154,16 +122,16 @@ const Interview = () => {
         }
       }
 
-      // Clean stop existing recognition first
+      // Clean stop existing recognition
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-          await new Promise(resolve => setTimeout(resolve, 300)); // Longer wait for cleanup
+          recognitionRef.current = null;
+          setIsListening(false);
+          await new Promise(resolve => setTimeout(resolve, 200));
         } catch (e) {
           console.log('🔄 Ignoring stop error (expected):', e);
         }
-        recognitionRef.current = null;
-        setIsListening(false);
       }
 
       // Initialize speech recognition
@@ -172,19 +140,19 @@ const Interview = () => {
 
       // Start speech recognition
       console.log('🎤 Starting speech recognition...');
-      try {
-        recognitionRef.current.start();
-        console.log('✅ Speech recognition started successfully');
-        return true;
-      } catch (startError: any) {
-        // Handle "already started" error - this means it's working
-        if (startError?.name === 'InvalidStateError' && startError?.message?.includes('already started')) {
-          console.log('✅ Speech recognition was already running');
-          setIsListening(true);
-          return true;
-        }
-        throw startError;
+      recognitionRef.current.start();
+      
+      // Wait and verify it started
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (!isListening && retryCount < maxRetries) {
+        console.log('🔄 Speech recognition didn\'t start, retrying...');
+        ensuringSpeechRef.current = false;
+        return ensureSpeechRecognitionActive(retryCount + 1);
       }
+      
+      console.log('✅ Speech recognition started successfully');
+      return true;
       
     } catch (error: any) {
       console.log('❌ Failed to start speech recognition:', error);
@@ -224,7 +192,11 @@ const Interview = () => {
     
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       console.error('Speech recognition not supported');
-      showInlineError("Your browser doesn't support speech recognition. Please use Chrome or Edge.");
+      toast({
+        title: "Speech Recognition Not Supported",
+        description: "Your browser doesn't support speech recognition",
+        variant: "destructive"
+      });
       return false;
     }
 
@@ -247,17 +219,13 @@ const Interview = () => {
     };
 
     recognitionRef.current.onend = () => {
-      console.log('🎤 Speech recognition ENDED - immediately restarting to keep always listening');
+      console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // ALWAYS restart speech recognition if interview is active - NEVER let it stay off
-      if (isInterviewActive && !ensuringSpeechRef.current) {
-        console.log('🔄 Auto-restarting speech recognition to maintain continuous listening...');
-        setTimeout(() => {
-          if (!ensuringSpeechRef.current && isInterviewActive) {
-            ensureSpeechRecognitionActive();
-          }
-        }, 300); // Shorter delay for immediate restart
+      // Aggressive auto-restart with multiple attempts
+      if (isInterviewActive) {
+        console.log('🔄 Auto-restarting speech recognition...');
+        setTimeout(() => ensureSpeechRecognitionActive(), 100);
       }
     };
 
@@ -307,15 +275,6 @@ const Interview = () => {
           clearTimeout(speechFinalizationTimer.current);
         }
         
-        // Clear processing timeout if user is still speaking
-        if (processingTimeoutRef.current) {
-          clearTimeout(processingTimeoutRef.current);
-          setIsProcessingAnswer(false);
-        }
-        
-        setCurrentSpeaker('user'); // User is speaking
-        resetAICheckInTimer(); // Reset AI check-in timer when user speaks
-        
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
             console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
@@ -325,21 +284,14 @@ const Interview = () => {
             pendingTranscript.current = '';
             accumulatedTranscript.current = '';
             setCurrentTranscript('');
-            setCurrentSpeaker('none');
             
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
-            resetAICheckInTimer(); // Reset the 2-minute AI check-in timer
             
             // Process complete accumulated user speech
             processCompleteUserSpeech(textToFinalize);
           }
         }, 10000); // 10 seconds
-        
-        // Show processing indicator after 5 seconds
-        processingTimeoutRef.current = setTimeout(() => {
-          setIsProcessingAnswer(true);
-        }, 5000); // 5 seconds
       }
       
     };
@@ -353,15 +305,18 @@ const Interview = () => {
         return;
       }
       
-      // Handle different error types - NEVER stop for no-speech, just continue
+      // Handle different error types
       if (event.error === 'no-speech') {
-        console.log('🔇 No speech detected - continuing listening...');
-        // Do NOT stop or restart - just continue listening
-        return;
+        console.log('🔇 No speech detected - continuing...');
+        return; // Don't show error for no-speech
       }
       
       if (event.error === 'not-allowed') {
-        showInlineError("Microphone access denied. Please allow microphone access to continue.");
+        toast({
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access to continue",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -419,12 +374,6 @@ const Interview = () => {
     try {
       console.log('🧠 Processing complete user speech:', transcript);
       
-      // Clear processing indicator
-      setIsProcessingAnswer(false);
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
-      }
-      
       // Skip if transcript is too short
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
@@ -459,7 +408,6 @@ const Interview = () => {
       if (aiResponse && !isAISpeaking.current) {
         // Mark AI as speaking before starting TTS (but keep speech recognition running)
         isAISpeaking.current = true;
-        setCurrentSpeaker('ai');
         
         const aiMessage: TranscriptMessage = {
           id: (Date.now() + 1).toString(),
@@ -479,19 +427,21 @@ const Interview = () => {
           
           console.log('🤖 AI finished speaking');
           isAISpeaking.current = false;
-          setCurrentSpeaker('none');
           
         } catch (error) {
           console.error('❌ Error in AI response or TTS:', error);
           isAISpeaking.current = false;
-          setCurrentSpeaker('none');
         }
       }
       
     } catch (error) {
       console.error('❌ Error processing complete speech:', error);
       isAISpeaking.current = false;
-      showInlineError("Failed to process speech. Please try again.");
+      toast({
+        title: "Processing Error",
+        description: "Failed to process speech. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -675,7 +625,11 @@ const Interview = () => {
         errorMessage = "Camera doesn't support the requested settings.";
       }
       
-      showInlineError(`Camera Access Error: ${errorMessage}`);
+      toast({
+        title: "Camera Access Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
@@ -700,7 +654,11 @@ const Interview = () => {
     const activeId = sessionManager.getActiveSessionId();
     
     if (hasActive && activeId !== sessionId) {
-      showInlineError("Please end your current interview before starting a new one.");
+      toast({
+        title: "Active Interview Detected",
+        description: "Please end your current interview before starting a new one.",
+        variant: "destructive"
+      });
       return false;
     }
     return true;
@@ -718,56 +676,14 @@ const Interview = () => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity >= 300000 && isInterviewActive) { // 5 minutes
         console.log('🔒 Auto-closing interview due to inactivity');
-        showInlineError("Interview auto-closed due to 5 minutes of inactivity.");
+        toast({
+          title: "Interview Auto-Closed",
+          description: "Session ended due to 5 minutes of inactivity",
+          variant: "default"
+        });
         endInterview();
       }
     }, 300000); // 5 minutes
-  };
-
-  // AI Proactive Check-in functionality
-  const resetAICheckInTimer = () => {
-    if (aiCheckInTimerRef.current) {
-      clearTimeout(aiCheckInTimerRef.current);
-    }
-    
-    // Set timer for 2 minutes of user silence
-    aiCheckInTimerRef.current = setTimeout(async () => {
-      if (isInterviewActive && !isAISpeaking.current) {
-        console.log('🤖 2 minutes of silence - AI checking in...');
-        await triggerAICheckIn();
-      }
-    }, 120000); // 2 minutes = 120,000ms
-  };
-
-  const triggerAICheckIn = async () => {
-    try {
-      const checkInMessage = "Hello! Are you still with us? Please let me know if you need a moment or if you'd like to continue with the interview.";
-      
-      isAISpeaking.current = true;
-      setCurrentSpeaker('ai');
-      
-      const aiMessage = {
-        id: Date.now().toString(),
-        speaker: 'ai' as const,
-        message: checkInMessage,
-        timestamp: new Date()
-      };
-      
-      setLocalTranscript(prev => [aiMessage, ...prev]);
-      await addTranscriptMessage(aiMessage);
-      await speak(checkInMessage, 'alloy');
-      
-      isAISpeaking.current = false;
-      setCurrentSpeaker('none');
-      
-      // Reset the timer for another 2 minutes
-      resetAICheckInTimer();
-      
-    } catch (error) {
-      console.error('❌ Error in AI check-in:', error);
-      isAISpeaking.current = false;
-      setCurrentSpeaker('none');
-    }
   };
 
   // Interview Control Functions
@@ -781,10 +697,7 @@ const Interview = () => {
       }
       
       setIsInterviewActive(true);
-      setInterviewStartTime(new Date());
-      setCurrentSpeaker('none');
       resetAutoCloseTimer();
-      resetAICheckInTimer(); // Start the 2-minute AI check-in timer
       
       // Update session status in database
       if (sessionId) {
@@ -837,11 +750,18 @@ const Interview = () => {
       await addTranscriptMessage(aiMessage);
       await speak(welcomeMessage, 'alloy');
       
-      clearInlineError(); // Clear any existing errors when interview starts successfully
+      toast({
+        title: "Interview Started",
+        description: "You can now begin speaking",
+      });
       
     } catch (error) {
       console.error('❌ Error starting interview:', error);
-      showInlineError("Failed to start interview. Please try again.");
+      toast({
+        title: "Start Error", 
+        description: "Failed to start interview. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -849,14 +769,9 @@ const Interview = () => {
     console.log('🏁 Ending interview...');
     
     setIsInterviewActive(false);
-    setCurrentSpeaker('none');
-    setIsProcessingAnswer(false);
-    setInterviewStartTime(null);
-    setInterviewDuration(0);
     stopSpeechRecognition();
     stopVideo();
     
-    // Clean up all timers
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
     }
@@ -869,19 +784,29 @@ const Interview = () => {
       clearTimeout(autoCloseTimerRef.current);
     }
     
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
+    if (speechFinalizationTimer.current) {
+      clearTimeout(speechFinalizationTimer.current);
     }
     
-    if (aiCheckInTimerRef.current) {
-      clearTimeout(aiCheckInTimerRef.current);
+    // Update session status in database
+    if (sessionId) {
+      try {
+        await updateSession(sessionId, { 
+          status: 'completed', 
+          ended_at: new Date().toISOString() 
+        });
+      } catch (error) {
+        console.error('Failed to update session status:', error);
+      }
     }
     
-    // Clean up session manager
+    // End session in manager
     sessionManager.endSession();
     
-    // Navigate to dashboard with feedback popup
-    navigate('/dashboard?showFeedback=true');
+    toast({
+      title: "Interview Ended",
+      description: "Thank you for your time!",
+    });
   };
 
   // Silence Detection for Fallback Logic
@@ -939,30 +864,6 @@ const Interview = () => {
     heartbeatRef.current = setTimeout(heartbeat, 2000);
   };
 
-  // Timer useEffect for interview duration
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isInterviewActive && interviewStartTime) {
-      interval = setInterval(() => {
-        const now = new Date();
-        const duration = Math.floor((now.getTime() - interviewStartTime.getTime()) / 1000);
-        setInterviewDuration(duration);
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isInterviewActive, interviewStartTime]);
-
-  // Format timer display
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // Toggle Functions with enhanced auto-start
   const toggleMute = async () => {
     const newMutedState = !isMuted;
@@ -1014,9 +915,6 @@ const Interview = () => {
       if (speechFinalizationTimer.current) {
         clearTimeout(speechFinalizationTimer.current);
       }
-      if (errorTimeout) {
-        clearTimeout(errorTimeout);
-      }
     };
   }, []);
 
@@ -1041,53 +939,18 @@ const Interview = () => {
                 LIVE
               </Badge>
             )}
-            {isInterviewActive && (
-              <Badge variant="outline" className="font-mono">
-                {formatTimer(interviewDuration)}
-              </Badge>
-            )}
           </div>
         </div>
 
-        {/* Inline Error Display */}
-        {inlineError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500 rounded-full flex-shrink-0"></div>
-                <p className="text-red-800 font-medium">{inlineError}</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearInlineError}
-                className="text-red-600 hover:text-red-800"
-              >
-                ×
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Side by Side Layout: User (Left) and AI (Right) with Dynamic Sizing */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 transition-all duration-300 ${
-          currentSpeaker === 'user' ? 'md:grid-cols-[2fr_1fr]' : 
-          currentSpeaker === 'ai' ? 'md:grid-cols-[1fr_2fr]' : 
-          'md:grid-cols-2'
-        }`}>
+        {/* Side by Side Layout: User (Left) and AI (Right) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* User Video Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>You</span>
-                {currentSpeaker === 'user' && (
-                  <Badge className="bg-red-500 animate-pulse">
-                    <Mic className="w-3 h-3 mr-1" />
-                    Speaking
-                  </Badge>
-                )}
-                {isListening && currentSpeaker !== 'user' && (
-                  <Badge className="bg-orange-500">
+                {isListening && (
+                  <Badge className="bg-red-500">
                     <Mic className="w-3 h-3 mr-1" />
                     Listening
                   </Badge>
@@ -1131,13 +994,7 @@ const Interview = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>AI Interviewer</span>
-                {currentSpeaker === 'ai' && (
-                  <Badge className="bg-blue-500 animate-pulse font-semibold">
-                    <Volume2 className="w-3 h-3 mr-1" />
-                    AI is Speaking
-                  </Badge>
-                )}
-                {isPlaying && currentSpeaker !== 'ai' && (
+                {isPlaying && (
                   <Badge className="bg-blue-500">
                     <Volume2 className="w-3 h-3 mr-1" />
                     Speaking
@@ -1253,16 +1110,6 @@ const Interview = () => {
           <CardContent className="p-0">
             <ScrollArea className="h-[400px] px-6 pb-6">
               <div className="space-y-4">
-                {/* Processing indicator */}
-                {isProcessingAnswer && (
-                  <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400 animate-pulse">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs bg-yellow-100">Processing...</Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 italic">Processing user answer...</p>
-                  </div>
-                )}
-                
                 {/* Current interim transcript */}
                 {currentTranscript && (
                   <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
