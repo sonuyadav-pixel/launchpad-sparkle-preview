@@ -140,11 +140,7 @@ const Interview = () => {
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      toast({
-        title: "Speech Recognition Failed",
-        description: "Unable to start speech recognition. Please try manually.",
-        variant: "destructive"
-      });
+      // Speech recognition failed - silent failure, will auto-retry
       return false;
     }
   }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
@@ -766,10 +762,8 @@ const Interview = () => {
     // End session in manager
     sessionManager.endSession();
     
-    toast({
-      title: "Interview Ended",
-      description: "Thank you for your time!",
-    });
+    // Navigate to dashboard with feedback form
+    navigate('/dashboard?showFeedback=true');
   };
 
   // Silence Detection for Fallback Logic
