@@ -51,6 +51,7 @@ const Interview = () => {
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const isStartingRecognition = useRef(false); // Prevent concurrent starts
   
   
   
@@ -180,11 +181,16 @@ const Interview = () => {
     recognitionRef.current.onend = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
+      isStartingRecognition.current = false; // Reset the flag
       
-      // Aggressive auto-restart with multiple attempts
+      // Auto-restart with delay to prevent rapid cycling
       if (isInterviewActive) {
         console.log('🔄 Auto-restarting speech recognition...');
-        setTimeout(() => ensureSpeechRecognitionActive(), 100);
+        setTimeout(() => {
+          if (isInterviewActive && !isStartingRecognition.current) {
+            ensureSpeechRecognitionActive();
+          }
+        }, 1000); // Increased delay to prevent rapid restarts
       }
     };
 
@@ -258,16 +264,15 @@ const Interview = () => {
     recognitionRef.current.onerror = (event: any) => {
       console.error('🎤 Speech recognition error:', event.error);
       
-      // Don't show error for network issues, just restart
+      // Handle different error types without aggressive retries
       if (event.error === 'network' || event.error === 'service-not-allowed' || event.error === 'bad-grammar') {
         console.log('🔄 Network/service error, will auto-restart...');
         return;
       }
       
-      // Handle different error types
       if (event.error === 'no-speech') {
         console.log('🔇 No speech detected - continuing...');
-        return; // Don't show error for no-speech
+        return;
       }
       
       if (event.error === 'not-allowed') {
@@ -279,47 +284,26 @@ const Interview = () => {
         return;
       }
       
-      // For other errors, try to restart after a delay
+      // For other errors, try to restart after a longer delay
+      isStartingRecognition.current = false; // Reset flag on error
       setTimeout(() => {
-        if (isInterviewActive && recognitionRef.current && !isListening) {
+        if (isInterviewActive && !isStartingRecognition.current && !isListening) {
           console.log('🔄 Recovering from error, restarting recognition...');
-          try {
-            recognitionRef.current.start();
-          } catch (error) {
-            console.error('🚨 Failed to restart after error:', error);
-          }
+          ensureSpeechRecognitionActive();
         }
-      }, 2000);
+      }, 3000); // Longer delay to prevent error loops
     };
 
     return true;
   }, [isInterviewActive, isMuted]);
 
   const startSpeechRecognition = useCallback(() => {
-    if (!recognitionRef.current) {
-      if (!initializeSpeechRecognition()) return;
+    // Use ensureSpeechRecognitionActive instead for better reliability
+    if (isInterviewActive && !isMuted) {
+      console.log('🚀 Delegating to ensureSpeechRecognitionActive...');
+      ensureSpeechRecognitionActive();
     }
-
-    try {
-      if (!isListening && isInterviewActive && !isMuted) {
-        console.log('🚀 Starting speech recognition...');
-        recognitionRef.current.start();
-      }
-    } catch (error) {
-      console.error('❌ Failed to start speech recognition:', error);
-      // If failed, try to reinitialize and restart
-      setTimeout(() => {
-        if (isInterviewActive && !isMuted) {
-          console.log('🔄 Reinitializing speech recognition after error...');
-          recognitionRef.current = null;
-          initializeSpeechRecognition();
-          if (recognitionRef.current) {
-            recognitionRef.current.start();
-          }
-        }
-      }, 2000);
-    }
-  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
+  }, [isInterviewActive, isMuted, ensureSpeechRecognitionActive]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
@@ -800,20 +784,20 @@ const Interview = () => {
     silenceTimeoutRef.current = setTimeout(checkForSilence, 10000);
   };
 
-  // Speech Recognition Heartbeat to ensure it stays active with enhanced monitoring
+  // Speech Recognition Heartbeat with improved logic
   const setupSpeechHeartbeat = () => {
     const heartbeat = async () => {
       if (!isInterviewActive) return;
       
-      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted);
+      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted, 'isStarting:', isStartingRecognition.current);
       
-      // More aggressive heartbeat - ensure speech recognition is always active when not muted
-      if (!isListening && isInterviewActive && !isMuted) {
+      // Only try to start if not already listening, not muted, not currently starting, and interview is active
+      if (!isListening && isInterviewActive && !isMuted && !isStartingRecognition.current) {
         console.log('💓 Heartbeat: Speech recognition not active, ensuring it starts...');
         await ensureSpeechRecognitionActive();
       }
       
-      // Also check microphone permissions periodically
+      // Check microphone permissions periodically
       if (isInterviewActive && !isMuted) {
         try {
           const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
@@ -826,17 +810,16 @@ const Interview = () => {
             });
           }
         } catch (error) {
-          // Some browsers don't support permissions API
           console.log('💓 Permissions API not supported');
         }
       }
       
-      // Schedule next heartbeat - check every 2 seconds for more aggressive monitoring
-      heartbeatRef.current = setTimeout(heartbeat, 2000);
+      // Schedule next heartbeat - longer interval to reduce conflicts
+      heartbeatRef.current = setTimeout(heartbeat, 5000);
     };
     
-    // Start heartbeat immediately and then every 2 seconds
-    heartbeatRef.current = setTimeout(heartbeat, 500);
+    // Start heartbeat with initial delay
+    heartbeatRef.current = setTimeout(heartbeat, 2000);
   };
 
   // Toggle Functions with enhanced auto-start
