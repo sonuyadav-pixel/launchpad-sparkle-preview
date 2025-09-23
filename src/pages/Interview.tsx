@@ -122,16 +122,16 @@ const Interview = () => {
         }
       }
 
-      // Clean stop existing recognition
+      // Clean stop existing recognition first
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
-          recognitionRef.current = null;
-          setIsListening(false);
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 300)); // Longer wait for cleanup
         } catch (e) {
           console.log('🔄 Ignoring stop error (expected):', e);
         }
+        recognitionRef.current = null;
+        setIsListening(false);
       }
 
       // Initialize speech recognition
@@ -140,19 +140,19 @@ const Interview = () => {
 
       // Start speech recognition
       console.log('🎤 Starting speech recognition...');
-      recognitionRef.current.start();
-      
-      // Wait and verify it started
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (!isListening && retryCount < maxRetries) {
-        console.log('🔄 Speech recognition didn\'t start, retrying...');
-        ensuringSpeechRef.current = false;
-        return ensureSpeechRecognitionActive(retryCount + 1);
+      try {
+        recognitionRef.current.start();
+        console.log('✅ Speech recognition started successfully');
+        return true;
+      } catch (startError: any) {
+        // Handle "already started" error - this means it's working
+        if (startError?.name === 'InvalidStateError' && startError?.message?.includes('already started')) {
+          console.log('✅ Speech recognition was already running');
+          setIsListening(true);
+          return true;
+        }
+        throw startError;
       }
-      
-      console.log('✅ Speech recognition started successfully');
-      return true;
       
     } catch (error: any) {
       console.log('❌ Failed to start speech recognition:', error);
@@ -222,10 +222,14 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Aggressive auto-restart with multiple attempts
-      if (isInterviewActive) {
+      // Only auto-restart if interview is active and we're not already ensuring speech is active
+      if (isInterviewActive && !ensuringSpeechRef.current) {
         console.log('🔄 Auto-restarting speech recognition...');
-        setTimeout(() => ensureSpeechRecognitionActive(), 100);
+        setTimeout(() => {
+          if (!ensuringSpeechRef.current) {
+            ensureSpeechRecognitionActive();
+          }
+        }, 500);
       }
     };
 
