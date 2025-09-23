@@ -175,14 +175,14 @@ const Interview = () => {
       setIsListening(false);
       isStartingRecognition.current = false; // Reset the flag
       
-      // Auto-restart with delay to prevent rapid cycling
+      // Auto-restart immediately if interview is active
       if (isInterviewActive) {
-        console.log('🔄 Auto-restarting speech recognition...');
+        console.log('🔄 Auto-restarting speech recognition immediately...');
         setTimeout(() => {
           if (isInterviewActive && !isStartingRecognition.current) {
             ensureSpeechRecognitionActive();
           }
-        }, 1000); // Increased delay to prevent rapid restarts
+        }, 100); // Minimal delay for immediate restart
       }
     };
 
@@ -272,14 +272,14 @@ const Interview = () => {
         return;
       }
       
-      // For other errors, try to restart after a longer delay
+      // For other errors, try to restart after a minimal delay
       isStartingRecognition.current = false; // Reset flag on error
       setTimeout(() => {
         if (isInterviewActive && !isStartingRecognition.current && !isListening) {
           console.log('🔄 Recovering from error, restarting recognition...');
           ensureSpeechRecognitionActive();
         }
-      }, 3000); // Longer delay to prevent error loops
+      }, 200); // Minimal delay for quick recovery
     };
 
     return true;
@@ -648,11 +648,11 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition automatically with robust initialization
-      console.log('🎯 Starting auto speech recognition...');
+      // Start speech recognition immediately - no delays
+      console.log('🎯 Starting speech recognition immediately...');
       setTimeout(async () => {
         await ensureSpeechRecognitionActive();
-      }, 1000); // Give video time to initialize
+      }, 100); // Minimal delay just to let video initialize
       
       // Start monitoring systems
       setupSpeechHeartbeat();
@@ -795,7 +795,7 @@ const Interview = () => {
     heartbeatRef.current = setTimeout(heartbeat, 2000);
   };
 
-  // Toggle Functions with enhanced auto-start
+  // Toggle Functions with immediate speech recognition
   const toggleMute = async () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
@@ -804,11 +804,11 @@ const Interview = () => {
       // Muting - stop speech recognition
       stopSpeechRecognition();
     } else if (isInterviewActive) {
-      // Unmuting - ensure speech recognition starts robustly
-      console.log('🔊 Unmuting - ensuring speech recognition starts...');
+      // Unmuting - start speech recognition immediately
+      console.log('🔊 Unmuting - starting speech recognition immediately...');
       setTimeout(async () => {
         await ensureSpeechRecognitionActive();
-      }, 500);
+      }, 50); // Very minimal delay
     }
   };
 
