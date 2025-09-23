@@ -573,13 +573,16 @@ const Interview = () => {
 
   // Check for active sessions before starting
   const checkForActiveSession = () => {
+    console.log('🔍 Checking for active session...');
     const hasActive = sessionManager.hasActiveSession();
     const activeId = sessionManager.getActiveSessionId();
+    console.log('🔍 Session check:', { hasActive, activeId, currentSessionId: sessionId });
     
     if (hasActive && activeId !== sessionId) {
       console.log('❌ Active interview detected - please end current session first');
       return false;
     }
+    console.log('✅ Session check passed');
     return true;
   };
 
@@ -602,6 +605,7 @@ const Interview = () => {
   };
 
   const startInterview = async () => {
+    console.log('🔥🔥🔥 START INTERVIEW FUNCTION CALLED!!!');
     try {
       console.log('🎯 Starting interview...');
       
@@ -956,7 +960,10 @@ const Interview = () => {
             <div className="flex items-center justify-center gap-4">
               {!isInterviewActive ? (
                 <Button 
-                  onClick={startInterview}
+                  onClick={() => {
+                    console.log('🔥 Start Interview button clicked!');
+                    startInterview();
+                  }}
                   size="lg"
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
