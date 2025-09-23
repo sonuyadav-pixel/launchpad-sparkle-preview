@@ -80,11 +80,7 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.error('❌ Microphone permission denied:', error);
-      toast({
-        title: "Microphone Access Required",
-        description: "Please allow microphone access to use speech recognition",
-        variant: "destructive"
-      });
+      console.log('❌ Microphone permission denied - silent failure');
       return false;
     }
   }, [toast]);
@@ -152,11 +148,7 @@ const Interview = () => {
     
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       console.error('Speech recognition not supported');
-      toast({
-        title: "Speech Recognition Not Supported",
-        description: "Your browser doesn't support speech recognition",
-        variant: "destructive"
-      });
+      console.log('❌ Speech recognition not supported in this browser');
       return false;
     }
 
@@ -276,11 +268,7 @@ const Interview = () => {
       }
       
       if (event.error === 'not-allowed') {
-        toast({
-          title: "Microphone Access Denied",
-          description: "Please allow microphone access to continue",
-          variant: "destructive"
-        });
+        console.log('❌ Microphone access denied by user');
         return;
       }
       
@@ -380,11 +368,7 @@ const Interview = () => {
     } catch (error) {
       console.error('❌ Error processing complete speech:', error);
       isAISpeaking.current = false;
-      toast({
-        title: "Processing Error",
-        description: "Failed to process speech. Please try again.",
-        variant: "destructive"
-      });
+      console.log('❌ Speech processing error - continuing...');
     }
   };
 
@@ -568,11 +552,7 @@ const Interview = () => {
         errorMessage = "Camera doesn't support the requested settings.";
       }
       
-      toast({
-        title: "Camera Access Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      console.log('❌ Camera access error:', errorMessage);
     }
   };
 
@@ -597,11 +577,7 @@ const Interview = () => {
     const activeId = sessionManager.getActiveSessionId();
     
     if (hasActive && activeId !== sessionId) {
-      toast({
-        title: "Active Interview Detected",
-        description: "Please end your current interview before starting a new one.",
-        variant: "destructive"
-      });
+      console.log('❌ Active interview detected - please end current session first');
       return false;
     }
     return true;
@@ -619,43 +595,44 @@ const Interview = () => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity >= 300000 && isInterviewActive) { // 5 minutes
         console.log('🔒 Auto-closing interview due to inactivity');
-        toast({
-          title: "Interview Auto-Closed",
-          description: "Session ended due to 5 minutes of inactivity",
-          variant: "default"
-        });
+        console.log('🔒 Auto-closing interview due to inactivity');
         endInterview();
       }
     }, 300000); // 5 minutes
   };
 
-  // Interview Control Functions
   const startInterview = async () => {
     try {
       console.log('🎯 Starting interview...');
       
       // Check for active sessions first
       if (!checkForActiveSession()) {
+        console.log('❌ Active session check failed');
         return;
       }
       
+      console.log('✅ Active session check passed');
       setIsInterviewActive(true);
       resetAutoCloseTimer();
       
       // Update session status in database
       if (sessionId) {
         try {
+          console.log('📝 Updating session status to active...');
           await updateSession(sessionId, { 
             status: 'active', 
             started_at: new Date().toISOString() 
           });
+          console.log('✅ Session status updated successfully');
         } catch (error) {
-          console.error('Failed to update session status:', error);
+          console.error('❌ Failed to update session status:', error);
         }
       }
       
+      console.log('📹 Starting video...');
       // Start video
       await startVideo();
+      console.log('✅ Video started successfully');
       
       // Set active session in session manager
       if (sessionId) {
@@ -677,9 +654,9 @@ const Interview = () => {
       setupSpeechHeartbeat();
       setupSilenceDetection();
       
-      // This old forceStart logic is replaced by the new ensureSpeechRecognitionActive
       
       // Welcome message
+      console.log('🤖 Preparing welcome message...');
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
       
       const aiMessage: TranscriptMessage = {
@@ -691,20 +668,16 @@ const Interview = () => {
       
       setLocalTranscript([aiMessage]);
       await addTranscriptMessage(aiMessage);
+      console.log('🎵 Starting TTS for welcome message...');
       await speak(welcomeMessage, 'alloy');
+      console.log('✅ Welcome message TTS completed');
       
-      toast({
-        title: "Interview Started",
-        description: "You can now begin speaking",
-      });
+      console.log('✅ Interview started successfully');
       
     } catch (error) {
       console.error('❌ Error starting interview:', error);
-      toast({
-        title: "Start Error", 
-        description: "Failed to start interview. Please try again.",
-        variant: "destructive"
-      });
+      setIsInterviewActive(false); // Reset state on error
+      // You can add an inline error display here if needed
     }
   };
 
@@ -803,11 +776,7 @@ const Interview = () => {
           const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
           if (permissionStatus.state === 'denied') {
             console.log('💓 Heartbeat: Microphone permission denied');
-            toast({
-              title: "Microphone Access Lost",
-              description: "Please refresh and allow microphone access",
-              variant: "destructive"
-            });
+            console.log('💓 Heartbeat: Microphone permission denied');
           }
         } catch (error) {
           console.log('💓 Permissions API not supported');
