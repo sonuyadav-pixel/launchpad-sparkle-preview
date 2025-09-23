@@ -47,6 +47,12 @@ const Interview = () => {
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
   
+  // Timer and status state
+  const [interviewStartTime, setInterviewStartTime] = useState<Date | null>(null);
+  const [interviewDuration, setInterviewDuration] = useState(0);
+  const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
+  const [currentSpeaker, setCurrentSpeaker] = useState<'user' | 'ai' | 'none'>('none');
+  
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
@@ -69,6 +75,7 @@ const Interview = () => {
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
   const ensuringSpeechRef = useRef(false);
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
@@ -279,6 +286,14 @@ const Interview = () => {
           clearTimeout(speechFinalizationTimer.current);
         }
         
+        // Clear processing timeout if user is still speaking
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          setIsProcessingAnswer(false);
+        }
+        
+        setCurrentSpeaker('user'); // User is speaking
+        
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
             console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
@@ -288,6 +303,7 @@ const Interview = () => {
             pendingTranscript.current = '';
             accumulatedTranscript.current = '';
             setCurrentTranscript('');
+            setCurrentSpeaker('none');
             
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
@@ -296,6 +312,11 @@ const Interview = () => {
             processCompleteUserSpeech(textToFinalize);
           }
         }, 10000); // 10 seconds
+        
+        // Show processing indicator after 5 seconds
+        processingTimeoutRef.current = setTimeout(() => {
+          setIsProcessingAnswer(true);
+        }, 5000); // 5 seconds
       }
       
     };
@@ -378,6 +399,12 @@ const Interview = () => {
     try {
       console.log('🧠 Processing complete user speech:', transcript);
       
+      // Clear processing indicator
+      setIsProcessingAnswer(false);
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+      }
+      
       // Skip if transcript is too short
       if (transcript.length < 3) {
         console.log('🚫 Skipping: transcript too short');
@@ -412,6 +439,7 @@ const Interview = () => {
       if (aiResponse && !isAISpeaking.current) {
         // Mark AI as speaking before starting TTS (but keep speech recognition running)
         isAISpeaking.current = true;
+        setCurrentSpeaker('ai');
         
         const aiMessage: TranscriptMessage = {
           id: (Date.now() + 1).toString(),
@@ -431,10 +459,12 @@ const Interview = () => {
           
           console.log('🤖 AI finished speaking');
           isAISpeaking.current = false;
+          setCurrentSpeaker('none');
           
         } catch (error) {
           console.error('❌ Error in AI response or TTS:', error);
           isAISpeaking.current = false;
+          setCurrentSpeaker('none');
         }
       }
       
@@ -701,6 +731,8 @@ const Interview = () => {
       }
       
       setIsInterviewActive(true);
+      setInterviewStartTime(new Date());
+      setCurrentSpeaker('none');
       resetAutoCloseTimer();
       
       // Update session status in database
@@ -773,9 +805,14 @@ const Interview = () => {
     console.log('🏁 Ending interview...');
     
     setIsInterviewActive(false);
+    setCurrentSpeaker('none');
+    setIsProcessingAnswer(false);
+    setInterviewStartTime(null);
+    setInterviewDuration(0);
     stopSpeechRecognition();
     stopVideo();
     
+    // Clean up all timers
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
     }
@@ -786,6 +823,10 @@ const Interview = () => {
     
     if (autoCloseTimerRef.current) {
       clearTimeout(autoCloseTimerRef.current);
+    }
+    
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
     }
     
     // Clean up session manager
@@ -848,6 +889,30 @@ const Interview = () => {
     
     // Start heartbeat after initial delay
     heartbeatRef.current = setTimeout(heartbeat, 2000);
+  };
+
+  // Timer useEffect for interview duration
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isInterviewActive && interviewStartTime) {
+      interval = setInterval(() => {
+        const now = new Date();
+        const duration = Math.floor((now.getTime() - interviewStartTime.getTime()) / 1000);
+        setInterviewDuration(duration);
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isInterviewActive, interviewStartTime]);
+
+  // Format timer display
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Toggle Functions with enhanced auto-start
@@ -925,18 +990,33 @@ const Interview = () => {
                 LIVE
               </Badge>
             )}
+            {isInterviewActive && (
+              <Badge variant="outline" className="font-mono">
+                {formatTimer(interviewDuration)}
+              </Badge>
+            )}
           </div>
         </div>
 
-        {/* Side by Side Layout: User (Left) and AI (Right) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Side by Side Layout: User (Left) and AI (Right) with Dynamic Sizing */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 transition-all duration-300 ${
+          currentSpeaker === 'user' ? 'md:grid-cols-[2fr_1fr]' : 
+          currentSpeaker === 'ai' ? 'md:grid-cols-[1fr_2fr]' : 
+          'md:grid-cols-2'
+        }`}>
           {/* User Video Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>You</span>
-                {isListening && (
-                  <Badge className="bg-red-500">
+                {currentSpeaker === 'user' && (
+                  <Badge className="bg-red-500 animate-pulse">
+                    <Mic className="w-3 h-3 mr-1" />
+                    Speaking
+                  </Badge>
+                )}
+                {isListening && currentSpeaker !== 'user' && (
+                  <Badge className="bg-orange-500">
                     <Mic className="w-3 h-3 mr-1" />
                     Listening
                   </Badge>
@@ -980,7 +1060,13 @@ const Interview = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <span>AI Interviewer</span>
-                {isPlaying && (
+                {currentSpeaker === 'ai' && (
+                  <Badge className="bg-blue-500 animate-pulse font-semibold">
+                    <Volume2 className="w-3 h-3 mr-1" />
+                    AI is Speaking
+                  </Badge>
+                )}
+                {isPlaying && currentSpeaker !== 'ai' && (
                   <Badge className="bg-blue-500">
                     <Volume2 className="w-3 h-3 mr-1" />
                     Speaking
@@ -1096,6 +1182,16 @@ const Interview = () => {
           <CardContent className="p-0">
             <ScrollArea className="h-[400px] px-6 pb-6">
               <div className="space-y-4">
+                {/* Processing indicator */}
+                {isProcessingAnswer && (
+                  <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400 animate-pulse">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs bg-yellow-100">Processing...</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">Processing user answer...</p>
+                  </div>
+                )}
+                
                 {/* Current interim transcript */}
                 {currentTranscript && (
                   <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
