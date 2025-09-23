@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
@@ -32,7 +32,7 @@ interface TranscriptMessage {
 const Interview = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast } = useToast(); // Keep for potential future use
   const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
   const { updateSession } = useInterviewSession();
 
@@ -52,6 +52,10 @@ const Interview = () => {
   const [interviewDuration, setInterviewDuration] = useState(0);
   const [isProcessingAnswer, setIsProcessingAnswer] = useState(false);
   const [currentSpeaker, setCurrentSpeaker] = useState<'user' | 'ai' | 'none'>('none');
+  
+  // Error state for inline display
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [errorTimeout, setErrorTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -78,6 +82,30 @@ const Interview = () => {
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const aiCheckInTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Inline error management
+  const showInlineError = useCallback((message: string) => {
+    setInlineError(message);
+    
+    // Clear any existing timeout
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+    
+    // Auto-clear error after 5 seconds
+    const timeout = setTimeout(() => {
+      setInlineError(null);
+    }, 5000);
+    
+    setErrorTimeout(timeout);
+  }, [errorTimeout]);
+
+  const clearInlineError = useCallback(() => {
+    setInlineError(null);
+    if (errorTimeout) {
+      clearTimeout(errorTimeout);
+    }
+  }, [errorTimeout]);
+
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
     console.log('🎤 Requesting microphone permission...');
@@ -88,14 +116,10 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.error('❌ Microphone permission denied:', error);
-      toast({
-        title: "Microphone Access Required",
-        description: "Please allow microphone access to use speech recognition",
-        variant: "destructive"
-      });
+      showInlineError("Microphone access required for speech recognition. Please allow microphone access.");
       return false;
     }
-  }, [toast]);
+  }, [showInlineError]);
 
   const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
     const maxRetries = 3;
@@ -200,11 +224,7 @@ const Interview = () => {
     
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       console.error('Speech recognition not supported');
-      toast({
-        title: "Speech Recognition Not Supported",
-        description: "Your browser doesn't support speech recognition",
-        variant: "destructive"
-      });
+      showInlineError("Your browser doesn't support speech recognition. Please use Chrome or Edge.");
       return false;
     }
 
@@ -341,11 +361,7 @@ const Interview = () => {
       }
       
       if (event.error === 'not-allowed') {
-        toast({
-          title: "Microphone Access Denied",
-          description: "Please allow microphone access to continue",
-          variant: "destructive"
-        });
+        showInlineError("Microphone access denied. Please allow microphone access to continue.");
         return;
       }
       
@@ -475,11 +491,7 @@ const Interview = () => {
     } catch (error) {
       console.error('❌ Error processing complete speech:', error);
       isAISpeaking.current = false;
-      toast({
-        title: "Processing Error",
-        description: "Failed to process speech. Please try again.",
-        variant: "destructive"
-      });
+      showInlineError("Failed to process speech. Please try again.");
     }
   };
 
@@ -663,11 +675,7 @@ const Interview = () => {
         errorMessage = "Camera doesn't support the requested settings.";
       }
       
-      toast({
-        title: "Camera Access Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      showInlineError(`Camera Access Error: ${errorMessage}`);
     }
   };
 
@@ -692,11 +700,7 @@ const Interview = () => {
     const activeId = sessionManager.getActiveSessionId();
     
     if (hasActive && activeId !== sessionId) {
-      toast({
-        title: "Active Interview Detected",
-        description: "Please end your current interview before starting a new one.",
-        variant: "destructive"
-      });
+      showInlineError("Please end your current interview before starting a new one.");
       return false;
     }
     return true;
@@ -714,11 +718,7 @@ const Interview = () => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity >= 300000 && isInterviewActive) { // 5 minutes
         console.log('🔒 Auto-closing interview due to inactivity');
-        toast({
-          title: "Interview Auto-Closed",
-          description: "Session ended due to 5 minutes of inactivity",
-          variant: "default"
-        });
+        showInlineError("Interview auto-closed due to 5 minutes of inactivity.");
         endInterview();
       }
     }, 300000); // 5 minutes
@@ -837,18 +837,11 @@ const Interview = () => {
       await addTranscriptMessage(aiMessage);
       await speak(welcomeMessage, 'alloy');
       
-      toast({
-        title: "Interview Started",
-        description: "You can now begin speaking",
-      });
+      clearInlineError(); // Clear any existing errors when interview starts successfully
       
     } catch (error) {
       console.error('❌ Error starting interview:', error);
-      toast({
-        title: "Start Error", 
-        description: "Failed to start interview. Please try again.",
-        variant: "destructive"
-      });
+      showInlineError("Failed to start interview. Please try again.");
     }
   };
 
@@ -1021,6 +1014,9 @@ const Interview = () => {
       if (speechFinalizationTimer.current) {
         clearTimeout(speechFinalizationTimer.current);
       }
+      if (errorTimeout) {
+        clearTimeout(errorTimeout);
+      }
     };
   }, []);
 
@@ -1052,6 +1048,26 @@ const Interview = () => {
             )}
           </div>
         </div>
+
+        {/* Inline Error Display */}
+        {inlineError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500 rounded-full flex-shrink-0"></div>
+                <p className="text-red-800 font-medium">{inlineError}</p>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearInlineError}
+                className="text-red-600 hover:text-red-800"
+              >
+                ×
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Side by Side Layout: User (Left) and AI (Right) with Dynamic Sizing */}
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 transition-all duration-300 ${
