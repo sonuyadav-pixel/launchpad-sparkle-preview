@@ -133,18 +133,26 @@ const Interview = () => {
       // Update interim transcript for live display
       setCurrentTranscript(interimTranscript);
       
-      // Handle interim speech - reset timer and store pending transcript
+      // Handle interim speech - append to existing transcript and reset timer
       if (interimTranscript.trim()) {
-        pendingTranscript.current = interimTranscript;
+        // Append new speech to existing pending transcript with space
+        if (pendingTranscript.current.trim()) {
+          pendingTranscript.current += ' ' + interimTranscript;
+        } else {
+          pendingTranscript.current = interimTranscript;
+        }
         
-        // Clear existing timer and start new 5-second timer
+        // Update live display with accumulated speech
+        setCurrentTranscript(pendingTranscript.current);
+        
+        // Clear existing timer and start new 10-second timer
         if (speechFinalizationTimer.current) {
           clearTimeout(speechFinalizationTimer.current);
         }
         
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
-            console.log('📝 5-second silence detected, finalizing transcript:', pendingTranscript.current);
+            console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
             const textToFinalize = pendingTranscript.current.trim();
             pendingTranscript.current = '';
             setCurrentTranscript('');
@@ -152,10 +160,10 @@ const Interview = () => {
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
             
-            // Process complete user speech regardless of AI speaking state
+            // Process complete accumulated user speech
             processCompleteUserSpeech(textToFinalize);
           }
-        }, 5000); // 5 seconds
+        }, 10000); // 10 seconds
       }
       
     };
