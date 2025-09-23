@@ -56,6 +56,7 @@ const Interview = () => {
   
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
+  const accumulatedTranscript = useRef('');
   const pendingTranscript = useRef('');
   
   // Refs
@@ -130,20 +131,31 @@ const Interview = () => {
         }
       }
       
-      // Update interim transcript for live display
-      setCurrentTranscript(interimTranscript);
-      
-      // Handle interim speech - append to existing transcript and reset timer
-      if (interimTranscript.trim()) {
-        // Append new speech to existing pending transcript with space
-        if (pendingTranscript.current.trim()) {
-          pendingTranscript.current += ' ' + interimTranscript;
+      // Handle final transcript - add to accumulated transcript
+      if (finalTranscript.trim()) {
+        if (accumulatedTranscript.current.trim()) {
+          accumulatedTranscript.current += ' ' + finalTranscript.trim();
         } else {
-          pendingTranscript.current = interimTranscript;
+          accumulatedTranscript.current = finalTranscript.trim();
+        }
+        console.log('📝 Added final transcript to accumulation:', accumulatedTranscript.current);
+      }
+      
+      // Handle interim transcript - show current speech + accumulated
+      if (interimTranscript.trim()) {
+        // Combine accumulated transcript with current interim speech
+        let displayTranscript = accumulatedTranscript.current;
+        if (displayTranscript.trim() && interimTranscript.trim()) {
+          displayTranscript += ' ' + interimTranscript.trim();
+        } else if (interimTranscript.trim()) {
+          displayTranscript = interimTranscript.trim();
         }
         
-        // Update live display with accumulated speech
-        setCurrentTranscript(pendingTranscript.current);
+        // Update live display and pending transcript
+        setCurrentTranscript(displayTranscript);
+        pendingTranscript.current = displayTranscript;
+        
+        // Reset 10-second timer whenever we get new speech
         
         // Clear existing timer and start new 10-second timer
         if (speechFinalizationTimer.current) {
@@ -154,7 +166,10 @@ const Interview = () => {
           if (pendingTranscript.current.trim()) {
             console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
             const textToFinalize = pendingTranscript.current.trim();
+            
+            // Clear all transcript states
             pendingTranscript.current = '';
+            accumulatedTranscript.current = '';
             setCurrentTranscript('');
             
             lastSpeechTime.current = Date.now();
