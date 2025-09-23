@@ -69,86 +69,6 @@ const Interview = () => {
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
-  // Permission and Auto-Start Functions
-  const requestMicrophonePermission = useCallback(async () => {
-    console.log('🎤 Requesting microphone permission...');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(track => track.stop()); // Stop immediately after getting permission
-      console.log('✅ Microphone permission granted');
-      return true;
-    } catch (error) {
-      console.error('❌ Microphone permission denied:', error);
-      toast({
-        title: "Microphone Access Required",
-        description: "Please allow microphone access to use speech recognition",
-        variant: "destructive"
-      });
-      return false;
-    }
-  }, [toast]);
-
-  const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
-    console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
-    
-    if (!isInterviewActive) {
-      console.log('❌ Interview not active, skipping speech recognition');
-      return false;
-    }
-
-    // Check if already listening
-    if (recognitionRef.current && isListening) {
-      console.log('✅ Speech recognition already active');
-      return true;
-    }
-
-    // Request microphone permission first
-    const hasPermission = await requestMicrophonePermission();
-    if (!hasPermission) {
-      console.log('❌ No microphone permission, cannot start speech recognition');
-      return false;
-    }
-
-    // Initialize if needed
-    if (!recognitionRef.current) {
-      const initialized = initializeSpeechRecognition();
-      if (!initialized) return false;
-    }
-
-    // Start speech recognition with retries
-    try {
-      console.log('🎤 Starting speech recognition...');
-      recognitionRef.current.start();
-      
-      // Wait a bit and verify it started
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (!isListening && retryCount < 3) {
-        console.log('🔄 Speech recognition didn\'t start, retrying...');
-        return ensureSpeechRecognitionActive(retryCount + 1);
-      }
-      
-      console.log('✅ Speech recognition started successfully');
-      return true;
-    } catch (error) {
-      console.log('❌ Failed to start speech recognition:', error);
-      
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-        console.log(`🔄 Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return ensureSpeechRecognitionActive(retryCount + 1);
-      }
-      
-      toast({
-        title: "Speech Recognition Failed",
-        description: "Unable to start speech recognition. Please try manually.",
-        variant: "destructive"
-      });
-      return false;
-    }
-  }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
-
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
     console.log('🔧 Initializing Speech Recognition');
@@ -185,11 +105,26 @@ const Interview = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
       
-      // Aggressive auto-restart with multiple attempts
-      if (isInterviewActive) {
-        console.log('🔄 Auto-restarting speech recognition...');
-        setTimeout(() => ensureSpeechRecognitionActive(), 100);
-      }
+      // Force restart after a short delay - make it very robust
+      setTimeout(() => {
+        if (isInterviewActive && recognitionRef.current) {
+          console.log('🔄 Force restarting speech recognition...');
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.log('🔄 Recognition start failed, retrying...', error);
+            setTimeout(() => {
+              if (isInterviewActive && recognitionRef.current) {
+                try {
+                  recognitionRef.current.start();
+                } catch (retryError) {
+                  console.error('🚨 Failed to restart recognition:', retryError);
+                }
+              }
+            }, 2000);
+          }
+        }
+      }, 500);
     };
 
     recognitionRef.current.onresult = (event: any) => {
@@ -687,17 +622,48 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition automatically with robust initialization
-      console.log('🎯 Starting auto speech recognition...');
-      setTimeout(async () => {
-        await ensureSpeechRecognitionActive();
-      }, 1000); // Give video time to initialize
+      // Start speech recognition immediately and aggressively
+      console.log('🎯 Force starting speech recognition...');
+      if (!recognitionRef.current) {
+        initializeSpeechRecognition();
+      }
       
-      // Start monitoring systems
-      setupSpeechHeartbeat();
+      // Ensure speech recognition is properly reset before starting
+      const forceStart = async () => {
+        // First, stop any existing recognition
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (e) {
+            console.log('🔧 Clearing existing recognition');
+          }
+        }
+        
+        // Reinitialize if needed
+        if (!recognitionRef.current) {
+          initializeSpeechRecognition();
+        }
+        
+        // Try to start with proper error handling
+        try {
+          if (recognitionRef.current && !isListening) {
+            console.log('🚀 Starting speech recognition');
+            recognitionRef.current.start();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('✅ Speech recognition started successfully');
+          }
+        } catch (error) {
+          console.log('❌ Speech recognition start failed:', error);
+          // Continue anyway - the interview can still work without perfect speech recognition
+        }
+      };
+      
+      await forceStart();
+      
+      // Setup silence detection and heartbeat
       setupSilenceDetection();
-      
-      // This old forceStart logic is replaced by the new ensureSpeechRecognitionActive
+      setupSpeechHeartbeat();
       
       // Welcome message
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
@@ -806,59 +772,47 @@ const Interview = () => {
     silenceTimeoutRef.current = setTimeout(checkForSilence, 10000);
   };
 
-  // Speech Recognition Heartbeat to ensure it stays active with enhanced monitoring
+  // Speech Recognition Heartbeat to ensure it stays active
   const setupSpeechHeartbeat = () => {
-    const heartbeat = async () => {
+    const heartbeat = () => {
       if (!isInterviewActive) return;
       
-      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted);
-      
-      // More aggressive heartbeat - ensure speech recognition is always active when not muted
-      if (!isListening && isInterviewActive && !isMuted) {
-        console.log('💓 Heartbeat: Speech recognition not active, ensuring it starts...');
-        await ensureSpeechRecognitionActive();
-      }
-      
-      // Also check microphone permissions periodically
-      if (isInterviewActive && !isMuted) {
+      // Check if speech recognition is still active and restart if needed
+      if (!isListening && isInterviewActive && recognitionRef.current) {
+        console.log('💓 Heartbeat: Speech recognition not active, force restarting...');
         try {
-          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-          if (permissionStatus.state === 'denied') {
-            console.log('💓 Heartbeat: Microphone permission denied');
-            toast({
-              title: "Microphone Access Lost",
-              description: "Please refresh and allow microphone access",
-              variant: "destructive"
-            });
-          }
+          recognitionRef.current.start();
         } catch (error) {
-          // Some browsers don't support permissions API
-          console.log('💓 Permissions API not supported');
+          console.log('💓 Heartbeat restart failed, retrying...', error);
+          setTimeout(() => {
+            if (isInterviewActive && recognitionRef.current && !isListening) {
+              try {
+                recognitionRef.current.start();
+              } catch (retryError) {
+                console.error('💓 Heartbeat retry failed:', retryError);
+              }
+            }
+          }, 1000);
         }
       }
       
-      // Schedule next heartbeat - check every 2 seconds for more aggressive monitoring
-      heartbeatRef.current = setTimeout(heartbeat, 2000);
+      // Schedule next heartbeat - check every 3 seconds for more frequent monitoring
+      heartbeatRef.current = setTimeout(heartbeat, 3000);
     };
     
-    // Start heartbeat immediately and then every 2 seconds
-    heartbeatRef.current = setTimeout(heartbeat, 500);
+    
+    // Start heartbeat immediately and then every 3 seconds
+    heartbeatRef.current = setTimeout(heartbeat, 1000);
   };
 
-  // Toggle Functions with enhanced auto-start
-  const toggleMute = async () => {
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
+  // Toggle Functions
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
     
-    if (newMutedState) {
-      // Muting - stop speech recognition
+    if (!isMuted) {
       stopSpeechRecognition();
     } else if (isInterviewActive) {
-      // Unmuting - ensure speech recognition starts robustly
-      console.log('🔊 Unmuting - ensuring speech recognition starts...');
-      setTimeout(async () => {
-        await ensureSpeechRecognitionActive();
-      }, 500);
+      startSpeechRecognition();
     }
   };
 
