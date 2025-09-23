@@ -76,6 +76,7 @@ const Interview = () => {
   const lastActivityRef = useRef<number>(Date.now());
   const ensuringSpeechRef = useRef(false);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const aiCheckInTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
@@ -226,17 +227,17 @@ const Interview = () => {
     };
 
     recognitionRef.current.onend = () => {
-      console.log('🎤 Speech recognition ENDED');
+      console.log('🎤 Speech recognition ENDED - immediately restarting to keep always listening');
       setIsListening(false);
       
-      // Only auto-restart if interview is active and we're not already ensuring speech is active
+      // ALWAYS restart speech recognition if interview is active - NEVER let it stay off
       if (isInterviewActive && !ensuringSpeechRef.current) {
-        console.log('🔄 Auto-restarting speech recognition...');
+        console.log('🔄 Auto-restarting speech recognition to maintain continuous listening...');
         setTimeout(() => {
-          if (!ensuringSpeechRef.current) {
+          if (!ensuringSpeechRef.current && isInterviewActive) {
             ensureSpeechRecognitionActive();
           }
-        }, 500);
+        }, 300); // Shorter delay for immediate restart
       }
     };
 
@@ -293,6 +294,7 @@ const Interview = () => {
         }
         
         setCurrentSpeaker('user'); // User is speaking
+        resetAICheckInTimer(); // Reset AI check-in timer when user speaks
         
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
@@ -307,6 +309,7 @@ const Interview = () => {
             
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
+            resetAICheckInTimer(); // Reset the 2-minute AI check-in timer
             
             // Process complete accumulated user speech
             processCompleteUserSpeech(textToFinalize);
@@ -330,10 +333,11 @@ const Interview = () => {
         return;
       }
       
-      // Handle different error types
+      // Handle different error types - NEVER stop for no-speech, just continue
       if (event.error === 'no-speech') {
-        console.log('🔇 No speech detected - continuing...');
-        return; // Don't show error for no-speech
+        console.log('🔇 No speech detected - continuing listening...');
+        // Do NOT stop or restart - just continue listening
+        return;
       }
       
       if (event.error === 'not-allowed') {
@@ -720,6 +724,52 @@ const Interview = () => {
     }, 300000); // 5 minutes
   };
 
+  // AI Proactive Check-in functionality
+  const resetAICheckInTimer = () => {
+    if (aiCheckInTimerRef.current) {
+      clearTimeout(aiCheckInTimerRef.current);
+    }
+    
+    // Set timer for 2 minutes of user silence
+    aiCheckInTimerRef.current = setTimeout(async () => {
+      if (isInterviewActive && !isAISpeaking.current) {
+        console.log('🤖 2 minutes of silence - AI checking in...');
+        await triggerAICheckIn();
+      }
+    }, 120000); // 2 minutes = 120,000ms
+  };
+
+  const triggerAICheckIn = async () => {
+    try {
+      const checkInMessage = "Hello! Are you still with us? Please let me know if you need a moment or if you'd like to continue with the interview.";
+      
+      isAISpeaking.current = true;
+      setCurrentSpeaker('ai');
+      
+      const aiMessage = {
+        id: Date.now().toString(),
+        speaker: 'ai' as const,
+        message: checkInMessage,
+        timestamp: new Date()
+      };
+      
+      setLocalTranscript(prev => [aiMessage, ...prev]);
+      await addTranscriptMessage(aiMessage);
+      await speak(checkInMessage, 'alloy');
+      
+      isAISpeaking.current = false;
+      setCurrentSpeaker('none');
+      
+      // Reset the timer for another 2 minutes
+      resetAICheckInTimer();
+      
+    } catch (error) {
+      console.error('❌ Error in AI check-in:', error);
+      isAISpeaking.current = false;
+      setCurrentSpeaker('none');
+    }
+  };
+
   // Interview Control Functions
   const startInterview = async () => {
     try {
@@ -734,6 +784,7 @@ const Interview = () => {
       setInterviewStartTime(new Date());
       setCurrentSpeaker('none');
       resetAutoCloseTimer();
+      resetAICheckInTimer(); // Start the 2-minute AI check-in timer
       
       // Update session status in database
       if (sessionId) {
@@ -827,6 +878,10 @@ const Interview = () => {
     
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
+    }
+    
+    if (aiCheckInTimerRef.current) {
+      clearTimeout(aiCheckInTimerRef.current);
     }
     
     // Clean up session manager
