@@ -68,7 +68,6 @@ const Interview = () => {
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
-  const ensuringSpeechRef = useRef(false);
 
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
@@ -90,99 +89,63 @@ const Interview = () => {
   }, [toast]);
 
   const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
-    const maxRetries = 3;
-    
-    // Prevent multiple simultaneous calls
-    if (ensuringSpeechRef.current) {
-      console.log('🔄 Speech recognition initialization already in progress');
-      return false;
-    }
+    console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
     
     if (!isInterviewActive) {
       console.log('❌ Interview not active, skipping speech recognition');
       return false;
     }
 
-    // Check if already properly working
+    // Check if already listening
     if (recognitionRef.current && isListening) {
       console.log('✅ Speech recognition already active');
       return true;
     }
 
-    ensuringSpeechRef.current = true;
-    console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
+    // Request microphone permission first
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) {
+      console.log('❌ No microphone permission, cannot start speech recognition');
+      return false;
+    }
 
-    try {
-      // Request microphone permission first (only on first attempt)
-      if (retryCount === 0) {
-        const hasPermission = await requestMicrophonePermission();
-        if (!hasPermission) {
-          console.log('❌ No microphone permission, cannot start speech recognition');
-          return false;
-        }
-      }
-
-      // Clean stop existing recognition
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-          recognitionRef.current = null;
-          setIsListening(false);
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (e) {
-          console.log('🔄 Ignoring stop error (expected):', e);
-        }
-      }
-
-      // Initialize speech recognition
+    // Initialize if needed
+    if (!recognitionRef.current) {
       const initialized = initializeSpeechRecognition();
       if (!initialized) return false;
+    }
 
-      // Start speech recognition
+    // Start speech recognition with retries
+    try {
       console.log('🎤 Starting speech recognition...');
       recognitionRef.current.start();
       
-      // Wait and verify it started
+      // Wait a bit and verify it started
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!isListening && retryCount < maxRetries) {
+      if (!isListening && retryCount < 3) {
         console.log('🔄 Speech recognition didn\'t start, retrying...');
-        ensuringSpeechRef.current = false;
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
       console.log('✅ Speech recognition started successfully');
       return true;
-      
-    } catch (error: any) {
+    } catch (error) {
       console.log('❌ Failed to start speech recognition:', error);
       
-      // Handle "already started" error as success
-      if (error?.name === 'InvalidStateError' && error?.message?.includes('already started')) {
-        if (isListening) {
-          console.log('✅ Speech recognition was already running');
-          return true;
-        }
-      }
-      
-      if (retryCount < maxRetries) {
-        const delay = 2000; // Fixed 2 second delay
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
         console.log(`🔄 Retrying in ${delay}ms...`);
-        ensuringSpeechRef.current = false;
         await new Promise(resolve => setTimeout(resolve, delay));
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      if (retryCount === 0) { // Only show toast on first failure
-        toast({
-          title: "Speech Recognition Failed", 
-          description: "Unable to start speech recognition. Please try manually.",
-          variant: "destructive"
-        });
-      }
+      toast({
+        title: "Speech Recognition Failed",
+        description: "Unable to start speech recognition. Please try manually.",
+        variant: "destructive"
+      });
       return false;
-    } finally {
-      ensuringSpeechRef.current = false;
     }
   }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
 
@@ -848,20 +811,38 @@ const Interview = () => {
     const heartbeat = async () => {
       if (!isInterviewActive) return;
       
-      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted, 'ensuring:', ensuringSpeechRef.current);
+      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted);
       
-      // Only restart if not already trying to ensure and actually not working
-      if (!isListening && isInterviewActive && !isMuted && !ensuringSpeechRef.current) {
+      // More aggressive heartbeat - ensure speech recognition is always active when not muted
+      if (!isListening && isInterviewActive && !isMuted) {
         console.log('💓 Heartbeat: Speech recognition not active, ensuring it starts...');
         await ensureSpeechRecognitionActive();
       }
       
-      // Schedule next heartbeat - less aggressive at 5 seconds to reduce noise
-      heartbeatRef.current = setTimeout(heartbeat, 5000);
+      // Also check microphone permissions periodically
+      if (isInterviewActive && !isMuted) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          if (permissionStatus.state === 'denied') {
+            console.log('💓 Heartbeat: Microphone permission denied');
+            toast({
+              title: "Microphone Access Lost",
+              description: "Please refresh and allow microphone access",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          // Some browsers don't support permissions API
+          console.log('💓 Permissions API not supported');
+        }
+      }
+      
+      // Schedule next heartbeat - check every 2 seconds for more aggressive monitoring
+      heartbeatRef.current = setTimeout(heartbeat, 2000);
     };
     
-    // Start heartbeat after initial delay
-    heartbeatRef.current = setTimeout(heartbeat, 2000);
+    // Start heartbeat immediately and then every 2 seconds
+    heartbeatRef.current = setTimeout(heartbeat, 500);
   };
 
   // Toggle Functions with enhanced auto-start
