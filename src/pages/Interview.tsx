@@ -88,8 +88,14 @@ const Interview = () => {
   const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
     console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
     
-    if (!isInterviewActive) {
-      console.log('❌ Interview not active, skipping speech recognition');
+    // Prevent multiple simultaneous starts
+    if (isStartingRecognition.current) {
+      console.log('🔄 Speech recognition startup already in progress...');
+      return false;
+    }
+    
+    if (!isInterviewActive || isMuted) {
+      console.log('❌ Interview not active or muted, skipping speech recognition');
       return false;
     }
 
@@ -99,29 +105,46 @@ const Interview = () => {
       return true;
     }
 
+    isStartingRecognition.current = true;
+
     // Request microphone permission first
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       console.log('❌ No microphone permission, cannot start speech recognition');
+      isStartingRecognition.current = false;
       return false;
     }
 
     // Initialize if needed
     if (!recognitionRef.current) {
       const initialized = initializeSpeechRecognition();
-      if (!initialized) return false;
+      if (!initialized) {
+        isStartingRecognition.current = false;
+        return false;
+      }
     }
 
-    // Start speech recognition with retries
+    // Ensure clean state before starting
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    } catch (e) {
+      // Ignore errors when stopping
+    }
+
+    // Start speech recognition
     try {
       console.log('🎤 Starting speech recognition...');
       recognitionRef.current.start();
       
-      // Wait a bit and verify it started
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait and verify it started
+      await new Promise(resolve => setTimeout(resolve, 800));
       
-      if (!isListening && retryCount < 3) {
-        console.log('🔄 Speech recognition didn\'t start, retrying...');
+      if (!isListening && retryCount < 1) {
+        console.log('🔄 Speech recognition didn\'t start, retrying once...');
+        isStartingRecognition.current = false;
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
@@ -129,18 +152,24 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.log('❌ Failed to start speech recognition:', error);
+      isStartingRecognition.current = false;
       
-      if (retryCount < 3) {
-        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-        console.log(`🔄 Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+      // Don't retry on "already started" errors
+      if (error.message?.includes('already started')) {
+        console.log('🔄 Recognition already started - resetting state');
+        setIsListening(true);
+        return true;
+      }
+      
+      if (retryCount < 1) {
+        console.log(`🔄 Retrying in 1000ms...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      // Speech recognition failed - silent failure, will auto-retry
       return false;
     }
-  }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
+  }, [isInterviewActive, isMuted, isListening, requestMicrophonePermission, toast]);
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -175,14 +204,14 @@ const Interview = () => {
       setIsListening(false);
       isStartingRecognition.current = false; // Reset the flag
       
-      // Auto-restart immediately if interview is active
-      if (isInterviewActive) {
-        console.log('🔄 Auto-restarting speech recognition immediately...');
+      // Auto-restart only if interview is active and not manually stopped
+      if (isInterviewActive && !isMuted) {
+        console.log('🔄 Auto-restarting speech recognition after delay...');
         setTimeout(() => {
-          if (isInterviewActive && !isStartingRecognition.current) {
+          if (isInterviewActive && !isMuted && !isStartingRecognition.current && !isListening) {
             ensureSpeechRecognitionActive();
           }
-        }, 100); // Minimal delay for immediate restart
+        }, 1500); // Longer delay to prevent rapid cycling
       }
     };
 
@@ -272,14 +301,14 @@ const Interview = () => {
         return;
       }
       
-      // For other errors, try to restart after a minimal delay
+      // For other errors, try to restart after a longer delay
       isStartingRecognition.current = false; // Reset flag on error
       setTimeout(() => {
-        if (isInterviewActive && !isStartingRecognition.current && !isListening) {
+        if (isInterviewActive && !isMuted && !isStartingRecognition.current && !isListening) {
           console.log('🔄 Recovering from error, restarting recognition...');
           ensureSpeechRecognitionActive();
         }
-      }, 200); // Minimal delay for quick recovery
+      }, 2000); // Longer delay to prevent error loops
     };
 
     return true;
@@ -787,12 +816,12 @@ const Interview = () => {
         }
       }
       
-      // Schedule next heartbeat - longer interval to reduce conflicts
-      heartbeatRef.current = setTimeout(heartbeat, 5000);
+      // Schedule next heartbeat - much longer interval to prevent interference
+      heartbeatRef.current = setTimeout(heartbeat, 30000);
     };
     
-    // Start heartbeat with initial delay
-    heartbeatRef.current = setTimeout(heartbeat, 2000);
+    // Start heartbeat with longer initial delay
+    heartbeatRef.current = setTimeout(heartbeat, 10000);
   };
 
   // Toggle Functions with immediate speech recognition
