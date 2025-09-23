@@ -52,6 +52,10 @@ const Interview = () => {
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
   
+  // Interim speech storage for when AI is speaking
+  const [interimSpeech, setInterimSpeech] = useState('');
+  const interimSpeechRef = useRef('');
+  
   
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
@@ -151,8 +155,15 @@ const Interview = () => {
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
             
-            // Process complete user speech regardless of AI speaking state
-            processCompleteUserSpeech(textToFinalize);
+            // Check if AI is speaking - if yes, store in interim state
+            if (isAISpeaking.current) {
+              console.log('🔄 AI is speaking - storing speech in interim state:', textToFinalize);
+              interimSpeechRef.current += ' ' + textToFinalize;
+              setInterimSpeech(interimSpeechRef.current.trim());
+            } else {
+              // Normal processing when AI is not speaking - process complete user speech
+              processCompleteUserSpeech(textToFinalize);
+            }
           }
         }, 5000); // 5 seconds
       }
@@ -269,8 +280,43 @@ const Interview = () => {
             speak(aiResponse, 'alloy') // ElevenLabs TTS conversion and playback
           ]);
           
-          console.log('🤖 AI finished speaking');
+          console.log('🤖 AI finished speaking, checking for interim speech...');
           isAISpeaking.current = false;
+          
+          // Wait 5 seconds, then add interim speech back to interim results captured
+          if (interimSpeechRef.current.trim()) {
+            console.log('🔄 AI finished, waiting 5 seconds before processing interim speech:', interimSpeechRef.current);
+            const storedSpeech = interimSpeechRef.current.trim();
+            
+            // Clear interim state
+            interimSpeechRef.current = '';
+            setInterimSpeech('');
+            
+            // Wait 5 seconds, then inject back into interim results system
+            setTimeout(() => {
+              console.log('🔄 Adding stored speech back to interim results:', storedSpeech);
+              setCurrentTranscript(storedSpeech);
+              pendingTranscript.current = storedSpeech;
+              
+              // Start the normal 5-second finalization timer
+              if (speechFinalizationTimer.current) {
+                clearTimeout(speechFinalizationTimer.current);
+              }
+              
+              speechFinalizationTimer.current = setTimeout(() => {
+                if (pendingTranscript.current.trim()) {
+                  console.log('📝 Processing stored speech after 5-second timer:', pendingTranscript.current);
+                  const textToFinalize = pendingTranscript.current.trim();
+                  pendingTranscript.current = '';
+                  setCurrentTranscript('');
+                  
+                  // Process through normal flow
+                  processCompleteUserSpeech(textToFinalize);
+                }
+              }, 5000); // 5 seconds for normal finalization
+              
+            }, 5000); // 5 seconds wait after AI finishes
+          }
           
         } catch (error) {
           console.error('❌ Error in AI response or TTS:', error);
@@ -936,7 +982,16 @@ const Interview = () => {
                     <PhoneOff className="w-5 h-5 mr-2" />
                     End Interview
                   </Button>
-                  
+                {/* Interim speech during AI talking */}
+                {interimSpeech && isAISpeaking.current && (
+                  <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant="outline" className="text-xs bg-yellow-100">You (waiting for AI...)</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 italic">{interimSpeech}</p>
+                  </div>
+                )}
+                
                   {/* Manual Speech Control for debugging */}
                   <Button
                     onClick={() => {
