@@ -51,7 +51,6 @@ const Interview = () => {
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
-  const isStartingRecognition = useRef(false); // Prevent concurrent starts
   
   
   
@@ -80,7 +79,11 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.error('❌ Microphone permission denied:', error);
-      console.log('❌ Microphone permission denied - silent failure');
+      toast({
+        title: "Microphone Access Required",
+        description: "Please allow microphone access to use speech recognition",
+        variant: "destructive"
+      });
       return false;
     }
   }, [toast]);
@@ -88,14 +91,8 @@ const Interview = () => {
   const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
     console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
     
-    // Prevent multiple simultaneous starts
-    if (isStartingRecognition.current) {
-      console.log('🔄 Speech recognition startup already in progress...');
-      return false;
-    }
-    
-    if (!isInterviewActive || isMuted) {
-      console.log('❌ Interview not active or muted, skipping speech recognition');
+    if (!isInterviewActive) {
+      console.log('❌ Interview not active, skipping speech recognition');
       return false;
     }
 
@@ -105,46 +102,29 @@ const Interview = () => {
       return true;
     }
 
-    isStartingRecognition.current = true;
-
     // Request microphone permission first
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       console.log('❌ No microphone permission, cannot start speech recognition');
-      isStartingRecognition.current = false;
       return false;
     }
 
     // Initialize if needed
     if (!recognitionRef.current) {
       const initialized = initializeSpeechRecognition();
-      if (!initialized) {
-        isStartingRecognition.current = false;
-        return false;
-      }
+      if (!initialized) return false;
     }
 
-    // Ensure clean state before starting
-    try {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        await new Promise(resolve => setTimeout(resolve, 200));
-      }
-    } catch (e) {
-      // Ignore errors when stopping
-    }
-
-    // Start speech recognition
+    // Start speech recognition with retries
     try {
       console.log('🎤 Starting speech recognition...');
       recognitionRef.current.start();
       
-      // Wait and verify it started
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Wait a bit and verify it started
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!isListening && retryCount < 1) {
-        console.log('🔄 Speech recognition didn\'t start, retrying once...');
-        isStartingRecognition.current = false;
+      if (!isListening && retryCount < 3) {
+        console.log('🔄 Speech recognition didn\'t start, retrying...');
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
@@ -152,24 +132,22 @@ const Interview = () => {
       return true;
     } catch (error) {
       console.log('❌ Failed to start speech recognition:', error);
-      isStartingRecognition.current = false;
       
-      // Don't retry on "already started" errors
-      if (error.message?.includes('already started')) {
-        console.log('🔄 Recognition already started - resetting state');
-        setIsListening(true);
-        return true;
-      }
-      
-      if (retryCount < 1) {
-        console.log(`🔄 Retrying in 1000ms...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.log(`🔄 Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
+      toast({
+        title: "Speech Recognition Failed",
+        description: "Unable to start speech recognition. Please try manually.",
+        variant: "destructive"
+      });
       return false;
     }
-  }, [isInterviewActive, isMuted, isListening, requestMicrophonePermission, toast]);
+  }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -177,7 +155,11 @@ const Interview = () => {
     
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       console.error('Speech recognition not supported');
-      console.log('❌ Speech recognition not supported in this browser');
+      toast({
+        title: "Speech Recognition Not Supported",
+        description: "Your browser doesn't support speech recognition",
+        variant: "destructive"
+      });
       return false;
     }
 
@@ -202,16 +184,11 @@ const Interview = () => {
     recognitionRef.current.onend = () => {
       console.log('🎤 Speech recognition ENDED');
       setIsListening(false);
-      isStartingRecognition.current = false; // Reset the flag
       
-      // Auto-restart only if interview is active and not manually stopped
-      if (isInterviewActive && !isMuted) {
-        console.log('🔄 Auto-restarting speech recognition after delay...');
-        setTimeout(() => {
-          if (isInterviewActive && !isMuted && !isStartingRecognition.current && !isListening) {
-            ensureSpeechRecognitionActive();
-          }
-        }, 1500); // Longer delay to prevent rapid cycling
+      // Aggressive auto-restart with multiple attempts
+      if (isInterviewActive) {
+        console.log('🔄 Auto-restarting speech recognition...');
+        setTimeout(() => ensureSpeechRecognitionActive(), 100);
       }
     };
 
@@ -285,42 +262,68 @@ const Interview = () => {
     recognitionRef.current.onerror = (event: any) => {
       console.error('🎤 Speech recognition error:', event.error);
       
-      // Handle different error types without aggressive retries
+      // Don't show error for network issues, just restart
       if (event.error === 'network' || event.error === 'service-not-allowed' || event.error === 'bad-grammar') {
         console.log('🔄 Network/service error, will auto-restart...');
         return;
       }
       
+      // Handle different error types
       if (event.error === 'no-speech') {
         console.log('🔇 No speech detected - continuing...');
-        return;
+        return; // Don't show error for no-speech
       }
       
       if (event.error === 'not-allowed') {
-        console.log('❌ Microphone access denied by user');
+        toast({
+          title: "Microphone Access Denied",
+          description: "Please allow microphone access to continue",
+          variant: "destructive"
+        });
         return;
       }
       
-      // For other errors, try to restart after a longer delay
-      isStartingRecognition.current = false; // Reset flag on error
+      // For other errors, try to restart after a delay
       setTimeout(() => {
-        if (isInterviewActive && !isMuted && !isStartingRecognition.current && !isListening) {
+        if (isInterviewActive && recognitionRef.current && !isListening) {
           console.log('🔄 Recovering from error, restarting recognition...');
-          ensureSpeechRecognitionActive();
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.error('🚨 Failed to restart after error:', error);
+          }
         }
-      }, 2000); // Longer delay to prevent error loops
+      }, 2000);
     };
 
     return true;
   }, [isInterviewActive, isMuted]);
 
   const startSpeechRecognition = useCallback(() => {
-    // Use ensureSpeechRecognitionActive instead for better reliability
-    if (isInterviewActive && !isMuted) {
-      console.log('🚀 Delegating to ensureSpeechRecognitionActive...');
-      ensureSpeechRecognitionActive();
+    if (!recognitionRef.current) {
+      if (!initializeSpeechRecognition()) return;
     }
-  }, [isInterviewActive, isMuted, ensureSpeechRecognitionActive]);
+
+    try {
+      if (!isListening && isInterviewActive && !isMuted) {
+        console.log('🚀 Starting speech recognition...');
+        recognitionRef.current.start();
+      }
+    } catch (error) {
+      console.error('❌ Failed to start speech recognition:', error);
+      // If failed, try to reinitialize and restart
+      setTimeout(() => {
+        if (isInterviewActive && !isMuted) {
+          console.log('🔄 Reinitializing speech recognition after error...');
+          recognitionRef.current = null;
+          initializeSpeechRecognition();
+          if (recognitionRef.current) {
+            recognitionRef.current.start();
+          }
+        }
+      }, 2000);
+    }
+  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current && isListening) {
@@ -397,7 +400,11 @@ const Interview = () => {
     } catch (error) {
       console.error('❌ Error processing complete speech:', error);
       isAISpeaking.current = false;
-      console.log('❌ Speech processing error - continuing...');
+      toast({
+        title: "Processing Error",
+        description: "Failed to process speech. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -581,7 +588,11 @@ const Interview = () => {
         errorMessage = "Camera doesn't support the requested settings.";
       }
       
-      console.log('❌ Camera access error:', errorMessage);
+      toast({
+        title: "Camera Access Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
@@ -602,16 +613,17 @@ const Interview = () => {
 
   // Check for active sessions before starting
   const checkForActiveSession = () => {
-    console.log('🔍 Checking for active session...');
     const hasActive = sessionManager.hasActiveSession();
     const activeId = sessionManager.getActiveSessionId();
-    console.log('🔍 Session check:', { hasActive, activeId, currentSessionId: sessionId });
     
     if (hasActive && activeId !== sessionId) {
-      console.log('❌ Active interview detected - please end current session first');
+      toast({
+        title: "Active Interview Detected",
+        description: "Please end your current interview before starting a new one.",
+        variant: "destructive"
+      });
       return false;
     }
-    console.log('✅ Session check passed');
     return true;
   };
 
@@ -627,45 +639,43 @@ const Interview = () => {
       const timeSinceActivity = Date.now() - lastActivityRef.current;
       if (timeSinceActivity >= 300000 && isInterviewActive) { // 5 minutes
         console.log('🔒 Auto-closing interview due to inactivity');
-        console.log('🔒 Auto-closing interview due to inactivity');
+        toast({
+          title: "Interview Auto-Closed",
+          description: "Session ended due to 5 minutes of inactivity",
+          variant: "default"
+        });
         endInterview();
       }
     }, 300000); // 5 minutes
   };
 
+  // Interview Control Functions
   const startInterview = async () => {
-    console.log('🔥🔥🔥 START INTERVIEW FUNCTION CALLED!!!');
     try {
       console.log('🎯 Starting interview...');
       
       // Check for active sessions first
       if (!checkForActiveSession()) {
-        console.log('❌ Active session check failed');
         return;
       }
       
-      console.log('✅ Active session check passed');
       setIsInterviewActive(true);
       resetAutoCloseTimer();
       
       // Update session status in database
       if (sessionId) {
         try {
-          console.log('📝 Updating session status to active...');
           await updateSession(sessionId, { 
             status: 'active', 
             started_at: new Date().toISOString() 
           });
-          console.log('✅ Session status updated successfully');
         } catch (error) {
-          console.error('❌ Failed to update session status:', error);
+          console.error('Failed to update session status:', error);
         }
       }
       
-      console.log('📹 Starting video...');
       // Start video
       await startVideo();
-      console.log('✅ Video started successfully');
       
       // Set active session in session manager
       if (sessionId) {
@@ -677,19 +687,19 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition immediately - no delays
-      console.log('🎯 Starting speech recognition immediately...');
+      // Start speech recognition automatically with robust initialization
+      console.log('🎯 Starting auto speech recognition...');
       setTimeout(async () => {
         await ensureSpeechRecognitionActive();
-      }, 100); // Minimal delay just to let video initialize
+      }, 1000); // Give video time to initialize
       
       // Start monitoring systems
       setupSpeechHeartbeat();
       setupSilenceDetection();
       
+      // This old forceStart logic is replaced by the new ensureSpeechRecognitionActive
       
       // Welcome message
-      console.log('🤖 Preparing welcome message...');
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
       
       const aiMessage: TranscriptMessage = {
@@ -701,16 +711,20 @@ const Interview = () => {
       
       setLocalTranscript([aiMessage]);
       await addTranscriptMessage(aiMessage);
-      console.log('🎵 Starting TTS for welcome message...');
       await speak(welcomeMessage, 'alloy');
-      console.log('✅ Welcome message TTS completed');
       
-      console.log('✅ Interview started successfully');
+      toast({
+        title: "Interview Started",
+        description: "You can now begin speaking",
+      });
       
     } catch (error) {
       console.error('❌ Error starting interview:', error);
-      setIsInterviewActive(false); // Reset state on error
-      // You can add an inline error display here if needed
+      toast({
+        title: "Start Error", 
+        description: "Failed to start interview. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -752,8 +766,10 @@ const Interview = () => {
     // End session in manager
     sessionManager.endSession();
     
-    // Navigate to dashboard with feedback form
-    navigate('/dashboard?showFeedback=true');
+    toast({
+      title: "Interview Ended",
+      description: "Thank you for your time!",
+    });
   };
 
   // Silence Detection for Fallback Logic
@@ -790,41 +806,46 @@ const Interview = () => {
     silenceTimeoutRef.current = setTimeout(checkForSilence, 10000);
   };
 
-  // Speech Recognition Heartbeat with improved logic
+  // Speech Recognition Heartbeat to ensure it stays active with enhanced monitoring
   const setupSpeechHeartbeat = () => {
     const heartbeat = async () => {
       if (!isInterviewActive) return;
       
-      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted, 'isStarting:', isStartingRecognition.current);
+      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted);
       
-      // Only try to start if not already listening, not muted, not currently starting, and interview is active
-      if (!isListening && isInterviewActive && !isMuted && !isStartingRecognition.current) {
+      // More aggressive heartbeat - ensure speech recognition is always active when not muted
+      if (!isListening && isInterviewActive && !isMuted) {
         console.log('💓 Heartbeat: Speech recognition not active, ensuring it starts...');
         await ensureSpeechRecognitionActive();
       }
       
-      // Check microphone permissions periodically
+      // Also check microphone permissions periodically
       if (isInterviewActive && !isMuted) {
         try {
           const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
           if (permissionStatus.state === 'denied') {
             console.log('💓 Heartbeat: Microphone permission denied');
-            console.log('💓 Heartbeat: Microphone permission denied');
+            toast({
+              title: "Microphone Access Lost",
+              description: "Please refresh and allow microphone access",
+              variant: "destructive"
+            });
           }
         } catch (error) {
+          // Some browsers don't support permissions API
           console.log('💓 Permissions API not supported');
         }
       }
       
-      // Schedule next heartbeat - much longer interval to prevent interference
-      heartbeatRef.current = setTimeout(heartbeat, 30000);
+      // Schedule next heartbeat - check every 2 seconds for more aggressive monitoring
+      heartbeatRef.current = setTimeout(heartbeat, 2000);
     };
     
-    // Start heartbeat with longer initial delay
-    heartbeatRef.current = setTimeout(heartbeat, 10000);
+    // Start heartbeat immediately and then every 2 seconds
+    heartbeatRef.current = setTimeout(heartbeat, 500);
   };
 
-  // Toggle Functions with immediate speech recognition
+  // Toggle Functions with enhanced auto-start
   const toggleMute = async () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
@@ -833,11 +854,11 @@ const Interview = () => {
       // Muting - stop speech recognition
       stopSpeechRecognition();
     } else if (isInterviewActive) {
-      // Unmuting - start speech recognition immediately
-      console.log('🔊 Unmuting - starting speech recognition immediately...');
+      // Unmuting - ensure speech recognition starts robustly
+      console.log('🔊 Unmuting - ensuring speech recognition starts...');
       setTimeout(async () => {
         await ensureSpeechRecognitionActive();
-      }, 50); // Very minimal delay
+      }, 500);
     }
   };
 
@@ -989,10 +1010,7 @@ const Interview = () => {
             <div className="flex items-center justify-center gap-4">
               {!isInterviewActive ? (
                 <Button 
-                  onClick={() => {
-                    console.log('🔥 Start Interview button clicked!');
-                    startInterview();
-                  }}
+                  onClick={startInterview}
                   size="lg"
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
