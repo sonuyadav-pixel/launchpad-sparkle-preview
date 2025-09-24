@@ -181,12 +181,30 @@ Generate the next appropriate interview question. Keep it natural, professional,
       setIsUserSpeaking(true);
     }
     
-    // Add to accumulated speech (both interim and browser-final)
+    // Smart append - only add new words, not duplicates
     if (transcript.trim()) {
-      if (accumulatedSpeechRef.current && !accumulatedSpeechRef.current.endsWith(' ')) {
-        accumulatedSpeechRef.current += ' ';
+      const currentAccumulated = accumulatedSpeechRef.current.trim();
+      const newTranscript = transcript.trim();
+      
+      if (!currentAccumulated) {
+        // First speech, use it as is
+        accumulatedSpeechRef.current = newTranscript;
+      } else {
+        // Check if new transcript is an extension of current accumulated speech
+        if (newTranscript.startsWith(currentAccumulated)) {
+          // Extract only the new part
+          const newPart = newTranscript.substring(currentAccumulated.length).trim();
+          if (newPart) {
+            accumulatedSpeechRef.current = currentAccumulated + ' ' + newPart;
+          }
+        } else {
+          // If it doesn't start with current accumulated, it might be a completely new phrase
+          // This can happen if speech recognition restarted
+          accumulatedSpeechRef.current = currentAccumulated + ' ' + newTranscript;
+        }
       }
-      accumulatedSpeechRef.current += transcript.trim();
+      
+      console.log('🎤 Updated accumulated speech:', accumulatedSpeechRef.current);
     }
     
     // Show accumulated speech in transcript as interim
