@@ -59,6 +59,35 @@ const Interview = () => {
   const accumulatedTranscript = useRef('');
   const pendingTranscript = useRef('');
   
+  // Smart word accumulation helper function
+  const appendNewWords = useCallback((existingText: string, incomingText: string): string => {
+    if (!existingText.trim()) return incomingText.trim();
+    if (!incomingText.trim()) return existingText.trim();
+    
+    const existingWords = existingText.trim().split(/\s+/);
+    const incomingWords = incomingText.trim().split(/\s+/);
+    
+    // Find where the overlap ends and new words begin
+    let overlapIndex = 0;
+    for (let i = 0; i < Math.min(existingWords.length, incomingWords.length); i++) {
+      if (existingWords[existingWords.length - 1 - i]?.toLowerCase() === 
+          incomingWords[incomingWords.length - 1 - i]?.toLowerCase()) {
+        overlapIndex = i + 1;
+      } else {
+        break;
+      }
+    }
+    
+    // Extract only the new words
+    const newWords = incomingWords.slice(0, incomingWords.length - overlapIndex);
+    
+    // If no new words, return existing text
+    if (newWords.length === 0) return existingText.trim();
+    
+    // Append new words to existing text
+    return `${existingText.trim()} ${newWords.join(' ')}`.trim();
+  }, []);
+  
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -203,25 +232,17 @@ const Interview = () => {
         }
       }
       
-      // Handle final transcript - add to accumulated transcript
+      // Handle final transcript - use smart append to avoid duplication
       if (finalTranscript.trim()) {
-        if (accumulatedTranscript.current.trim()) {
-          accumulatedTranscript.current += ' ' + finalTranscript.trim();
-        } else {
-          accumulatedTranscript.current = finalTranscript.trim();
-        }
+        accumulatedTranscript.current = appendNewWords(accumulatedTranscript.current, finalTranscript.trim());
         console.log('📝 Added final transcript to accumulation:', accumulatedTranscript.current);
       }
       
       // Handle interim transcript - show current speech + accumulated
       if (interimTranscript.trim()) {
-        // Combine accumulated transcript with current interim speech
-        let displayTranscript = accumulatedTranscript.current;
-        if (displayTranscript.trim() && interimTranscript.trim()) {
-          displayTranscript += ' ' + interimTranscript.trim();
-        } else if (interimTranscript.trim()) {
-          displayTranscript = interimTranscript.trim();
-        }
+        // Combine accumulated transcript with current interim speech using smart append
+        const fullTranscript = accumulatedTranscript.current.trim() + ' ' + interimTranscript.trim();
+        const displayTranscript = appendNewWords(accumulatedTranscript.current, fullTranscript);
         
         // Update live display and pending transcript
         setCurrentTranscript(displayTranscript);
