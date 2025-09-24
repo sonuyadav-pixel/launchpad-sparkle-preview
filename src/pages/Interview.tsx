@@ -240,9 +240,10 @@ const Interview = () => {
       
       // Handle interim transcript - show current speech + accumulated
       if (interimTranscript.trim()) {
-        // Combine accumulated transcript with current interim speech using smart append
-        const fullTranscript = accumulatedTranscript.current.trim() + ' ' + interimTranscript.trim();
-        const displayTranscript = appendNewWords(accumulatedTranscript.current, fullTranscript);
+        // For interim results, just append to accumulated transcript
+        const displayTranscript = accumulatedTranscript.current.trim() 
+          ? `${accumulatedTranscript.current} ${interimTranscript.trim()}` 
+          : interimTranscript.trim();
         
         // Update live display and pending transcript
         setCurrentTranscript(displayTranscript);
@@ -402,15 +403,20 @@ const Interview = () => {
           // PARALLEL: Add AI response to database AND start TTS conversion
           const [, ] = await Promise.all([
             addTranscriptMessage(aiMessage),
-            speak(aiResponse, 'alloy') // ElevenLabs TTS conversion and playback
+            speak(aiResponse, 'alloy').catch((ttsError) => {
+              console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
+              // Don't throw error, just log it - interview can continue without TTS
+              return null;
+            })
           ]);
           
           console.log('🤖 AI finished speaking');
           isAISpeaking.current = false;
           
         } catch (error) {
-          console.error('❌ Error in AI response or TTS:', error);
+          console.error('❌ Error in AI response processing:', error);
           isAISpeaking.current = false;
+          // Don't show toast for TTS errors - they're not critical for interview flow
         }
       }
       
@@ -728,7 +734,14 @@ const Interview = () => {
       
       setLocalTranscript([aiMessage]);
       await addTranscriptMessage(aiMessage);
-      await speak(welcomeMessage, 'alloy');
+      
+      // Try TTS but don't fail the interview startup if it fails
+      try {
+        await speak(welcomeMessage, 'alloy');
+      } catch (ttsError) {
+        console.warn('⚠️ TTS failed during startup, continuing without audio:', ttsError);
+        // Interview can continue without TTS - not a critical failure
+      }
       
       toast({
         title: "Interview Started",
