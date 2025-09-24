@@ -199,19 +199,29 @@ const InterviewModule = () => {
             <div className="text-center space-y-4">
               <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
                 <Video className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <h3 className="text-lg font-semibold mb-2">Ready to Practice?</h3>
+                <h3 className="text-lg font-semibold mb-2">AI Interview Ready! 🎯</h3>
                 <p className="text-muted-foreground mb-4">
-                  Start your AI interview session and get personalized feedback
+                  Test the new AI interview with real-time voice detection, smart TTS, and live transcription
                 </p>
-                <Button 
-                  onClick={handleStartNewInterview} 
-                  size="lg"
-                  className="px-8"
-                  disabled={loading}
-                >
-                  <Video className="h-4 w-4 mr-2" />
-                  {loading ? 'Loading...' : 'Start New Interview'}
-                </Button>
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => navigate('/interview')} 
+                    size="lg"
+                    className="px-8 w-full bg-gradient-to-r from-primary to-primary/80"
+                  >
+                    <Video className="h-4 w-4 mr-2" />
+                    🚀 Test AI Interview (New!)
+                  </Button>
+                  <Button 
+                    onClick={handleStartNewInterview} 
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    {loading ? 'Loading...' : 'Start with Session Creation'}
+                  </Button>
+                </div>
               </div>
             </div>
           ) : null}
