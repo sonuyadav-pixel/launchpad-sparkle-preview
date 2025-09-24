@@ -18,70 +18,58 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
-    console.log('Converting text to speech with ElevenLabs:', text.substring(0, 50) + '...')
+    console.log('Converting text to speech with OpenAI:', text.substring(0, 50) + '...')
     console.log('Using voice:', voice || 'alloy')
 
-    // Get ElevenLabs API key
-    const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
-    if (!elevenLabsApiKey) {
-      throw new Error('ElevenLabs API key not configured')
+    // Get OpenAI API key
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured')
     }
 
-    // Voice mapping - use voice IDs from ElevenLabs
-    const voiceMapping = {
-      'alloy': '9BWtsMINqrJLrRacOk9x', // Aria
-      'echo': 'CwhRBWXzGAHq8TQ4Fs17', // Roger  
-      'fable': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-      'onyx': 'JBFqnCBsd6RMkjVDRZzb', // George
-      'nova': 'XB0fDUnXU5powFXDhCwa', // Charlotte
-      'shimmer': 'pFZP5JQG7iQjIQuC4Bku' // Lily
-    }
+    // OpenAI TTS supports these voices directly
+    const validVoices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']
+    const selectedVoice = validVoices.includes(voice) ? voice : 'alloy'
 
-    const selectedVoiceId = voiceMapping[voice] || '9BWtsMINqrJLrRacOk9x' // Default to Aria
+    console.log('Selected voice:', selectedVoice)
 
-    // Generate speech using ElevenLabs API
-    const elevenLabsResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`, {
+    // Generate speech using OpenAI TTS API
+    const openaiResponse = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
-        'Accept': 'audio/mpeg',
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
-        'xi-api-key': elevenLabsApiKey,
       },
       body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.5,
-          style: 0.0,
-          use_speaker_boost: true
-        }
+        model: 'tts-1',
+        input: text,
+        voice: selectedVoice,
+        response_format: 'mp3',
       }),
     })
 
-    if (!elevenLabsResponse.ok) {
-      const errorText = await elevenLabsResponse.text()
-      console.error('ElevenLabs API error:', elevenLabsResponse.status, errorText)
-      throw new Error(`ElevenLabs API error: ${elevenLabsResponse.status} ${errorText}`)
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text()
+      console.error('OpenAI TTS API error:', openaiResponse.status, errorText)
+      throw new Error(`OpenAI TTS API error: ${openaiResponse.status} ${errorText}`)
     }
 
-    // Convert audio buffer to base64 safely
-    const arrayBuffer = await elevenLabsResponse.arrayBuffer()
+    // Convert audio buffer to base64
+    const arrayBuffer = await openaiResponse.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer)
     
-    // Convert the entire buffer to base64 at once
+    // Convert to base64 in chunks to avoid memory issues
     let binaryString = ''
-    const chunkSize = 8192 // Process in 8KB chunks to build binary string
+    const chunkSize = 8192
     
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length))
       binaryString += String.fromCharCode.apply(null, Array.from(chunk))
     }
     
-    // Convert the complete binary string to base64
     const base64Audio = btoa(binaryString)
 
-    console.log('Successfully generated speech, audio length:', arrayBuffer.byteLength)
+    console.log('Successfully generated speech with OpenAI, audio length:', arrayBuffer.byteLength)
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
