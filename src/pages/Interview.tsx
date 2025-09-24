@@ -51,14 +51,8 @@ const Interview = () => {
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
-  const shouldProcessSpeech = useRef(true); // For handling mute without stopping recognition
-  const isRestarting = useRef(false); // Prevent race conditions
   
-  // Recognition health monitoring
-  const recognitionRestartCount = useRef(0);
-  const lastRestartTime = useRef(0);
-  const sessionStartTime = useRef(0);
-  const recognitionHealthTimer = useRef<NodeJS.Timeout | null>(null);
+  
   
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
@@ -74,6 +68,86 @@ const Interview = () => {
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
+
+  // Permission and Auto-Start Functions
+  const requestMicrophonePermission = useCallback(async () => {
+    console.log('🎤 Requesting microphone permission...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop immediately after getting permission
+      console.log('✅ Microphone permission granted');
+      return true;
+    } catch (error) {
+      console.error('❌ Microphone permission denied:', error);
+      toast({
+        title: "Microphone Access Required",
+        description: "Please allow microphone access to use speech recognition",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }, [toast]);
+
+  const ensureSpeechRecognitionActive = useCallback(async (retryCount = 0) => {
+    console.log(`🔧 Ensuring speech recognition is active (attempt ${retryCount + 1})`);
+    
+    if (!isInterviewActive) {
+      console.log('❌ Interview not active, skipping speech recognition');
+      return false;
+    }
+
+    // Check if already listening
+    if (recognitionRef.current && isListening) {
+      console.log('✅ Speech recognition already active');
+      return true;
+    }
+
+    // Request microphone permission first
+    const hasPermission = await requestMicrophonePermission();
+    if (!hasPermission) {
+      console.log('❌ No microphone permission, cannot start speech recognition');
+      return false;
+    }
+
+    // Initialize if needed
+    if (!recognitionRef.current) {
+      const initialized = initializeSpeechRecognition();
+      if (!initialized) return false;
+    }
+
+    // Start speech recognition with retries
+    try {
+      console.log('🎤 Starting speech recognition...');
+      recognitionRef.current.start();
+      
+      // Wait a bit and verify it started
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (!isListening && retryCount < 3) {
+        console.log('🔄 Speech recognition didn\'t start, retrying...');
+        return ensureSpeechRecognitionActive(retryCount + 1);
+      }
+      
+      console.log('✅ Speech recognition started successfully');
+      return true;
+    } catch (error) {
+      console.log('❌ Failed to start speech recognition:', error);
+      
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+        console.log(`🔄 Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return ensureSpeechRecognitionActive(retryCount + 1);
+      }
+      
+      toast({
+        title: "Speech Recognition Failed",
+        description: "Unable to start speech recognition. Please try manually.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -108,87 +182,18 @@ const Interview = () => {
     };
 
     recognitionRef.current.onend = () => {
-      console.log('🎤 Speech recognition ENDED - Interview active:', isInterviewActive);
+      console.log('🎤 Speech recognition ENDED');
+      setIsListening(false);
       
-      // Always keep speech recognition running during interview
-      setIsListening(true); // Force listening state to remain true
-      
-      // Only stop if interview is explicitly ended
-      if (!isInterviewActive) {
-        console.log('🎤 Interview not active, stopping recognition');
-        setIsListening(false);
-        return;
+      // Aggressive auto-restart with multiple attempts
+      if (isInterviewActive) {
+        console.log('🔄 Auto-restarting speech recognition...');
+        setTimeout(() => ensureSpeechRecognitionActive(), 100);
       }
-      
-      // Prevent race conditions during restart
-      if (isRestarting.current) {
-        console.log('🔄 Already restarting, skipping duplicate restart...');
-        return;
-      }
-      
-      console.log('🔄 Starting immediate restart for continuous listening...');
-      isRestarting.current = true;
-      
-      // Calculate restart delay with exponential backoff
-      const getRestartDelay = () => {
-        const now = Date.now();
-        const timeSinceLastRestart = now - lastRestartTime.current;
-        
-        // Reset restart count if successful operation for 30 seconds
-        if (timeSinceLastRestart > 30000) {
-          recognitionRestartCount.current = 0;
-        }
-        
-        // Progressive delays: 800ms, 1600ms, 3200ms
-        const baseDelay = 800;
-        const backoffMultiplier = Math.min(recognitionRestartCount.current, 2);
-        const delay = baseDelay * Math.pow(2, backoffMultiplier);
-        
-        console.log(`🔄 Restart delay: ${delay}ms (attempt ${recognitionRestartCount.current + 1})`);
-        return delay;
-      };
-      
-      // Optimized restart with exponential backoff
-      setTimeout(() => {
-        if (isInterviewActive && recognitionRef.current) {
-          recognitionRestartCount.current++;
-          lastRestartTime.current = Date.now();
-          
-          try {
-            console.log('🔄 Restarting speech recognition with optimized timing...');
-            recognitionRef.current.start();
-            console.log('✅ Speech recognition restarted successfully');
-            setIsListening(true);
-          } catch (error) {
-            console.log('🔄 Restart failed:', error.message, 'reinitializing...');
-            
-            // Comprehensive cleanup and reinitialize
-            if (recognitionRef.current) {
-              try {
-                recognitionRef.current.abort();
-              } catch (abortError) {
-                console.log('🔄 Abort failed, proceeding with cleanup');
-              }
-              recognitionRef.current = null;
-            }
-            
-            if (initializeSpeechRecognition()) {
-              try {
-                recognitionRef.current.start();
-                setIsListening(true);
-                console.log('✅ Speech recognition reinitialized and restarted');
-              } catch (reinitError) {
-                console.error('🚨 Complete restart failed:', reinitError.message);
-              }
-            }
-          }
-        }
-        isRestarting.current = false;
-      }, getRestartDelay());
     };
 
     recognitionRef.current.onresult = (event: any) => {
-      console.log('🎤 Speech result received - Results count:', event.results.length);
+      console.log('🎤 Speech result received');
       let finalTranscript = '';
       let interimTranscript = '';
       
@@ -197,24 +202,22 @@ const Interview = () => {
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
-          console.log('📝 Final transcript received:', transcript);
         } else {
           interimTranscript += transcript;
-          console.log('📝 Interim transcript received:', transcript);
         }
       }
       
       // Handle final transcript - add to accumulated transcript
-      if (finalTranscript.trim() && shouldProcessSpeech.current) {
+      if (finalTranscript.trim()) {
         if (accumulatedTranscript.current.trim()) {
           accumulatedTranscript.current += ' ' + finalTranscript.trim();
         } else {
           accumulatedTranscript.current = finalTranscript.trim();
         }
-        console.log('📝 Updated accumulated transcript:', accumulatedTranscript.current);
+        console.log('📝 Added final transcript to accumulation:', accumulatedTranscript.current);
       }
       
-      // Handle interim transcript - show current speech + accumulated (always show, even when muted)
+      // Handle interim transcript - show current speech + accumulated
       if (interimTranscript.trim()) {
         // Combine accumulated transcript with current interim speech
         let displayTranscript = accumulatedTranscript.current;
@@ -227,57 +230,51 @@ const Interview = () => {
         // Update live display and pending transcript
         setCurrentTranscript(displayTranscript);
         pendingTranscript.current = displayTranscript;
-        console.log('📝 Updated current transcript display:', displayTranscript);
         
-        // Only process speech if not muted
-        if (shouldProcessSpeech.current) {
-          // Clear existing timer and start new 10-second timer
-          if (speechFinalizationTimer.current) {
-            clearTimeout(speechFinalizationTimer.current);
-          }
-          
-          console.log('⏰ Starting 10-second finalization timer...');
-          speechFinalizationTimer.current = setTimeout(() => {
-            if (pendingTranscript.current.trim() && shouldProcessSpeech.current) {
-              console.log('📝 10-second silence detected, finalizing transcript:', pendingTranscript.current);
-              const textToFinalize = pendingTranscript.current.trim();
-              
-              // Clear all transcript states
-              pendingTranscript.current = '';
-              accumulatedTranscript.current = '';
-              setCurrentTranscript('');
-              
-              lastSpeechTime.current = Date.now();
-              resetAutoCloseTimer();
-              
-              // Process complete accumulated user speech
-              processCompleteUserSpeech(textToFinalize);
-            }
-          }, 10000); // 10 seconds
-        } else {
-          console.log('🔇 Speech processing disabled (muted), not setting finalization timer');
+        // Reset 10-second timer whenever we get new speech
+        
+        // Clear existing timer and start new 10-second timer
+        if (speechFinalizationTimer.current) {
+          clearTimeout(speechFinalizationTimer.current);
         }
+        
+        speechFinalizationTimer.current = setTimeout(() => {
+          if (pendingTranscript.current.trim()) {
+            console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
+            const textToFinalize = pendingTranscript.current.trim();
+            
+            // Clear all transcript states
+            pendingTranscript.current = '';
+            accumulatedTranscript.current = '';
+            setCurrentTranscript('');
+            
+            lastSpeechTime.current = Date.now();
+            resetAutoCloseTimer();
+            
+            // Process complete accumulated user speech
+            processCompleteUserSpeech(textToFinalize);
+          }
+        }, 10000); // 10 seconds
       }
       
     };
 
     recognitionRef.current.onerror = (event: any) => {
-      console.error('🎤 Speech recognition error:', event.error, 'Interview active:', isInterviewActive);
+      console.error('🎤 Speech recognition error:', event.error);
       
       // Don't show error for network issues, just restart
       if (event.error === 'network' || event.error === 'service-not-allowed' || event.error === 'bad-grammar') {
-        console.log('🔄 Network/service error, will auto-restart on next onend...');
+        console.log('🔄 Network/service error, will auto-restart...');
         return;
       }
       
       // Handle different error types
       if (event.error === 'no-speech') {
-        console.log('🔇 No speech detected - this is normal, continuing...');
+        console.log('🔇 No speech detected - continuing...');
         return; // Don't show error for no-speech
       }
       
       if (event.error === 'not-allowed') {
-        console.error('🚨 Microphone access denied');
         toast({
           title: "Microphone Access Denied",
           description: "Please allow microphone access to continue",
@@ -286,27 +283,17 @@ const Interview = () => {
         return;
       }
       
-      // For other errors, restart with optimized timing
-      if (isInterviewActive && recognitionRef.current && !isRestarting.current) {
-        console.log('🔄 Recovering from error with exponential backoff...');
-        isRestarting.current = true;
-        
-        const errorRecoveryDelay = 1200; // Higher delay for error recovery
-        setTimeout(() => {
+      // For other errors, try to restart after a delay
+      setTimeout(() => {
+        if (isInterviewActive && recognitionRef.current && !isListening) {
+          console.log('🔄 Recovering from error, restarting recognition...');
           try {
-            if (isInterviewActive && recognitionRef.current) {
-              console.log('🔄 Error recovery restart attempt...');
-              recognitionRef.current.start();
-              console.log('✅ Error recovery restart successful');
-              recognitionRestartCount.current = 0; // Reset on successful recovery
-            }
+            recognitionRef.current.start();
           } catch (error) {
-            console.error('🚨 Failed to restart after error:', error.message);
-            recognitionRestartCount.current++;
+            console.error('🚨 Failed to restart after error:', error);
           }
-          isRestarting.current = false;
-        }, errorRecoveryDelay);
-      }
+        }
+      }, 2000);
     };
 
     return true;
@@ -317,172 +304,33 @@ const Interview = () => {
       if (!initializeSpeechRecognition()) return;
     }
 
-    // Always start recognition during interview - ignore all other conditions
-    if (isInterviewActive) {
-      console.log('🚀 Starting speech recognition with health monitoring...');
-      
-      // Initialize session start time for health monitoring
-      if (sessionStartTime.current === 0) {
-        sessionStartTime.current = Date.now();
-      }
-      
-      try {
+    try {
+      if (!isListening && isInterviewActive && !isMuted) {
+        console.log('🚀 Starting speech recognition...');
         recognitionRef.current.start();
-        setIsListening(true);
-        
-        // Start health monitoring
-        startRecognitionHealthMonitoring();
-        
-      } catch (error) {
-        console.error('❌ Failed to start speech recognition:', error);
-        
-        // Comprehensive cleanup before reinitialize
-        cleanupRecognition();
-        
-        const manualRestartDelay = 500; // Manual restart can be faster
-        setTimeout(() => {
-          if (initializeSpeechRecognition()) {
-            try {
-              recognitionRef.current.start();
-              setIsListening(true);
-              startRecognitionHealthMonitoring();
-              console.log('✅ Speech recognition reinitialized and started');
-            } catch (retryError) {
-              console.error('🚨 Manual restart failed:', retryError);
-            }
-          }
-        }, manualRestartDelay);
       }
-    }
-  }, [initializeSpeechRecognition, isInterviewActive]);
-
-  const stopSpeechRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      console.log('🛑 Stopping speech recognition with comprehensive cleanup...');
-      
-      // Stop health monitoring
-      stopRecognitionHealthMonitoring();
-      
-      // Comprehensive cleanup
-      cleanupRecognition();
-      
-      setIsListening(false);
-    }
-  }, []);
-
-  // Recognition health monitoring functions
-  const startRecognitionHealthMonitoring = useCallback(() => {
-    console.log('💊 Starting recognition health monitoring...');
-    
-    // Clear existing timer
-    if (recognitionHealthTimer.current) {
-      clearInterval(recognitionHealthTimer.current);
-    }
-    
-    // Monitor every 30 seconds
-    recognitionHealthTimer.current = setInterval(() => {
-      const now = Date.now();
-      const sessionDuration = (now - sessionStartTime.current) / 1000;
-      const restartFrequency = recognitionRestartCount.current / (sessionDuration / 60); // restarts per minute
-      
-      console.log(`💊 Health check - Session: ${Math.round(sessionDuration)}s, Restarts: ${recognitionRestartCount.current}, Frequency: ${restartFrequency.toFixed(2)}/min`);
-      
-      // Proactive session cycling after 4 minutes to prevent browser limits
-      if (sessionDuration > 240 && isInterviewActive) {
-        console.log('💊 Proactive session cycling after 4 minutes...');
-        proactiveSessionRestart();
-      }
-      
-      // Throttle if too many restarts
-      if (restartFrequency > 3) {
-        console.log('💊 High restart frequency detected, implementing throttling...');
-        // Could implement fallback modes here
-      }
-      
-    }, 30000); // Check every 30 seconds
-  }, [isInterviewActive]);
-
-  const stopRecognitionHealthMonitoring = useCallback(() => {
-    console.log('💊 Stopping recognition health monitoring...');
-    if (recognitionHealthTimer.current) {
-      clearInterval(recognitionHealthTimer.current);
-      recognitionHealthTimer.current = null;
-    }
-  }, []);
-
-  const proactiveSessionRestart = useCallback(() => {
-    console.log('💊 Performing proactive session restart...');
-    
-    if (recognitionRef.current && !isRestarting.current) {
-      isRestarting.current = true;
-      
-      // Clean stop current recognition
-      try {
-        recognitionRef.current.stop();
-      } catch (error) {
-        console.log('💊 Clean stop failed, proceeding with restart');
-      }
-      
-      // Wait for clean shutdown, then restart
+    } catch (error) {
+      console.error('❌ Failed to start speech recognition:', error);
+      // If failed, try to reinitialize and restart
       setTimeout(() => {
-        cleanupRecognition();
-        
-        if (initializeSpeechRecognition()) {
-          try {
+        if (isInterviewActive && !isMuted) {
+          console.log('🔄 Reinitializing speech recognition after error...');
+          recognitionRef.current = null;
+          initializeSpeechRecognition();
+          if (recognitionRef.current) {
             recognitionRef.current.start();
-            setIsListening(true);
-            
-            // Reset counters for fresh session
-            recognitionRestartCount.current = 0;
-            sessionStartTime.current = Date.now();
-            
-            console.log('💊 Proactive restart completed successfully');
-          } catch (error) {
-            console.error('💊 Proactive restart failed:', error);
           }
         }
-        
-        isRestarting.current = false;
-      }, 800);
+      }, 2000);
     }
-  }, [initializeSpeechRecognition]);
+  }, [isListening, initializeSpeechRecognition, isInterviewActive, isMuted]);
 
-  const cleanupRecognition = useCallback(() => {
-    console.log('🧹 Performing comprehensive recognition cleanup...');
-    
-    if (recognitionRef.current) {
-      try {
-        // Remove all event listeners
-        recognitionRef.current.onstart = null;
-        recognitionRef.current.onend = null;
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        
-        // Abort current recognition
-        recognitionRef.current.abort();
-        
-        // Nullify reference
-        recognitionRef.current = null;
-        
-        console.log('🧹 Recognition cleanup completed');
-      } catch (error) {
-        console.log('🧹 Cleanup error (expected):', error.message);
-        recognitionRef.current = null;
-      }
+  const stopSpeechRecognition = useCallback(() => {
+    if (recognitionRef.current && isListening) {
+      console.log('🛑 Stopping speech recognition...');
+      recognitionRef.current.stop();
     }
-    
-    // Clear any pending timers
-    if (speechFinalizationTimer.current) {
-      clearTimeout(speechFinalizationTimer.current);
-      speechFinalizationTimer.current = null;
-    }
-    
-    // Reset state
-    accumulatedTranscript.current = '';
-    pendingTranscript.current = '';
-    setCurrentTranscript('');
-    
-  }, []);
+  }, [isListening]);
 
   // Process complete user speech with parallel transcript saving and AI response generation
   const processCompleteUserSpeech = async (transcript: string) => {
@@ -495,9 +343,14 @@ const Interview = () => {
         return;
       }
       
-      // No debounce - process all speech immediately
-      console.log('✅ Processing speech immediately - no debounce threshold');
-      lastProcessedTime.current = Date.now();
+      // Check if we just processed speech recently (debounce - 1 second)
+      const now = Date.now();
+      if (lastProcessedTime.current && now - lastProcessedTime.current < 1000) {
+        console.log('🚫 Skipping: too soon after last response');
+        return;
+      }
+      
+      lastProcessedTime.current = now;
       
       // Add user message to transcript
       const userMessage: TranscriptMessage = {
@@ -834,46 +687,17 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition immediately and aggressively
-      console.log('🎯 Force starting speech recognition...');
-      if (!recognitionRef.current) {
-        initializeSpeechRecognition();
-      }
+      // Start speech recognition automatically with robust initialization
+      console.log('🎯 Starting auto speech recognition...');
+      setTimeout(async () => {
+        await ensureSpeechRecognitionActive();
+      }, 1000); // Give video time to initialize
       
-      // Initialize and start speech recognition once
-      if (!recognitionRef.current) {
-        initializeSpeechRecognition();
-      }
-      
-      // Start speech recognition and set listening to true for the entire interview
-      try {
-        if (recognitionRef.current) {
-          console.log('🚀 Starting speech recognition for interview');
-          recognitionRef.current.start();
-          setIsListening(true); // Set to true and keep throughout interview
-          shouldProcessSpeech.current = true; // Enable speech processing
-          console.log('✅ Speech recognition started successfully');
-        }
-      } catch (error) {
-        console.log('❌ Speech recognition start failed:', error);
-        // Try once more with fresh initialization
-        setTimeout(() => {
-          try {
-            recognitionRef.current = null;
-            initializeSpeechRecognition();
-            if (recognitionRef.current) {
-              recognitionRef.current.start();
-              setIsListening(true);
-              shouldProcessSpeech.current = true;
-            }
-          } catch (retryError) {
-            console.error('🚨 Final retry failed:', retryError);
-          }
-        }, 100);
-      }
-      
-      // Setup silence detection (remove heartbeat - not needed with proper restart logic)
+      // Start monitoring systems
+      setupSpeechHeartbeat();
       setupSilenceDetection();
+      
+      // This old forceStart logic is replaced by the new ensureSpeechRecognitionActive
       
       // Welcome message
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
@@ -915,7 +739,9 @@ const Interview = () => {
       clearTimeout(silenceTimeoutRef.current);
     }
     
-    // Heartbeat removed
+    if (heartbeatRef.current) {
+      clearTimeout(heartbeatRef.current);
+    }
     
     if (autoCloseTimerRef.current) {
       clearTimeout(autoCloseTimerRef.current);
@@ -980,26 +806,60 @@ const Interview = () => {
     silenceTimeoutRef.current = setTimeout(checkForSilence, 10000);
   };
 
-  // Removed speech heartbeat - no longer needed with proper onend restart logic
-
-  // Toggle Functions
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    
-    // Handle muting by controlling speech processing, not recognition itself
-    if (!isMuted) {
-      console.log('🔇 Muting - stopping speech processing but keeping recognition active');
-      shouldProcessSpeech.current = false;
-      // Clear any pending finalization
-      if (speechFinalizationTimer.current) {
-        clearTimeout(speechFinalizationTimer.current);
+  // Speech Recognition Heartbeat to ensure it stays active with enhanced monitoring
+  const setupSpeechHeartbeat = () => {
+    const heartbeat = async () => {
+      if (!isInterviewActive) return;
+      
+      console.log('💓 Heartbeat check - isListening:', isListening, 'isMuted:', isMuted);
+      
+      // More aggressive heartbeat - ensure speech recognition is always active when not muted
+      if (!isListening && isInterviewActive && !isMuted) {
+        console.log('💓 Heartbeat: Speech recognition not active, ensuring it starts...');
+        await ensureSpeechRecognitionActive();
       }
-    } else {
-      console.log('🎤 Unmuting - resuming speech processing');
-      shouldProcessSpeech.current = true;
-    }
+      
+      // Also check microphone permissions periodically
+      if (isInterviewActive && !isMuted) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          if (permissionStatus.state === 'denied') {
+            console.log('💓 Heartbeat: Microphone permission denied');
+            toast({
+              title: "Microphone Access Lost",
+              description: "Please refresh and allow microphone access",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          // Some browsers don't support permissions API
+          console.log('💓 Permissions API not supported');
+        }
+      }
+      
+      // Schedule next heartbeat - check every 2 seconds for more aggressive monitoring
+      heartbeatRef.current = setTimeout(heartbeat, 2000);
+    };
     
-    // Keep speech recognition running regardless of mute state
+    // Start heartbeat immediately and then every 2 seconds
+    heartbeatRef.current = setTimeout(heartbeat, 500);
+  };
+
+  // Toggle Functions with enhanced auto-start
+  const toggleMute = async () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    
+    if (newMutedState) {
+      // Muting - stop speech recognition
+      stopSpeechRecognition();
+    } else if (isInterviewActive) {
+      // Unmuting - ensure speech recognition starts robustly
+      console.log('🔊 Unmuting - ensuring speech recognition starts...');
+      setTimeout(async () => {
+        await ensureSpeechRecognitionActive();
+      }, 500);
+    }
   };
 
   // Load session on mount
@@ -1027,7 +887,9 @@ const Interview = () => {
       if (silenceTimeoutRef.current) {
         clearTimeout(silenceTimeoutRef.current);
       }
-      // Heartbeat removed
+      if (heartbeatRef.current) {
+        clearTimeout(heartbeatRef.current);
+      }
       if (autoCloseTimerRef.current) {
         clearTimeout(autoCloseTimerRef.current);
       }
@@ -1190,36 +1052,23 @@ const Interview = () => {
                     End Interview
                   </Button>
                 
-                  {/* Temporary test button for debugging speech recognition */}
+                  {/* Manual Speech Control for debugging */}
                   <Button
                     onClick={() => {
-                      console.log('🔧 Manual test - Current state:', {
+                      console.log('🔧 Manual speech recognition start - Current state:', {
                         isListening,
                         isInterviewActive,
                         isMuted,
-                        hasRecognition: !!recognitionRef.current,
-                        isRestarting: isRestarting.current,
-                        shouldProcessSpeech: shouldProcessSpeech.current
+                        hasRecognition: !!recognitionRef.current
                       });
-                      
-                      if (recognitionRef.current && isInterviewActive) {
-                        try {
-                          console.log('🔧 Manual restart attempt...');
-                          recognitionRef.current.stop();
-                          setTimeout(() => {
-                            if (recognitionRef.current) {
-                              recognitionRef.current.start();
-                              console.log('🔧 Manual restart completed');
-                            }
-                          }, 100);
-                        } catch (error) {
-                          console.error('🔧 Manual restart failed:', error);
-                        }
+                      if (!isListening && !isMuted) {
+                        startSpeechRecognition();
                       }
                     }}
                     variant="outline"
                     size="sm"
                   >
+                    {isListening ? '🎤 Listening' : '🔇 Start Mic'}
                   </Button>
                 </>
               )}
