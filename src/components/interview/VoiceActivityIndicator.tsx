@@ -6,13 +6,11 @@ import { Mic, Bot, Loader2, Volume2 } from 'lucide-react';
 interface VoiceActivityIndicatorProps {
   isUserSpeaking: boolean;
   isAISpeaking: boolean;
-  energyLevel?: number;
 }
 
 const VoiceActivityIndicator: React.FC<VoiceActivityIndicatorProps> = ({ 
   isUserSpeaking, 
-  isAISpeaking,
-  energyLevel = 0
+  isAISpeaking
 }) => {
   const getStatusBadge = () => {
     if (isAISpeaking) {
@@ -48,34 +46,15 @@ const VoiceActivityIndicator: React.FC<VoiceActivityIndicatorProps> = ({
       <div className="flex items-center gap-3">
         {getStatusBadge()}
         
-        {/* Voice Activity Visualizer */}
+        {/* Simple Status Indicator */}
         <div className="flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, index) => {
-            const isActive = isUserSpeaking && energyLevel * 10 > index;
-            return (
-              <div
-                key={index}
-                className={`w-1 h-4 rounded-full transition-all duration-150 ${
-                  isActive 
-                    ? 'bg-primary scale-y-125' 
-                    : 'bg-muted-foreground/30'
-                }`}
-                style={{
-                  height: isActive 
-                    ? `${Math.max(16, Math.min(32, 16 + energyLevel * 50))}px`
-                    : '16px'
-                }}
-              />
-            );
-          })}
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+            isUserSpeaking ? 'bg-primary animate-pulse' : 'bg-muted-foreground/30'
+          }`} />
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+            isAISpeaking ? 'bg-secondary animate-pulse' : 'bg-muted-foreground/30'
+          }`} />
         </div>
-        
-        {/* Overlap Detection Warning */}
-        {isUserSpeaking && isAISpeaking && (
-          <Badge variant="destructive" className="animate-pulse">
-            Overlap Detected
-          </Badge>
-        )}
       </div>
     </Card>
   );

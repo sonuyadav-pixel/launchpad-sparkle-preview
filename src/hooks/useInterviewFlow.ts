@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAdvancedTTS } from './useAdvancedTTS';
-import { useVoiceActivityDetection } from './useVoiceActivityDetection';
 import { useSpeechRecognition } from './useSpeechRecognition';
 import { useInterviewSession } from './useInterviewSession';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +43,7 @@ export const useInterviewFlow = (): InterviewFlowResult => {
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [questionCount, setQuestionCount] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   
   const questionIndexRef = useRef(0);
   const conversationHistoryRef = useRef<string[]>([]);
@@ -55,14 +55,7 @@ export const useInterviewFlow = (): InterviewFlowResult => {
   const tts = useAdvancedTTS();
   const { addTranscriptMessage } = useInterviewSession();
   
-  // VAD with TTS awareness
-  const vad = useVoiceActivityDetection(tts.isPlaying, {
-    threshold: 0.01,
-    minSilenceDuration: 1500,
-    minSpeechDuration: 300
-  });
-
-  // Speech recognition with smart filtering
+  // Speech recognition without VAD
   const speechRecognition = useSpeechRecognition();
 
   // Add transcript entry helper
@@ -169,6 +162,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
   // Start listening for user response
   const startUserResponse = useCallback(() => {
     userResponseBufferRef.current = '';
+    setIsUserSpeaking(true);
     
     speechRecognition.startListening({
       continuous: true,
@@ -183,11 +177,13 @@ Generate the next appropriate interview question. Keep it natural, professional,
       },
       onError: (error) => {
         console.error('🎤 Speech recognition error:', error);
+        setIsUserSpeaking(false);
         toast({
           title: "Speech Recognition Error",
           description: error,
           variant: "destructive",
         });
+        setIsUserSpeaking(false);
       }
     });
 
@@ -216,6 +212,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
 
     // Stop speech recognition
     speechRecognition.stopListening();
+    setIsUserSpeaking(false);
     
     setInterviewState('processing');
     
@@ -242,25 +239,21 @@ Generate the next appropriate interview question. Keep it natural, professional,
     }
   }, [speechRecognition, generateNextQuestion, askQuestion, toast]);
 
-  // Handle VAD overlap detection
+  // Handle user speech state changes with simple timeout
   useEffect(() => {
-    if (vad.overlapDetected && tts.isPlaying) {
-      console.log('🔄 Overlap detected - pausing AI speech');
-      tts.pause();
-    }
-  }, [vad.overlapDetected, tts]);
-
-  // Handle user speech state changes
-  useEffect(() => {
-    if (!vad.isUserSpeaking && userResponseBufferRef.current.trim() && interviewState === 'waiting_response') {
+    let timeout: NodeJS.Timeout;
+    
+    if (!isUserSpeaking && userResponseBufferRef.current.trim() && interviewState === 'waiting_response') {
       // User stopped speaking, process their response after a delay
-      setTimeout(() => {
-        if (!vad.isUserSpeaking) {
-          processUserResponse(userResponseBufferRef.current.trim());
-        }
-      }, 1500);
+      timeout = setTimeout(() => {
+        processUserResponse(userResponseBufferRef.current.trim());
+      }, 2000); // 2 second delay after stopping speech
     }
-  }, [vad.isUserSpeaking, interviewState, processUserResponse]);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [isUserSpeaking, interviewState, processUserResponse]);
 
   // Main interview flow functions
   const startInterview = useCallback(async (sessionId: string) => {
@@ -271,10 +264,8 @@ Generate the next appropriate interview question. Keep it natural, professional,
       setQuestionCount(0);
       questionIndexRef.current = 0;
       conversationHistoryRef.current = [];
+      setIsUserSpeaking(false);
 
-      // Start VAD
-      await vad.startListening();
-      
       console.log('🎯 Starting interview with session:', sessionId);
       
       // Ask first question
@@ -289,7 +280,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
         variant: "destructive",
       });
     }
-  }, [vad, askQuestion, toast]);
+  }, [askQuestion, toast]);
 
   const endInterview = useCallback(async () => {
     console.log('🏁 Ending interview');
@@ -297,7 +288,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
     // Stop all audio/recognition
     tts.stop();
     speechRecognition.stopListening();
-    vad.stopListening();
+    setIsUserSpeaking(false);
     
     // Clear timeouts
     if (responseTimeoutRef.current) {
@@ -311,11 +302,12 @@ Generate the next appropriate interview question. Keep it natural, professional,
     
     // Final TTS
     await tts.speak('Thank you for completing the interview. Your responses have been recorded and will be reviewed.');
-  }, [tts, speechRecognition, vad, addToTranscript]);
+  }, [tts, speechRecognition, addToTranscript]);
 
   const pauseInterview = useCallback(() => {
     tts.pause();
     speechRecognition.stopListening();
+    setIsUserSpeaking(false);
     setInterviewState('idle');
   }, [tts, speechRecognition]);
 
@@ -337,7 +329,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
     currentQuestion,
     transcript,
     isAISpeaking: tts.isPlaying,
-    isUserSpeaking: vad.isUserSpeaking,
+    isUserSpeaking,
     questionCount
   };
 };
