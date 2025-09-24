@@ -144,6 +144,7 @@ const Interview = () => {
     }
 
     // Request microphone permission first
+    console.log('🎤 Requesting microphone permission for speech recognition...');
     const hasPermission = await requestMicrophonePermission();
     if (!hasPermission) {
       console.log('❌ No microphone permission, cannot start speech recognition');
@@ -152,8 +153,12 @@ const Interview = () => {
 
     // Initialize if needed
     if (!recognitionRef.current) {
+      console.log('🔧 Initializing speech recognition...');
       const initialized = initializeSpeechRecognition();
-      if (!initialized) return false;
+      if (!initialized) {
+        console.log('❌ Failed to initialize speech recognition');
+        return false;
+      }
     }
 
     // Start speech recognition with retries
@@ -162,29 +167,35 @@ const Interview = () => {
       recognitionRef.current.start();
       
       // Wait a bit and verify it started
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (!isListening && retryCount < 3) {
+      if (!isListening && retryCount < 5) {
         console.log('🔄 Speech recognition didn\'t start, retrying...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      console.log('✅ Speech recognition started successfully');
-      return true;
+      if (isListening) {
+        console.log('✅ Speech recognition started successfully');
+        return true;
+      } else {
+        console.log('❌ Speech recognition failed to start after all attempts');
+        return false;
+      }
     } catch (error) {
       console.log('❌ Failed to start speech recognition:', error);
       
-      if (retryCount < 3) {
+      if (retryCount < 5) {
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
         console.log(`🔄 Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      console.error("Speech Recognition Failed: Unable to start speech recognition");
+      console.error("Speech Recognition Failed: Unable to start speech recognition after all attempts");
       return false;
     }
-  }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
+  }, [isInterviewActive, isListening, requestMicrophonePermission]);
 
   // Speech Recognition Functions
   const initializeSpeechRecognition = useCallback(() => {
@@ -223,9 +234,12 @@ const Interview = () => {
       setIsListening(false);
       
       // Aggressive auto-restart with multiple attempts
-      if (isInterviewActive) {
+      if (isInterviewActive && !isMuted) {
         console.log('🔄 Auto-restarting speech recognition...');
-        setTimeout(() => ensureSpeechRecognitionActive(), 100);
+        setTimeout(() => {
+          console.log('🔄 Attempting to restart speech recognition...');
+          ensureSpeechRecognitionActive();
+        }, 500);
       }
     };
 
@@ -721,6 +735,7 @@ const Interview = () => {
         return;
       }
       
+      // CRITICAL: Set interview as active FIRST 
       setIsInterviewActive(true);
       resetAutoCloseTimer();
       
@@ -736,8 +751,12 @@ const Interview = () => {
         }
       }
       
-      // Start video
-      await startVideo();
+      // Start video (optional, don't block on failure)
+      try {
+        await startVideo();
+      } catch (videoError) {
+        console.warn('⚠️ Video failed to start, continuing without video:', videoError);
+      }
       
       // Set active session in session manager
       if (sessionId) {
@@ -749,54 +768,64 @@ const Interview = () => {
         );
       }
       
-      // Start speech recognition automatically with robust initialization
-      console.log('🎯 Starting auto speech recognition...');
-      setTimeout(async () => {
-        await ensureSpeechRecognitionActive();
-      }, 1000); // Give video time to initialize
+      // CRITICAL: Start speech recognition IMMEDIATELY with aggressive retries
+      console.log('🎯 Starting speech recognition IMMEDIATELY...');
+      const speechStarted = await ensureSpeechRecognitionActive();
+      if (!speechStarted) {
+        console.error('❌ CRITICAL: Speech recognition failed to start!');
+        // Don't fail the entire interview, but show warning
+        toast({
+          title: "Microphone Issue",
+          description: "Speech recognition may not be working. Please check your microphone.",
+          variant: "destructive"
+        });
+      }
       
       // Start monitoring systems
       setupSpeechHeartbeat();
       setupSilenceDetection();
       
-      // This old forceStart logic is replaced by the new ensureSpeechRecognitionActive
-      
-      // Welcome message
+      // Welcome message (TTS failure should not affect interview)
       const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
       
       const aiMessage: TranscriptMessage = {
         id: Date.now().toString(),
-        speaker: 'ai', 
+        speaker: 'ai',
         message: welcomeMessage,
         timestamp: new Date()
       };
       
-      setLocalTranscript([aiMessage]);
-      await addTranscriptMessage(aiMessage);
+      setLocalTranscript(prev => [aiMessage, ...prev]);
       
-      // Try TTS but don't fail the interview startup if it fails
+      // Try TTS but don't fail interview if it doesn't work
       try {
-        await speak(welcomeMessage, 'alloy');
+        await Promise.all([
+          addTranscriptMessage(aiMessage),
+          speak(welcomeMessage, 'alloy')
+        ]);
       } catch (ttsError) {
-        console.warn('⚠️ TTS failed during startup, continuing without audio:', ttsError);
-        // Interview can continue without TTS - not a critical failure
+        console.warn('⚠️ TTS failed but interview continues:', ttsError);
+        // Just add to transcript database without TTS
+        try {
+          await addTranscriptMessage(aiMessage);
+        } catch (dbError) {
+          console.warn('⚠️ Database save failed:', dbError);
+        }
       }
       
-      toast({
-        title: "Interview Started",
-        description: "You can now begin speaking",
-      });
+      console.log('✅ Interview started successfully');
       
     } catch (error) {
-      console.error('❌ Error starting interview:', error);
+      console.error('❌ Critical error starting interview:', error);
+      setIsInterviewActive(false);
+      
       toast({
-        title: "Start Error", 
-        description: "Failed to start interview. Please try again.",
+        title: "Interview Start Failed",
+        description: error instanceof Error ? error.message : 'Failed to start interview. Please try again.',
         variant: "destructive"
       });
     }
   };
-
   const endInterview = async () => {
     console.log('🏁 Ending interview...');
     
