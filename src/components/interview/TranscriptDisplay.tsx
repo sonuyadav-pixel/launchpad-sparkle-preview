@@ -86,35 +86,45 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   <div className={`flex-1 max-w-[80%] ${
                     entry.speaker === 'user' ? 'text-right' : 'text-left'
                   }`}>
-                    <div className={`inline-block p-3 rounded-lg ${
-                      entry.speaker === 'ai'
-                        ? 'bg-muted text-muted-foreground'
-                        : 'bg-primary text-primary-foreground'
-                    } ${!entry.isFinal ? 'opacity-60 italic' : ''}`}>
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {entry.message}
-                      </p>
-                      {entry.isFinal && (
-                        <p className="text-xs mt-1 opacity-70">
-                          {formatTime(entry.timestamp)}
-                        </p>
-                      )}
-                    </div>
+                   <div className={`inline-block p-3 rounded-lg ${
+                     entry.speaker === 'ai'
+                       ? 'bg-muted text-muted-foreground'
+                       : entry.isFinal 
+                         ? 'bg-primary text-primary-foreground'
+                         : 'bg-primary/70 text-primary-foreground border-2 border-primary/50'
+                   } ${!entry.isFinal ? 'animate-pulse' : ''}`}>
+                     <p className="text-sm whitespace-pre-wrap break-words">
+                       {entry.message}
+                       {!entry.isFinal && entry.speaker === 'user' && (
+                         <span className="inline-block w-1 h-4 bg-current ml-1 animate-pulse">|</span>
+                       )}
+                     </p>
+                     {entry.isFinal && (
+                       <p className="text-xs mt-1 opacity-70">
+                         {formatTime(entry.timestamp)}
+                       </p>
+                     )}
+                     {!entry.isFinal && entry.speaker === 'user' && (
+                       <p className="text-xs mt-1 opacity-70">
+                         Speaking... (will finalize after 10s silence)
+                       </p>
+                     )}
+                   </div>
                     
                     {/* Speaker Label */}
                     <div className={`text-xs text-muted-foreground mt-1 ${
                       entry.speaker === 'user' ? 'text-right' : 'text-left'
-                    }`}>
-                      {entry.speaker === 'ai' ? 'AI Interviewer' : 'You'}
-                      {!entry.isFinal && ' (speaking...)'}
-                    </div>
+                   }`}>
+                     {entry.speaker === 'ai' ? 'AI Interviewer' : 'You'}
+                     {!entry.isFinal && entry.speaker === 'user' && ' (accumulating speech...)'}
+                   </div>
                   </div>
                 </div>
               ))
             )}
             
-            {/* Current speaking indicator */}
-            {isUserSpeaking && (
+            {/* Additional speaking indicator if no interim transcript yet */}
+            {isUserSpeaking && !transcript.some(entry => entry.speaker === 'user' && !entry.isFinal) && (
               <div className="flex gap-3 flex-row-reverse">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
                   <User className="w-4 h-4" />
@@ -123,7 +133,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   <div className="inline-block p-3 rounded-lg bg-primary/50 text-primary-foreground">
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Speaking...</span>
+                      <span className="text-sm">Listening for speech...</span>
                     </div>
                   </div>
                 </div>

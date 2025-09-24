@@ -50,6 +50,11 @@ export const useInterviewFlow = (): InterviewFlowResult => {
   const interruptedQuestionRef = useRef<string | null>(null);
   const userResponseBufferRef = useRef<string>('');
   const responseTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // New refs for 10-second silence detection and speech accumulation
+  const accumulatedSpeechRef = useRef<string>('');
+  const silenceTimeoutRef = useRef<NodeJS.Timeout>();
+  const currentTranscriptEntryIdRef = useRef<string | null>(null);
 
   // Initialize hooks
   const tts = useAdvancedTTS();
@@ -58,10 +63,10 @@ export const useInterviewFlow = (): InterviewFlowResult => {
   // Speech recognition without VAD
   const speechRecognition = useSpeechRecognition();
 
-  // Add transcript entry helper
-  const addToTranscript = useCallback((speaker: 'ai' | 'user', message: string, isFinal: boolean = true) => {
+  // Add transcript entry helper with improved accumulation support
+  const addToTranscript = useCallback((speaker: 'ai' | 'user', message: string, isFinal: boolean = true, entryId?: string) => {
     const entry: TranscriptEntry = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: entryId || `${Date.now()}-${Math.random()}`,
       speaker,
       message,
       timestamp: new Date(),
@@ -69,12 +74,20 @@ export const useInterviewFlow = (): InterviewFlowResult => {
     };
 
     setTranscript(prev => {
-      if (!isFinal) {
-        // Replace last interim entry or add new one
-        const withoutLastInterim = prev.filter(t => t.isFinal || t.speaker !== speaker);
-        return [...withoutLastInterim, entry];
+      if (!isFinal && speaker === 'user') {
+        // For interim user speech, update or create single accumulating entry
+        const withoutCurrentUserEntry = prev.filter(t => t.id !== currentTranscriptEntryIdRef.current);
+        currentTranscriptEntryIdRef.current = entry.id;
+        return [...withoutCurrentUserEntry, entry];
+      } else if (isFinal && speaker === 'user' && currentTranscriptEntryIdRef.current) {
+        // Replace the interim entry with final one
+        const withoutInterimEntry = prev.filter(t => t.id !== currentTranscriptEntryIdRef.current);
+        currentTranscriptEntryIdRef.current = null;
+        return [...withoutInterimEntry, entry];
+      } else {
+        // AI messages or other final messages
+        return [...prev.filter(t => t.isFinal || t.speaker !== speaker), entry];
       }
-      return [...prev.filter(t => t.isFinal), entry];
     });
 
     // Save to database if final and session exists
@@ -159,39 +172,88 @@ Generate the next appropriate interview question. Keep it natural, professional,
     }
   }, [tts, addToTranscript, toast]);
 
-  // Start listening for user response with improved flow
+  // Handle speech result with 10-second silence detection
+  const handleSpeechResult = useCallback((transcript: string, isFinal: boolean) => {
+    console.log('🎤 Speech result:', { transcript, isFinal, currentAccumulated: accumulatedSpeechRef.current });
+    
+    // Set user speaking when we get any transcript
+    if (!isUserSpeaking) {
+      setIsUserSpeaking(true);
+    }
+    
+    // Add to accumulated speech (both interim and browser-final)
+    if (transcript.trim()) {
+      if (accumulatedSpeechRef.current && !accumulatedSpeechRef.current.endsWith(' ')) {
+        accumulatedSpeechRef.current += ' ';
+      }
+      accumulatedSpeechRef.current += transcript.trim();
+    }
+    
+    // Show accumulated speech in transcript as interim
+    if (accumulatedSpeechRef.current.trim()) {
+      addToTranscript('user', accumulatedSpeechRef.current.trim(), false);
+    }
+    
+    // Reset 10-second silence timer
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+    }
+    
+    // Start 10-second silence detection
+    silenceTimeoutRef.current = setTimeout(() => {
+      finalizeUserSpeech();
+    }, 10000); // 10 seconds of silence
+  }, [isUserSpeaking, addToTranscript]);
+
+  // Finalize user speech after 10 seconds of silence
+  const finalizeUserSpeech = useCallback(() => {
+    const finalSpeech = accumulatedSpeechRef.current.trim();
+    console.log('🎤 Finalizing user speech after 10s silence:', finalSpeech);
+    
+    if (finalSpeech) {
+      // Clear accumulated speech
+      accumulatedSpeechRef.current = '';
+      
+      // Add final transcript entry
+      addToTranscript('user', finalSpeech, true);
+      
+      // Process the complete response
+      processUserResponse(finalSpeech);
+    }
+    
+    // Clear silence timeout
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = undefined;
+    }
+    
+    setIsUserSpeaking(false);
+  }, [addToTranscript]);
+
+  // Start listening for user response with 10-second silence detection
   const startUserResponse = useCallback(() => {
-    console.log('🎤 Starting to listen for user response');
-    userResponseBufferRef.current = '';
-    setIsUserSpeaking(false); // Start as false, will be set to true when speech detected
+    console.log('🎤 Starting to listen for user response with 10s silence detection');
+    
+    // Reset accumulated speech and user speaking state
+    accumulatedSpeechRef.current = '';
+    currentTranscriptEntryIdRef.current = null;
+    setIsUserSpeaking(false);
     
     speechRecognition.startListening({
-      continuous: false, // Use single recognition session to prevent loops
+      continuous: true, // Keep listening continuously
       interimResults: true,
-      onResult: (transcript, isFinal) => {
-        console.log('🎤 Speech result:', { transcript, isFinal });
-        
-        // Set user speaking when we get any transcript
-        if (!isUserSpeaking) {
-          setIsUserSpeaking(true);
-        }
-        
-        if (isFinal) {
-          userResponseBufferRef.current = transcript.trim();
-          addToTranscript('user', transcript.trim(), true);
-          
-          // Process the response immediately
-          setTimeout(() => {
-            processUserResponse(transcript.trim());
-          }, 500);
-        } else {
-          // Show interim results
-          addToTranscript('user', transcript.trim(), false);
-        }
-      },
+      onResult: handleSpeechResult,
       onError: (error) => {
         console.error('🎤 Speech recognition error:', error);
         setIsUserSpeaking(false);
+        
+        // Clear accumulated speech on error
+        accumulatedSpeechRef.current = '';
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+          silenceTimeoutRef.current = undefined;
+        }
+        
         toast({
           title: "Speech Recognition Error",
           description: error,
@@ -204,29 +266,28 @@ Generate the next appropriate interview question. Keep it natural, professional,
         }
       },
       onStart: () => {
-        console.log('🎤 Speech recognition started');
+        console.log('🎤 Speech recognition started with continuous mode');
       },
       onEnd: () => {
         console.log('🎤 Speech recognition ended');
-        setIsUserSpeaking(false);
         
-        // Restart if no response and still waiting
-        if (interviewState === 'waiting_response' && !userResponseBufferRef.current.trim()) {
+        // Restart if still waiting and no accumulated speech
+        if (interviewState === 'waiting_response' && !accumulatedSpeechRef.current.trim()) {
           setTimeout(() => startUserResponse(), 500);
         }
       }
     });
 
-    // Set timeout for user response
+    // Set overall timeout for user response (backup)
     responseTimeoutRef.current = setTimeout(() => {
-      if (userResponseBufferRef.current.trim()) {
-        processUserResponse(userResponseBufferRef.current.trim());
+      if (accumulatedSpeechRef.current.trim()) {
+        finalizeUserSpeech();
       } else {
         // No response detected, ask if they need the question repeated
         askQuestion("I didn't catch that. Would you like me to repeat the question?");
       }
-    }, 30000); // 30 second timeout
-  }, [speechRecognition, addToTranscript, askQuestion, toast, isUserSpeaking, interviewState]);
+    }, 60000); // 60 second overall timeout
+  }, [speechRecognition, handleSpeechResult, finalizeUserSpeech, askQuestion, toast, interviewState]);
 
   // Process user response and generate next question
   const processUserResponse = useCallback(async (response: string) => {
@@ -234,14 +295,20 @@ Generate the next appropriate interview question. Keep it natural, professional,
 
     console.log('🎤 Processing user response:', response);
     
-    // Clear timeout
+    // Clear all timeouts
     if (responseTimeoutRef.current) {
       clearTimeout(responseTimeoutRef.current);
       responseTimeoutRef.current = undefined;
     }
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = undefined;
+    }
 
-    // Stop speech recognition
+    // Stop speech recognition and clear accumulated speech
     speechRecognition.stopListening();
+    accumulatedSpeechRef.current = '';
+    currentTranscriptEntryIdRef.current = null;
     setIsUserSpeaking(false);
     
     setInterviewState('processing');
@@ -269,21 +336,17 @@ Generate the next appropriate interview question. Keep it natural, professional,
     }
   }, [speechRecognition, generateNextQuestion, askQuestion, toast]);
 
-  // Handle user speech state changes with simple timeout
+  // Cleanup effect for timeouts
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    if (!isUserSpeaking && userResponseBufferRef.current.trim() && interviewState === 'waiting_response') {
-      // User stopped speaking, process their response after a delay
-      timeout = setTimeout(() => {
-        processUserResponse(userResponseBufferRef.current.trim());
-      }, 2000); // 2 second delay after stopping speech
-    }
-
     return () => {
-      if (timeout) clearTimeout(timeout);
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
     };
-  }, [isUserSpeaking, interviewState, processUserResponse]);
+  }, []);
 
   // Main interview flow functions
   const startInterview = useCallback(async (sessionId: string) => {
@@ -295,6 +358,16 @@ Generate the next appropriate interview question. Keep it natural, professional,
       questionIndexRef.current = 0;
       conversationHistoryRef.current = [];
       setIsUserSpeaking(false);
+      
+      // Reset all speech accumulation refs
+      accumulatedSpeechRef.current = '';
+      currentTranscriptEntryIdRef.current = null;
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
+      if (responseTimeoutRef.current) {
+        clearTimeout(responseTimeoutRef.current);
+      }
 
       console.log('🎯 Starting interview with session:', sessionId);
       
@@ -320,10 +393,15 @@ Generate the next appropriate interview question. Keep it natural, professional,
     speechRecognition.stopListening();
     setIsUserSpeaking(false);
     
-    // Clear timeouts
+    // Clear all timeouts and accumulated speech
     if (responseTimeoutRef.current) {
       clearTimeout(responseTimeoutRef.current);
     }
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+    }
+    accumulatedSpeechRef.current = '';
+    currentTranscriptEntryIdRef.current = null;
     
     setInterviewState('completed');
     
