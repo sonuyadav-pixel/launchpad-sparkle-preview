@@ -54,6 +54,12 @@ const Interview = () => {
   const shouldProcessSpeech = useRef(true); // For handling mute without stopping recognition
   const isRestarting = useRef(false); // Prevent race conditions
   
+  // Recognition health monitoring
+  const recognitionRestartCount = useRef(0);
+  const lastRestartTime = useRef(0);
+  const sessionStartTime = useRef(0);
+  const recognitionHealthTimer = useRef<NodeJS.Timeout | null>(null);
+  
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
   const accumulatedTranscript = useRef('');
@@ -123,17 +129,49 @@ const Interview = () => {
       console.log('🔄 Starting immediate restart for continuous listening...');
       isRestarting.current = true;
       
-      // Force immediate restart with no delays
+      // Calculate restart delay with exponential backoff
+      const getRestartDelay = () => {
+        const now = Date.now();
+        const timeSinceLastRestart = now - lastRestartTime.current;
+        
+        // Reset restart count if successful operation for 30 seconds
+        if (timeSinceLastRestart > 30000) {
+          recognitionRestartCount.current = 0;
+        }
+        
+        // Progressive delays: 800ms, 1600ms, 3200ms
+        const baseDelay = 800;
+        const backoffMultiplier = Math.min(recognitionRestartCount.current, 2);
+        const delay = baseDelay * Math.pow(2, backoffMultiplier);
+        
+        console.log(`🔄 Restart delay: ${delay}ms (attempt ${recognitionRestartCount.current + 1})`);
+        return delay;
+      };
+      
+      // Optimized restart with exponential backoff
       setTimeout(() => {
         if (isInterviewActive && recognitionRef.current) {
+          recognitionRestartCount.current++;
+          lastRestartTime.current = Date.now();
+          
           try {
-            console.log('🔄 Force restarting speech recognition...');
+            console.log('🔄 Restarting speech recognition with optimized timing...');
             recognitionRef.current.start();
-            console.log('✅ Speech recognition force restarted successfully');
-            setIsListening(true); // Ensure listening state stays true
+            console.log('✅ Speech recognition restarted successfully');
+            setIsListening(true);
           } catch (error) {
-            console.log('🔄 Force restart failed:', error.message, 'reinitializing...');
-            // Reinitialize completely if restart fails
+            console.log('🔄 Restart failed:', error.message, 'reinitializing...');
+            
+            // Comprehensive cleanup and reinitialize
+            if (recognitionRef.current) {
+              try {
+                recognitionRef.current.abort();
+              } catch (abortError) {
+                console.log('🔄 Abort failed, proceeding with cleanup');
+              }
+              recognitionRef.current = null;
+            }
+            
             if (initializeSpeechRecognition()) {
               try {
                 recognitionRef.current.start();
@@ -146,7 +184,7 @@ const Interview = () => {
           }
         }
         isRestarting.current = false;
-      }, 50); // Very short delay for immediate restart
+      }, getRestartDelay());
     };
 
     recognitionRef.current.onresult = (event: any) => {
@@ -248,22 +286,26 @@ const Interview = () => {
         return;
       }
       
-      // For other errors, try to restart immediately (no delay for continuous operation)
+      // For other errors, restart with optimized timing
       if (isInterviewActive && recognitionRef.current && !isRestarting.current) {
-        console.log('🔄 Recovering from error, attempting immediate restart...');
+        console.log('🔄 Recovering from error with exponential backoff...');
         isRestarting.current = true;
+        
+        const errorRecoveryDelay = 1200; // Higher delay for error recovery
         setTimeout(() => {
           try {
             if (isInterviewActive && recognitionRef.current) {
               console.log('🔄 Error recovery restart attempt...');
               recognitionRef.current.start();
               console.log('✅ Error recovery restart successful');
+              recognitionRestartCount.current = 0; // Reset on successful recovery
             }
           } catch (error) {
             console.error('🚨 Failed to restart after error:', error.message);
+            recognitionRestartCount.current++;
           }
           isRestarting.current = false;
-        }, 100); // Very short delay
+        }, errorRecoveryDelay);
       }
     };
 
@@ -277,34 +319,169 @@ const Interview = () => {
 
     // Always start recognition during interview - ignore all other conditions
     if (isInterviewActive) {
-      console.log('🚀 Starting speech recognition - always active during interview');
+      console.log('🚀 Starting speech recognition with health monitoring...');
+      
+      // Initialize session start time for health monitoring
+      if (sessionStartTime.current === 0) {
+        sessionStartTime.current = Date.now();
+      }
+      
       try {
         recognitionRef.current.start();
-        setIsListening(true); // Force listening state to true and keep it true
+        setIsListening(true);
+        
+        // Start health monitoring
+        startRecognitionHealthMonitoring();
+        
       } catch (error) {
         console.error('❌ Failed to start speech recognition:', error);
-        // Force reinitialize and restart
-        console.log('🔄 Force reinitializing speech recognition...');
-        recognitionRef.current = null;
-        if (initializeSpeechRecognition()) {
-          try {
-            recognitionRef.current.start();
-            setIsListening(true);
-            console.log('✅ Speech recognition force reinitialized and started');
-          } catch (retryError) {
-            console.error('🚨 Force retry failed:', retryError);
+        
+        // Comprehensive cleanup before reinitialize
+        cleanupRecognition();
+        
+        const manualRestartDelay = 500; // Manual restart can be faster
+        setTimeout(() => {
+          if (initializeSpeechRecognition()) {
+            try {
+              recognitionRef.current.start();
+              setIsListening(true);
+              startRecognitionHealthMonitoring();
+              console.log('✅ Speech recognition reinitialized and started');
+            } catch (retryError) {
+              console.error('🚨 Manual restart failed:', retryError);
+            }
           }
-        }
+        }, manualRestartDelay);
       }
     }
   }, [initializeSpeechRecognition, isInterviewActive]);
 
   const stopSpeechRecognition = useCallback(() => {
     if (recognitionRef.current) {
-      console.log('🛑 Stopping speech recognition...');
-      recognitionRef.current.stop();
-      setIsListening(false); // Only set false when actually stopping
+      console.log('🛑 Stopping speech recognition with comprehensive cleanup...');
+      
+      // Stop health monitoring
+      stopRecognitionHealthMonitoring();
+      
+      // Comprehensive cleanup
+      cleanupRecognition();
+      
+      setIsListening(false);
     }
+  }, []);
+
+  // Recognition health monitoring functions
+  const startRecognitionHealthMonitoring = useCallback(() => {
+    console.log('💊 Starting recognition health monitoring...');
+    
+    // Clear existing timer
+    if (recognitionHealthTimer.current) {
+      clearInterval(recognitionHealthTimer.current);
+    }
+    
+    // Monitor every 30 seconds
+    recognitionHealthTimer.current = setInterval(() => {
+      const now = Date.now();
+      const sessionDuration = (now - sessionStartTime.current) / 1000;
+      const restartFrequency = recognitionRestartCount.current / (sessionDuration / 60); // restarts per minute
+      
+      console.log(`💊 Health check - Session: ${Math.round(sessionDuration)}s, Restarts: ${recognitionRestartCount.current}, Frequency: ${restartFrequency.toFixed(2)}/min`);
+      
+      // Proactive session cycling after 4 minutes to prevent browser limits
+      if (sessionDuration > 240 && isInterviewActive) {
+        console.log('💊 Proactive session cycling after 4 minutes...');
+        proactiveSessionRestart();
+      }
+      
+      // Throttle if too many restarts
+      if (restartFrequency > 3) {
+        console.log('💊 High restart frequency detected, implementing throttling...');
+        // Could implement fallback modes here
+      }
+      
+    }, 30000); // Check every 30 seconds
+  }, [isInterviewActive]);
+
+  const stopRecognitionHealthMonitoring = useCallback(() => {
+    console.log('💊 Stopping recognition health monitoring...');
+    if (recognitionHealthTimer.current) {
+      clearInterval(recognitionHealthTimer.current);
+      recognitionHealthTimer.current = null;
+    }
+  }, []);
+
+  const proactiveSessionRestart = useCallback(() => {
+    console.log('💊 Performing proactive session restart...');
+    
+    if (recognitionRef.current && !isRestarting.current) {
+      isRestarting.current = true;
+      
+      // Clean stop current recognition
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.log('💊 Clean stop failed, proceeding with restart');
+      }
+      
+      // Wait for clean shutdown, then restart
+      setTimeout(() => {
+        cleanupRecognition();
+        
+        if (initializeSpeechRecognition()) {
+          try {
+            recognitionRef.current.start();
+            setIsListening(true);
+            
+            // Reset counters for fresh session
+            recognitionRestartCount.current = 0;
+            sessionStartTime.current = Date.now();
+            
+            console.log('💊 Proactive restart completed successfully');
+          } catch (error) {
+            console.error('💊 Proactive restart failed:', error);
+          }
+        }
+        
+        isRestarting.current = false;
+      }, 800);
+    }
+  }, [initializeSpeechRecognition]);
+
+  const cleanupRecognition = useCallback(() => {
+    console.log('🧹 Performing comprehensive recognition cleanup...');
+    
+    if (recognitionRef.current) {
+      try {
+        // Remove all event listeners
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        
+        // Abort current recognition
+        recognitionRef.current.abort();
+        
+        // Nullify reference
+        recognitionRef.current = null;
+        
+        console.log('🧹 Recognition cleanup completed');
+      } catch (error) {
+        console.log('🧹 Cleanup error (expected):', error.message);
+        recognitionRef.current = null;
+      }
+    }
+    
+    // Clear any pending timers
+    if (speechFinalizationTimer.current) {
+      clearTimeout(speechFinalizationTimer.current);
+      speechFinalizationTimer.current = null;
+    }
+    
+    // Reset state
+    accumulatedTranscript.current = '';
+    pendingTranscript.current = '';
+    setCurrentTranscript('');
+    
   }, []);
 
   // Process complete user speech with parallel transcript saving and AI response generation
