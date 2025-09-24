@@ -140,11 +140,7 @@ const Interview = () => {
         return ensureSpeechRecognitionActive(retryCount + 1);
       }
       
-      toast({
-        title: "Speech Recognition Failed",
-        description: "Unable to start speech recognition. Please try manually.",
-        variant: "destructive"
-      });
+      console.error("Speech Recognition Failed: Unable to start speech recognition");
       return false;
     }
   }, [isInterviewActive, isListening, requestMicrophonePermission, toast]);
