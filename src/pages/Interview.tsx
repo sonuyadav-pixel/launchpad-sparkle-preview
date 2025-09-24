@@ -104,9 +104,12 @@ const Interview = () => {
     recognitionRef.current.onend = () => {
       console.log('🎤 Speech recognition ENDED - Interview active:', isInterviewActive);
       
-      // NEVER set isListening to false during interview - keep it true
+      // Always keep speech recognition running during interview
+      setIsListening(true); // Force listening state to remain true
+      
+      // Only stop if interview is explicitly ended
       if (!isInterviewActive) {
-        console.log('🎤 Interview not active, setting isListening to false');
+        console.log('🎤 Interview not active, stopping recognition');
         setIsListening(false);
         return;
       }
@@ -120,32 +123,30 @@ const Interview = () => {
       console.log('🔄 Starting immediate restart for continuous listening...');
       isRestarting.current = true;
       
-      // Immediate restart without delay for continuous listening
-      if (recognitionRef.current) {
-        try {
-          console.log('🔄 Attempting to restart speech recognition...');
-          recognitionRef.current.start();
-          console.log('✅ Speech recognition restarted successfully');
-          isRestarting.current = false;
-        } catch (error) {
-          console.log('🔄 Immediate restart failed:', error.message, 'trying again in 100ms...');
-          setTimeout(() => {
-            if (isInterviewActive && recognitionRef.current && !isRestarting.current) {
+      // Force immediate restart with no delays
+      setTimeout(() => {
+        if (isInterviewActive && recognitionRef.current) {
+          try {
+            console.log('🔄 Force restarting speech recognition...');
+            recognitionRef.current.start();
+            console.log('✅ Speech recognition force restarted successfully');
+            setIsListening(true); // Ensure listening state stays true
+          } catch (error) {
+            console.log('🔄 Force restart failed:', error.message, 'reinitializing...');
+            // Reinitialize completely if restart fails
+            if (initializeSpeechRecognition()) {
               try {
-                console.log('🔄 Retry attempt to restart speech recognition...');
                 recognitionRef.current.start();
-                console.log('✅ Speech recognition retry restart successful');
-              } catch (retryError) {
-                console.error('🚨 Failed to restart recognition after retry:', retryError.message);
+                setIsListening(true);
+                console.log('✅ Speech recognition reinitialized and restarted');
+              } catch (reinitError) {
+                console.error('🚨 Complete restart failed:', reinitError.message);
               }
             }
-            isRestarting.current = false;
-          }, 100);
+          }
         }
-      } else {
-        console.error('🚨 recognitionRef.current is null, cannot restart');
         isRestarting.current = false;
-      }
+      }, 50); // Very short delay for immediate restart
     };
 
     recognitionRef.current.onresult = (event: any) => {
@@ -274,33 +275,26 @@ const Interview = () => {
       if (!initializeSpeechRecognition()) return;
     }
 
-    // Start recognition during interview (ignore mute state - we handle that separately)
-    if (isInterviewActive && !isRestarting.current) {
-      console.log('🚀 Starting speech recognition...');
-      isRestarting.current = true;
+    // Always start recognition during interview - ignore all other conditions
+    if (isInterviewActive) {
+      console.log('🚀 Starting speech recognition - always active during interview');
       try {
         recognitionRef.current.start();
-        setIsListening(true); // Set to true and keep it true during interview
-        isRestarting.current = false;
+        setIsListening(true); // Force listening state to true and keep it true
       } catch (error) {
         console.error('❌ Failed to start speech recognition:', error);
-        // Quick retry with reinitialize
-        setTimeout(() => {
-          if (isInterviewActive) {
-            console.log('🔄 Reinitializing speech recognition after error...');
-            recognitionRef.current = null;
-            initializeSpeechRecognition();
-            if (recognitionRef.current) {
-              try {
-                recognitionRef.current.start();
-                setIsListening(true);
-              } catch (retryError) {
-                console.error('🚨 Retry failed:', retryError);
-              }
-            }
+        // Force reinitialize and restart
+        console.log('🔄 Force reinitializing speech recognition...');
+        recognitionRef.current = null;
+        if (initializeSpeechRecognition()) {
+          try {
+            recognitionRef.current.start();
+            setIsListening(true);
+            console.log('✅ Speech recognition force reinitialized and started');
+          } catch (retryError) {
+            console.error('🚨 Force retry failed:', retryError);
           }
-          isRestarting.current = false;
-        }, 100); // Very short delay
+        }
       }
     }
   }, [initializeSpeechRecognition, isInterviewActive]);
@@ -324,14 +318,9 @@ const Interview = () => {
         return;
       }
       
-      // Check if we just processed speech recently (debounce - 1 second)
-      const now = Date.now();
-      if (lastProcessedTime.current && now - lastProcessedTime.current < 1000) {
-        console.log('🚫 Skipping: too soon after last response');
-        return;
-      }
-      
-      lastProcessedTime.current = now;
+      // No debounce - process all speech immediately
+      console.log('✅ Processing speech immediately - no debounce threshold');
+      lastProcessedTime.current = Date.now();
       
       // Add user message to transcript
       const userMessage: TranscriptMessage = {
