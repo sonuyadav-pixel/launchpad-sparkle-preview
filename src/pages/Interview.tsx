@@ -102,45 +102,54 @@ const Interview = () => {
     };
 
     recognitionRef.current.onend = () => {
-      console.log('🎤 Speech recognition ENDED');
+      console.log('🎤 Speech recognition ENDED - Interview active:', isInterviewActive);
       
       // NEVER set isListening to false during interview - keep it true
       if (!isInterviewActive) {
+        console.log('🎤 Interview not active, setting isListening to false');
         setIsListening(false);
         return;
       }
       
       // Prevent race conditions during restart
       if (isRestarting.current) {
-        console.log('🔄 Already restarting, skipping...');
+        console.log('🔄 Already restarting, skipping duplicate restart...');
         return;
       }
       
+      console.log('🔄 Starting immediate restart for continuous listening...');
+      isRestarting.current = true;
+      
       // Immediate restart without delay for continuous listening
-      if (isInterviewActive && recognitionRef.current) {
-        isRestarting.current = true;
-        console.log('🔄 Immediately restarting speech recognition...');
+      if (recognitionRef.current) {
         try {
+          console.log('🔄 Attempting to restart speech recognition...');
           recognitionRef.current.start();
+          console.log('✅ Speech recognition restarted successfully');
           isRestarting.current = false;
         } catch (error) {
-          console.log('🔄 Immediate restart failed, trying again...', error);
+          console.log('🔄 Immediate restart failed:', error.message, 'trying again in 100ms...');
           setTimeout(() => {
             if (isInterviewActive && recognitionRef.current && !isRestarting.current) {
               try {
+                console.log('🔄 Retry attempt to restart speech recognition...');
                 recognitionRef.current.start();
+                console.log('✅ Speech recognition retry restart successful');
               } catch (retryError) {
-                console.error('🚨 Failed to restart recognition:', retryError);
+                console.error('🚨 Failed to restart recognition after retry:', retryError.message);
               }
             }
             isRestarting.current = false;
-          }, 100); // Very short delay
+          }, 100);
         }
+      } else {
+        console.error('🚨 recognitionRef.current is null, cannot restart');
+        isRestarting.current = false;
       }
     };
 
     recognitionRef.current.onresult = (event: any) => {
-      console.log('🎤 Speech result received');
+      console.log('🎤 Speech result received - Results count:', event.results.length);
       let finalTranscript = '';
       let interimTranscript = '';
       
@@ -149,8 +158,10 @@ const Interview = () => {
         
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+          console.log('📝 Final transcript received:', transcript);
         } else {
           interimTranscript += transcript;
+          console.log('📝 Interim transcript received:', transcript);
         }
       }
       
@@ -161,7 +172,7 @@ const Interview = () => {
         } else {
           accumulatedTranscript.current = finalTranscript.trim();
         }
-        console.log('📝 Added final transcript to accumulation:', accumulatedTranscript.current);
+        console.log('📝 Updated accumulated transcript:', accumulatedTranscript.current);
       }
       
       // Handle interim transcript - show current speech + accumulated (always show, even when muted)
@@ -177,6 +188,7 @@ const Interview = () => {
         // Update live display and pending transcript
         setCurrentTranscript(displayTranscript);
         pendingTranscript.current = displayTranscript;
+        console.log('📝 Updated current transcript display:', displayTranscript);
         
         // Only process speech if not muted
         if (shouldProcessSpeech.current) {
@@ -185,9 +197,10 @@ const Interview = () => {
             clearTimeout(speechFinalizationTimer.current);
           }
           
+          console.log('⏰ Starting 10-second finalization timer...');
           speechFinalizationTimer.current = setTimeout(() => {
             if (pendingTranscript.current.trim() && shouldProcessSpeech.current) {
-              console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
+              console.log('📝 10-second silence detected, finalizing transcript:', pendingTranscript.current);
               const textToFinalize = pendingTranscript.current.trim();
               
               // Clear all transcript states
@@ -202,27 +215,30 @@ const Interview = () => {
               processCompleteUserSpeech(textToFinalize);
             }
           }, 10000); // 10 seconds
+        } else {
+          console.log('🔇 Speech processing disabled (muted), not setting finalization timer');
         }
       }
       
     };
 
     recognitionRef.current.onerror = (event: any) => {
-      console.error('🎤 Speech recognition error:', event.error);
+      console.error('🎤 Speech recognition error:', event.error, 'Interview active:', isInterviewActive);
       
       // Don't show error for network issues, just restart
       if (event.error === 'network' || event.error === 'service-not-allowed' || event.error === 'bad-grammar') {
-        console.log('🔄 Network/service error, will auto-restart...');
+        console.log('🔄 Network/service error, will auto-restart on next onend...');
         return;
       }
       
       // Handle different error types
       if (event.error === 'no-speech') {
-        console.log('🔇 No speech detected - continuing...');
+        console.log('🔇 No speech detected - this is normal, continuing...');
         return; // Don't show error for no-speech
       }
       
       if (event.error === 'not-allowed') {
+        console.error('🚨 Microphone access denied');
         toast({
           title: "Microphone Access Denied",
           description: "Please allow microphone access to continue",
@@ -233,15 +249,17 @@ const Interview = () => {
       
       // For other errors, try to restart immediately (no delay for continuous operation)
       if (isInterviewActive && recognitionRef.current && !isRestarting.current) {
-        console.log('🔄 Recovering from error, restarting recognition...');
+        console.log('🔄 Recovering from error, attempting immediate restart...');
         isRestarting.current = true;
         setTimeout(() => {
           try {
             if (isInterviewActive && recognitionRef.current) {
+              console.log('🔄 Error recovery restart attempt...');
               recognitionRef.current.start();
+              console.log('✅ Error recovery restart successful');
             }
           } catch (error) {
-            console.error('🚨 Failed to restart after error:', error);
+            console.error('🚨 Failed to restart after error:', error.message);
           }
           isRestarting.current = false;
         }, 100); // Very short delay
@@ -1006,6 +1024,37 @@ const Interview = () => {
                     End Interview
                   </Button>
                 
+                  {/* Temporary test button for debugging speech recognition */}
+                  <Button
+                    onClick={() => {
+                      console.log('🔧 Manual test - Current state:', {
+                        isListening,
+                        isInterviewActive,
+                        isMuted,
+                        hasRecognition: !!recognitionRef.current,
+                        isRestarting: isRestarting.current,
+                        shouldProcessSpeech: shouldProcessSpeech.current
+                      });
+                      
+                      if (recognitionRef.current && isInterviewActive) {
+                        try {
+                          console.log('🔧 Manual restart attempt...');
+                          recognitionRef.current.stop();
+                          setTimeout(() => {
+                            if (recognitionRef.current) {
+                              recognitionRef.current.start();
+                              console.log('🔧 Manual restart completed');
+                            }
+                          }, 100);
+                        } catch (error) {
+                          console.error('🔧 Manual restart failed:', error);
+                        }
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                  </Button>
                 </>
               )}
             </div>
