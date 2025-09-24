@@ -87,6 +87,18 @@ const Interview = () => {
     // Append new words to existing text
     return `${existingText.trim()} ${newWords.join(' ')}`.trim();
   }, []);
+
+  // Word count helper function
+  const countWords = useCallback((text: string): number => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }, []);
+
+  // Dynamic timeout based on word count
+  const getDynamicTimeout = useCallback((wordCount: number): number => {
+    if (wordCount <= 2) return 18000; // 18 seconds for very short utterances
+    if (wordCount <= 5) return 10000; // 10 seconds for medium utterances  
+    return 7000; // 7 seconds for longer utterances
+  }, []);
   
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -258,8 +270,35 @@ const Interview = () => {
         
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
-            console.log('📝 10-second silence detected, finalizing accumulated transcript:', pendingTranscript.current);
             const textToFinalize = pendingTranscript.current.trim();
+            const wordCount = countWords(textToFinalize);
+            
+            // If word count is <= 2, wait longer for more words (unless it's been too long)
+            if (wordCount <= 2) {
+              console.log(`📝 Short utterance detected (${wordCount} words), waiting longer for more input...`);
+              
+              // Set another timeout for short utterances, but with a maximum wait time
+              speechFinalizationTimer.current = setTimeout(() => {
+                if (pendingTranscript.current.trim()) {
+                  console.log('📝 Extended wait complete, finalizing short transcript:', pendingTranscript.current);
+                  const finalText = pendingTranscript.current.trim();
+                  
+                  // Clear all transcript states
+                  pendingTranscript.current = '';
+                  accumulatedTranscript.current = '';
+                  setCurrentTranscript('');
+                  
+                  lastSpeechTime.current = Date.now();
+                  resetAutoCloseTimer();
+                  
+                  // Process complete accumulated user speech
+                  processCompleteUserSpeech(finalText);
+                }
+              }, 8000); // Additional 8 seconds for short utterances
+              return;
+            }
+            
+            console.log(`📝 Silence detected, finalizing transcript (${wordCount} words):`, textToFinalize);
             
             // Clear all transcript states
             pendingTranscript.current = '';
@@ -272,7 +311,7 @@ const Interview = () => {
             // Process complete accumulated user speech
             processCompleteUserSpeech(textToFinalize);
           }
-        }, 10000); // 10 seconds
+        }, getDynamicTimeout(countWords(pendingTranscript.current)));
       }
       
     };
