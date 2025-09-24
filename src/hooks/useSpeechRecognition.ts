@@ -35,21 +35,17 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
   const isSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
   const processTranscript = useCallback((text: string, isFinal: boolean) => {
-    // Filter out AI speech patterns - basic implementation
-    // This can be enhanced with more sophisticated filtering
-    const aiPatterns = [
-      /^(um|uh|let me|so|well|okay|right)/i,
-      /\b(computer|ai|system|processing)\b/i
-    ];
+    console.log('🎤 Processing transcript:', { text, isFinal, length: text.length });
     
-    let filteredText = text;
-    aiPatterns.forEach(pattern => {
-      filteredText = filteredText.replace(pattern, '').trim();
-    });
-
-    if (filteredText && filteredText.length > 2) {
+    // Simplified filtering - less aggressive
+    const filteredText = text.trim();
+    
+    if (filteredText && filteredText.length > 0) {
+      console.log('🎤 Setting transcript:', filteredText);
       setTranscript(prev => isFinal ? prev + ' ' + filteredText : filteredText);
       optionsRef.current.onResult?.(filteredText, isFinal);
+    } else {
+      console.log('🎤 Transcript filtered out or empty');
     }
   }, []);
 
@@ -143,14 +139,7 @@ export const useSpeechRecognition = (): SpeechRecognitionResult => {
         options.onEnd?.();
         console.log('🎤 Speech recognition ended');
         
-        // Auto-restart if continuous mode and not manually stopped
-        if (options.continuous && recognitionRef.current) {
-          setTimeout(() => {
-            if (recognitionRef.current) {
-              recognition.start();
-            }
-          }, 100);
-        }
+        // Don't auto-restart - let the parent component handle restart logic
       };
 
       // Start recognition

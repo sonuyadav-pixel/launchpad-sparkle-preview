@@ -159,19 +159,33 @@ Generate the next appropriate interview question. Keep it natural, professional,
     }
   }, [tts, addToTranscript, toast]);
 
-  // Start listening for user response
+  // Start listening for user response with improved flow
   const startUserResponse = useCallback(() => {
+    console.log('🎤 Starting to listen for user response');
     userResponseBufferRef.current = '';
-    setIsUserSpeaking(true);
+    setIsUserSpeaking(false); // Start as false, will be set to true when speech detected
     
     speechRecognition.startListening({
-      continuous: true,
+      continuous: false, // Use single recognition session to prevent loops
       interimResults: true,
       onResult: (transcript, isFinal) => {
+        console.log('🎤 Speech result:', { transcript, isFinal });
+        
+        // Set user speaking when we get any transcript
+        if (!isUserSpeaking) {
+          setIsUserSpeaking(true);
+        }
+        
         if (isFinal) {
-          userResponseBufferRef.current += ' ' + transcript;
+          userResponseBufferRef.current = transcript.trim();
           addToTranscript('user', transcript.trim(), true);
+          
+          // Process the response immediately
+          setTimeout(() => {
+            processUserResponse(transcript.trim());
+          }, 500);
         } else {
+          // Show interim results
           addToTranscript('user', transcript.trim(), false);
         }
       },
@@ -183,7 +197,23 @@ Generate the next appropriate interview question. Keep it natural, professional,
           description: error,
           variant: "destructive",
         });
+        
+        // Restart on error if still waiting
+        if (interviewState === 'waiting_response') {
+          setTimeout(() => startUserResponse(), 1000);
+        }
+      },
+      onStart: () => {
+        console.log('🎤 Speech recognition started');
+      },
+      onEnd: () => {
+        console.log('🎤 Speech recognition ended');
         setIsUserSpeaking(false);
+        
+        // Restart if no response and still waiting
+        if (interviewState === 'waiting_response' && !userResponseBufferRef.current.trim()) {
+          setTimeout(() => startUserResponse(), 500);
+        }
       }
     });
 
@@ -196,7 +226,7 @@ Generate the next appropriate interview question. Keep it natural, professional,
         askQuestion("I didn't catch that. Would you like me to repeat the question?");
       }
     }, 30000); // 30 second timeout
-  }, [speechRecognition, addToTranscript, askQuestion, toast]);
+  }, [speechRecognition, addToTranscript, askQuestion, toast, isUserSpeaking, interviewState]);
 
   // Process user response and generate next question
   const processUserResponse = useCallback(async (response: string) => {
