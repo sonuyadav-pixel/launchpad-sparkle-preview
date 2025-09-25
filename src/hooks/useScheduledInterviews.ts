@@ -10,7 +10,7 @@ export interface ScheduledInterview {
   duration_minutes: number;
   status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'missed';
   session_id?: string;
-  invited_email?: string;
+  invited_email: string;
   created_at: string;
   updated_at: string;
 }
@@ -20,19 +20,27 @@ export const useScheduledInterviews = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return {
+      'Content-Type': 'application/json',
+      'authorization': `Bearer ${session?.access_token}`,
+    };
+  };
+
   const fetchScheduledInterviews = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('scheduled_interviews')
-        .select('*')
-        .order('scheduled_at', { ascending: true });
+      const headers = await getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('scheduled-interviews', {
+        headers
+      });
 
       if (error) throw error;
 
-      setScheduledInterviews((data as ScheduledInterview[]) || []);
+      setScheduledInterviews(data || []);
     } catch (err: any) {
       console.error('Error fetching scheduled interviews:', err);
       setError(err.message);
@@ -46,21 +54,15 @@ export const useScheduledInterviews = () => {
       setLoading(true);
       setError(null);
 
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('scheduled_interviews')
-        .insert([{
-          ...interview,
-          user_id: user.user.id
-        }])
-        .select()
-        .single();
+      const headers = await getAuthHeaders();
+      const { data, error } = await supabase.functions.invoke('scheduled-interviews', {
+        body: interview,
+        headers
+      });
 
       if (error) throw error;
 
-      setScheduledInterviews(prev => [...prev, data as ScheduledInterview]);
+      setScheduledInterviews(prev => [...prev, data]);
       return data;
     } catch (err: any) {
       console.error('Error creating scheduled interview:', err);
@@ -76,17 +78,22 @@ export const useScheduledInterviews = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('scheduled_interviews')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      // Since we can't pass method in invoke, we'll use a direct fetch call
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`https://ecrxtqvkncbbolmfqpxx.supabase.co/functions/v1/scheduled-interviews/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify(updates)
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update interview');
 
       setScheduledInterviews(prev => prev.map(interview => 
-        interview.id === id ? (data as ScheduledInterview) : interview
+        interview.id === id ? data : interview
       ));
 
       return data;
@@ -104,12 +111,18 @@ export const useScheduledInterviews = () => {
       setLoading(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('scheduled_interviews')
-        .delete()
-        .eq('id', id);
+      // Since we can't pass method in invoke, we'll use a direct fetch call
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`https://ecrxtqvkncbbolmfqpxx.supabase.co/functions/v1/scheduled-interviews/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${session?.access_token}`,
+        }
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete interview');
 
       setScheduledInterviews(prev => prev.filter(interview => interview.id !== id));
     } catch (err: any) {
