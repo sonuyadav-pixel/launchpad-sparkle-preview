@@ -8,6 +8,7 @@ import { useInterviewSession, type InterviewSession } from "@/hooks/useInterview
 import { supabase } from "@/integrations/supabase/client";
 import { OngoingInterviewSection } from "./OngoingInterviewSection";
 import ProductValueProposition from "./ProductValueProposition";
+import candidateInterview from "@/assets/candidate-interview.jpg";
 const InterviewModule = () => {
   const navigate = useNavigate();
   const {
@@ -117,9 +118,16 @@ const InterviewModule = () => {
               <Video className="h-5 w-5 text-primary" />
               <CardTitle>AI-Powered Interview</CardTitle>
             </div>
-            {activeSession && activeSession.status !== 'active' && <Badge className={`${getStatusColor(activeSession.status)} text-white`}>
-                {activeSession.status.toUpperCase()}
-              </Badge>}
+            <div className="flex items-center gap-3">
+              {activeSession && activeSession.status !== 'active' && <Badge className={`${getStatusColor(activeSession.status)} text-white`}>
+                  {activeSession.status.toUpperCase()}
+                </Badge>}
+              <img 
+                src={candidateInterview} 
+                alt="Candidate giving interview" 
+                className="w-16 h-16 rounded-lg object-cover shadow-sm"
+              />
+            </div>
           </div>
           <CardDescription>
             Practice interviews with AI-powered feedback and analysis
