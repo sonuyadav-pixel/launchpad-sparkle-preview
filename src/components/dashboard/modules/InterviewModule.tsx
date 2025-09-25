@@ -222,10 +222,15 @@ const InterviewModule = () => {
                 <Button 
                   onClick={handleStartNewInterview} 
                   size="lg"
-                  className="px-8"
+                  className="px-8 bg-blue-600 hover:bg-blue-700 text-white border-0"
                   disabled={loading}
                 >
-                  <Video className="h-4 w-4 mr-2" />
+                  <div className="relative h-4 w-4 mr-2">
+                    <div className="absolute inset-0 bg-blue-200 rounded border border-blue-300">
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-800 rounded-full"></div>
+                      <div className="absolute top-0.5 right-0.5 w-1 h-1 bg-blue-300 rounded-full animate-ping"></div>
+                    </div>
+                  </div>
                   {loading ? 'Loading...' : 'Start New Interview'}
                 </Button>
               </div>
