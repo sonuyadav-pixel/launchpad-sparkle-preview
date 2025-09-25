@@ -120,6 +120,11 @@ export const UpcomingInterviewSection = () => {
                 <Clock className="h-4 w-4" />
                 {interviewTime}
               </div>
+              {upcomingInterview.invited_email && (
+                <Badge variant="outline" className="text-xs">
+                  Invited
+                </Badge>
+              )}
             </div>
 
             {showTimeError && !isUnlocked && (

@@ -20,6 +20,7 @@ interface AddInterviewModalProps {
 export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddInterviewModalProps) => {
   const [candidateName, setCandidateName] = useState('');
   const [interviewTitle, setInterviewTitle] = useState('');
+  const [invitedEmail, setInvitedEmail] = useState('');
   const [date, setDate] = useState<Date>(selectedDate || new Date());
   const [time, setTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
@@ -48,7 +49,8 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
         interview_title: interviewTitle.trim(),
         scheduled_at: scheduledAt.toISOString(),
         duration_minutes: duration,
-        status: 'scheduled'
+        status: 'scheduled',
+        invited_email: invitedEmail.trim() || undefined
       });
 
       toast.success('Interview scheduled successfully!');
@@ -57,6 +59,7 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
       // Reset form
       setCandidateName('');
       setInterviewTitle('');
+      setInvitedEmail('');
       setTime('09:00');
       setDuration(60);
     } catch (error: any) {
@@ -101,6 +104,20 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
               placeholder="e.g., Frontend Developer Interview"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="invitedEmail">Invite Email (Optional)</Label>
+            <Input
+              id="invitedEmail"
+              type="email"
+              value={invitedEmail}
+              onChange={(e) => setInvitedEmail(e.target.value)}
+              placeholder="candidate@example.com"
+            />
+            <p className="text-sm text-muted-foreground">
+              If provided, the interview will appear on the invited person's calendar instead of yours.
+            </p>
           </div>
 
           <div className="space-y-2">

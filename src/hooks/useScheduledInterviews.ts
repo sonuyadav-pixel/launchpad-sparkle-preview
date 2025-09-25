@@ -10,6 +10,7 @@ export interface ScheduledInterview {
   duration_minutes: number;
   status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'missed';
   session_id?: string;
+  invited_email?: string;
   created_at: string;
   updated_at: string;
 }
