@@ -912,6 +912,9 @@ const Interview = () => {
       title: "Interview Ended",
       description: "Thank you for your time!",
     });
+
+    // Navigate to dashboard with feedback modal
+    navigate('/dashboard?feedback=true');
   };
 
   // Silence Detection for Fallback Logic

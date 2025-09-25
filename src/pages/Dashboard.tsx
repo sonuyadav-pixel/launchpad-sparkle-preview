@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { PricingModal } from "@/components/dashboard/PricingModal";
+import { FeedbackModal } from "@/components/dashboard/FeedbackModal";
 
 export type DashboardModule = 
   | "overview" 
@@ -16,10 +18,22 @@ export type DashboardModule =
   | "interview-plus";
 
 const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeModule, setActiveModule] = useState<DashboardModule>("interview");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  // Check for feedback parameter on mount
+  useEffect(() => {
+    const showFeedback = searchParams.get('feedback');
+    if (showFeedback === 'true') {
+      setIsFeedbackOpen(true);
+      // Remove the parameter from URL
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   console.log('Dashboard render:', { isSidebarOpen, isSidebarCollapsed });
 
@@ -52,6 +66,11 @@ const Dashboard = () => {
       <PricingModal 
         isOpen={isPricingOpen}
         onClose={() => setIsPricingOpen(false)}
+      />
+
+      <FeedbackModal 
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
       />
     </div>
   );
