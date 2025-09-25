@@ -9,7 +9,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { sessionManager } from '@/utils/SessionManager';
 import { 
   Video, 
@@ -36,7 +35,6 @@ const Interview = () => {
   const { toast } = useToast();
   const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
   const { updateSession } = useInterviewSession();
-  const { profile } = useUserProfile();
 
   // Session state
   const sessionId = searchParams.get('session');
@@ -48,10 +46,6 @@ const Interview = () => {
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
-  
-  // Timer state
-  const [interviewStartTime, setInterviewStartTime] = useState<Date | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -88,18 +82,6 @@ const Interview = () => {
     if (wordCount <= 5) return 10000; // 10 seconds for medium utterances  
     return 7000; // 7 seconds for longer utterances
   }, []);
-
-  // Format timer display
-  const formatTime = useCallback((seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, []);
   
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -110,7 +92,6 @@ const Interview = () => {
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Permission and Auto-Start Functions
   const requestMicrophonePermission = useCallback(async () => {
@@ -798,10 +779,6 @@ const Interview = () => {
       setIsInterviewActive(true);
       resetAutoCloseTimer();
       
-      // Start timer
-      setInterviewStartTime(new Date());
-      setElapsedTime(0);
-      
       // Update session status in database
       if (sessionId) {
         try {
@@ -896,10 +873,6 @@ const Interview = () => {
     stopSpeechRecognition();
     stopVideo();
     
-    // Stop timer
-    setInterviewStartTime(null);
-    setElapsedTime(0);
-    
     if (silenceTimeoutRef.current) {
       clearTimeout(silenceTimeoutRef.current);
     }
@@ -918,10 +891,6 @@ const Interview = () => {
     
     if (acknowledgmentTimer.current) {
       clearTimeout(acknowledgmentTimer.current);
-    }
-    
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
     }
     
     // Update session status in database
@@ -1102,33 +1071,6 @@ const Interview = () => {
                 LIVE
               </Badge>
             )}
-          </div>
-          
-          {/* Live CTA with User Name and Timer */}
-          <div className="flex items-center gap-4">
-            {isInterviewActive && (
-              <div className="flex items-center gap-3 bg-gradient-to-r from-primary/10 to-accent/10 px-4 py-2 rounded-lg border">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-red-600">LIVE</span>
-                </div>
-                <Separator orientation="vertical" className="h-4" />
-                <div className="text-sm font-mono font-medium">
-                  {formatTime(elapsedTime)}
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2 bg-card px-3 py-2 rounded-lg border shadow-sm">
-              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-primary">
-                  {profile?.first_name?.[0]?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <span className="text-sm font-medium">
-                {profile?.first_name || 'User'}
-              </span>
-            </div>
           </div>
         </div>
 
