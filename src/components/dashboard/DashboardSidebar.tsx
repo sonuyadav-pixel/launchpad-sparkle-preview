@@ -43,7 +43,7 @@ const menuItems = [
         id: "calendar" as DashboardModule,
         label: "Calendar",
         icon: Calendar,
-        comingSoon: true,
+        comingSoon: false,
       },
       {
         id: "feedback" as DashboardModule,

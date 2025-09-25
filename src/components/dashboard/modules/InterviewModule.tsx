@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useInterviewSession, type InterviewSession } from "@/hooks/useInterviewSession";
 import { supabase } from "@/integrations/supabase/client";
 import { OngoingInterviewSection } from "./OngoingInterviewSection";
+import { UpcomingInterviewSection } from "./UpcomingInterviewSection";
 import ProductValueProposition from "./ProductValueProposition";
 import candidateInterview from "@/assets/candidate-interview.jpg";
 const InterviewModule = () => {
@@ -99,10 +100,13 @@ const InterviewModule = () => {
     }
   };
   return <div className="space-y-0">
-      {/* Section 1: Ongoing Interview - Always check for active session */}
+      {/* Section 1: Upcoming Interview - Always check for scheduled interviews */}
+      <UpcomingInterviewSection />
+      
+      {/* Section 2: Ongoing Interview - Always check for active session */}
       <OngoingInterviewSection />
 
-      {/* Section 2: Main Interview Module */}
+      {/* Section 3: Main Interview Module */}
       <Card className="h-full">
         {error && <div className="mx-6 mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
