@@ -122,11 +122,13 @@ const InterviewModule = () => {
               {activeSession && activeSession.status !== 'active' && <Badge className={`${getStatusColor(activeSession.status)} text-white`}>
                   {activeSession.status.toUpperCase()}
                 </Badge>}
-              <img 
-                src={candidateInterview} 
-                alt="Candidate giving interview" 
-                className="w-16 h-16 rounded-lg object-cover shadow-sm"
-              />
+              <div className="relative">
+                <img 
+                  src={candidateInterview} 
+                  alt="Candidate giving interview" 
+                  className="w-32 h-24 rounded-lg object-cover shadow-lg relative z-10"
+                />
+              </div>
             </div>
           </div>
           <CardDescription>
