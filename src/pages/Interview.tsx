@@ -56,8 +56,10 @@ const Interview = () => {
   
   // Speech finalization timer
   const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
+  const acknowledgmentTimer = useRef<NodeJS.Timeout | null>(null);
   const accumulatedTranscript = useRef('');
   const pendingTranscript = useRef('');
+  const hasAcknowledgedCurrent = useRef(false);
   
   // Smart word accumulation helper function - simple append approach
   const appendNewWords = useCallback((existingText: string, incomingText: string): string => {
@@ -253,48 +255,38 @@ const Interview = () => {
         pendingTranscript.current = displayTranscript;
         
         // Reset 10-second timer whenever we get new speech
+        // Clear acknowledgment flag for new speech
+        hasAcknowledgedCurrent.current = false;
         
-        // Clear existing timer and start new 10-second timer
+        // Clear existing timers and start new 10-second journey
         if (speechFinalizationTimer.current) {
           clearTimeout(speechFinalizationTimer.current);
         }
+        if (acknowledgmentTimer.current) {
+          clearTimeout(acknowledgmentTimer.current);
+        }
         
+        // Start 3-segment journey: 5s silence → "Sure" → 5s more silence → finalize
+        console.log('🎯 Starting 10-second journey: Segment 1 (0-5s silence) → Segment 2 (5s "Sure") → Segment 3 (5s more silence)');
+        
+        // Segment 2: Trigger acknowledgment at 5 seconds
+        acknowledgmentTimer.current = setTimeout(() => {
+          console.log('🎯 Segment 2: 5 seconds reached - triggering acknowledgment');
+          triggerAcknowledgment();
+        }, 5000);
+        
+        // Segment 3: Finalize speech at 10 seconds (full journey)
         speechFinalizationTimer.current = setTimeout(() => {
           if (pendingTranscript.current.trim()) {
             const textToFinalize = pendingTranscript.current.trim();
-            const wordCount = countWords(textToFinalize);
             
-            // If word count is <= 2, wait longer for more words (unless it's been too long)
-            if (wordCount <= 2) {
-              console.log(`📝 Short utterance detected (${wordCount} words), waiting longer for more input...`);
-              
-              // Set another timeout for short utterances, but with a maximum wait time
-              speechFinalizationTimer.current = setTimeout(() => {
-                if (pendingTranscript.current.trim()) {
-                  console.log('📝 Extended wait complete, finalizing short transcript:', pendingTranscript.current);
-                  const finalText = pendingTranscript.current.trim();
-                  
-                  // Clear all transcript states
-                  pendingTranscript.current = '';
-                  accumulatedTranscript.current = '';
-                  setCurrentTranscript('');
-                  
-                  lastSpeechTime.current = Date.now();
-                  resetAutoCloseTimer();
-                  
-                  // Process complete accumulated user speech
-                  processCompleteUserSpeech(finalText);
-                }
-              }, 8000); // Additional 8 seconds for short utterances
-              return;
-            }
-            
-            console.log(`📝 Silence detected, finalizing transcript (${wordCount} words):`, textToFinalize);
+            console.log(`🎯 Segment 3: 10-second journey complete, finalizing transcript:`, textToFinalize);
             
             // Clear all transcript states
             pendingTranscript.current = '';
             accumulatedTranscript.current = '';
             setCurrentTranscript('');
+            hasAcknowledgedCurrent.current = false;
             
             lastSpeechTime.current = Date.now();
             resetAutoCloseTimer();
@@ -302,7 +294,7 @@ const Interview = () => {
             // Process complete accumulated user speech
             processCompleteUserSpeech(textToFinalize);
           }
-        }, getDynamicTimeout(countWords(pendingTranscript.current)));
+        }, 10000); // Fixed 10-second timeout for the complete journey
       }
       
     };
@@ -419,6 +411,37 @@ const Interview = () => {
       recognitionRef.current.stop();
     }
   }, []);
+
+  // Trigger acknowledgment during 10-second silence (segment 2)
+  const triggerAcknowledgment = useCallback(async () => {
+    if (hasAcknowledgedCurrent.current || !isInterviewActive) {
+      return;
+    }
+
+    try {
+      console.log('🎯 Segment 2: Triggering acknowledgment - AI says "Sure"');
+      hasAcknowledgedCurrent.current = true;
+
+      // Add "Sure" to transcript
+      const acknowledgmentMessage: TranscriptMessage = {
+        id: Date.now().toString(),
+        speaker: 'ai',
+        message: 'Sure',
+        timestamp: new Date()
+      };
+
+      setLocalTranscript(prev => [...prev, acknowledgmentMessage]);
+      
+      // Save to database
+      await addTranscriptMessage(acknowledgmentMessage);
+
+      // Speak "Sure" using TTS
+      await speak('Sure', 'alloy');
+
+    } catch (error) {
+      console.error('❌ Error in acknowledgment:', error);
+    }
+  }, [isInterviewActive, speak]);
 
   // Process complete user speech with parallel transcript saving and AI response generation
   const processCompleteUserSpeech = async (transcript: string) => {
@@ -866,6 +889,10 @@ const Interview = () => {
       clearTimeout(speechFinalizationTimer.current);
     }
     
+    if (acknowledgmentTimer.current) {
+      clearTimeout(acknowledgmentTimer.current);
+    }
+    
     // Update session status in database
     if (sessionId) {
       try {
@@ -1016,6 +1043,9 @@ const Interview = () => {
       }
       if (speechFinalizationTimer.current) {
         clearTimeout(speechFinalizationTimer.current);
+      }
+      if (acknowledgmentTimer.current) {
+        clearTimeout(acknowledgmentTimer.current);
       }
     };
   }, []);
