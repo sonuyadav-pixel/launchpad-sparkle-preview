@@ -20,22 +20,14 @@ export const useScheduledInterviews = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    return {
-      'Content-Type': 'application/json',
-      'authorization': `Bearer ${session?.access_token}`,
-    };
-  };
 
   const fetchScheduledInterviews = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const headers = await getAuthHeaders();
       const { data, error } = await supabase.functions.invoke('scheduled-interviews', {
-        headers
+        method: 'GET'
       });
 
       if (error) throw error;
@@ -54,10 +46,9 @@ export const useScheduledInterviews = () => {
       setLoading(true);
       setError(null);
 
-      const headers = await getAuthHeaders();
       const { data, error } = await supabase.functions.invoke('scheduled-interviews', {
         body: interview,
-        headers
+        method: 'POST'
       });
 
       if (error) throw error;
