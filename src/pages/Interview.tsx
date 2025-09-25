@@ -10,6 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
 import { sessionManager } from '@/utils/SessionManager';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import PermissionRequest from '@/components/interview/PermissionRequest';
+import type { InterviewSessionStatus } from '@/types/interview';
 import { 
   Video, 
   VideoOff, 
@@ -1043,7 +1046,7 @@ const Interview = () => {
         
         // Update session as abandoned in database
         updateSession(sessionId, { 
-          status: 'abandoned' as InterviewSessionStatus,
+          status: 'abandoned' as any,
           ended_at: new Date().toISOString(),
           metadata: { reason: 'user_left_without_ending' }
         }).catch(error => {
@@ -1075,7 +1078,7 @@ const Interview = () => {
     <div className="min-h-screen bg-primary p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 bg-primary/10 p-4 rounded-lg border border-primary/20">
+        <div className="flex items-center justify-between mb-6 bg-primary/5 p-4 rounded-lg border border-primary/10">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
