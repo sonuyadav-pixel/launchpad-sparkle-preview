@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
@@ -276,37 +276,47 @@ const History = () => {
                 {sessions.map((session) => (
                   <Card 
                     key={session.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow hover-scale"
+                    className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:rotate-1 hover:shadow-2xl hover:shadow-primary/20 hover:bg-primary/5 border hover:border-primary/20"
                     onClick={() => handleSessionClick(session)}
                   >
-                    <CardHeader className="pb-2">
+                    {/* Hover CTA Overlay */}
+                    <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-10">
+                      <Button 
+                        size="sm" 
+                        className="bg-primary text-white shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Explore
+                      </Button>
+                    </div>
+                    <CardHeader className="pb-2 relative z-20">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-sm font-medium line-clamp-2">
+                        <CardTitle className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors duration-300">
                           {session.title}
                         </CardTitle>
-                        <Badge className={`text-xs ${getStatusColor(session.status)}`}>
+                        <Badge className={`text-xs ${getStatusColor(session.status)} group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300`}>
                           {session.status}
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <CardContent className="space-y-2 relative z-20">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary/80 transition-colors duration-300">
                         <User className="h-3 w-3" />
                         <span>{profile?.first_name || 'You'}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary/80 transition-colors duration-300">
                         <Calendar className="h-3 w-3" />
                         <span>{format(new Date(session.created_at), 'MMM dd')}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-primary/80 transition-colors duration-300">
                         <Clock className="h-3 w-3" />
                         <span>{formatDuration(session.duration_seconds)}</span>
                       </div>
                       
                       <div className="pt-1">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs group-hover:border-primary/50 group-hover:text-primary/80 transition-colors duration-300">
                           {session.interview_type}
                         </Badge>
                       </div>
