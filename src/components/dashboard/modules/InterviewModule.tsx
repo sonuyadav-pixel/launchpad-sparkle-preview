@@ -184,9 +184,10 @@ const InterviewModule = () => {
                 <p className="text-muted-foreground mb-4">
                   Start your AI interview session and get personalized feedback
                 </p>
-                <Button onClick={handleStartNewInterview} size="lg" className="px-8" disabled={loading}>
-                  <Video className="h-4 w-4 mr-2" />
-                  {loading ? 'Loading...' : 'Start New Interview'}
+                <Button onClick={handleStartNewInterview} size="lg" className="px-8 relative overflow-hidden group/btn" disabled={loading}>
+                  <span className="absolute inset-0 bg-black transform -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-500 ease-in-out"></span>
+                  <Video className="h-4 w-4 mr-2 relative z-10" />
+                  <span className="relative z-10">{loading ? 'Loading...' : 'Start New Interview'}</span>
                 </Button>
               </div>
             </div>) : null}
