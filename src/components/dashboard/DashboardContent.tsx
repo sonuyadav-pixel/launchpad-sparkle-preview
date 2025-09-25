@@ -40,7 +40,7 @@ export const DashboardContent = ({ activeModule, sidebarOpen, sidebarCollapsed }
   return (
     <main className="flex-1 overflow-auto">
     
-      <div className="container mx-auto p-6 lg:p-8">
+      <div className="container mx-auto p-6 lg:p-8 bg-primary/5 rounded-lg">
         {renderModule()}
       </div>
     </main>
