@@ -1062,7 +1062,7 @@ const Interview = () => {
   }, [sessionId]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
+    <div className="min-h-screen bg-primary p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
