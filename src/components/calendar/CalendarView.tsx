@@ -3,7 +3,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, Plus, Trash2, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, Plus, Trash2, X, Laptop, Users } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, addYears, subYears } from 'date-fns';
 import { useScheduledInterviews, type ScheduledInterview } from '@/hooks/useScheduledInterviews';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalSelectedDate, setModalSelectedDate] = useState<Date | undefined>(undefined);
   const [modalSelectedTime, setModalSelectedTime] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState('calendar');
   const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, loading } = useScheduledInterviews();
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
@@ -245,58 +247,164 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
     );
   };
 
+  const renderScheduledInterviewsList = () => {
+    if (scheduledInterviews.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="relative mb-6">
+            <Laptop className="h-24 w-24 text-muted-foreground/40" />
+            <div className="absolute -top-2 -right-2 bg-primary rounded-full p-2">
+              <Users className="h-6 w-6 text-primary-foreground" />
+            </div>
+          </div>
+          <h3 className="text-2xl font-semibold text-muted-foreground mb-2">
+            No Interview Scheduled
+          </h3>
+          <p className="text-muted-foreground/70 mb-6 max-w-md">
+            You haven't scheduled any interviews yet. Click "Add Interview" to get started.
+          </p>
+          <Button onClick={handleAddInterviewClick} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Schedule Your First Interview
+          </Button>
+        </div>
+      );
+    }
+
+    // Sort interviews by date
+    const sortedInterviews = [...scheduledInterviews].sort(
+      (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+    );
+
+    return (
+      <div className="space-y-4">
+        {sortedInterviews.map((interview) => (
+          <Card key={interview.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Badge variant={interview.status === 'scheduled' ? 'default' : 'secondary'}>
+                      {interview.status}
+                    </Badge>
+                    <h4 className="font-semibold text-lg">{interview.interview_title}</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>{interview.candidate_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{interview.duration_minutes} minutes</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      <span>{format(new Date(interview.scheduled_at), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{format(new Date(interview.scheduled_at), 'h:mm a')}</span>
+                    </div>
+                  </div>
+                  
+                  {interview.invited_email && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      <strong>Invited:</strong> {interview.invited_email}
+                    </div>
+                  )}
+                </div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => handleDeleteInterview(interview, e)}
+                  className="ml-4 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5" />
-            Interview Calendar
+            Interview Management
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="flex border rounded-md">
-              {(['monthly', 'weekly', 'daily'] as const).map(type => (
-                <Button
-                  key={type}
-                  variant={viewType === type ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewType(type)}
-                  className="rounded-none first:rounded-l-md last:rounded-r-md"
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Button>
-              ))}
-            </div>
-            <Button onClick={handleAddInterviewClick} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Interview
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <Button variant="outline" size="sm" onClick={() => navigateDate('prev')}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="text-lg font-semibold">
-            {viewType === 'monthly' && format(selectedDate, 'yyyy')}
-            {viewType === 'weekly' && `Week of ${format(startOfWeek(selectedDate), 'MMM d, yyyy')}`}
-            {viewType === 'daily' && format(selectedDate, 'EEEE, MMMM d, yyyy')}
-          </h3>
-          <Button variant="outline" size="sm" onClick={() => navigateDate('next')}>
-            <ChevronRight className="h-4 w-4" />
+          <Button onClick={handleAddInterviewClick} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Add Interview
           </Button>
         </div>
       </CardHeader>
+      
       <CardContent className="p-6">
-        {loading ? (
-          <SectionLoader text="Loading calendar..." variant="dots" />
-        ) : (
-          <>
-            {viewType === 'monthly' && renderMonthlyView()}
-            {viewType === 'weekly' && renderWeeklyView()}
-            {viewType === 'daily' && renderDailyView()}
-          </>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
+            <TabsTrigger value="scheduled">Scheduled Interviews</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="calendar" className="mt-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex border rounded-md">
+                  {(['monthly', 'weekly', 'daily'] as const).map(type => (
+                    <Button
+                      key={type}
+                      variant={viewType === type ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewType(type)}
+                      className="rounded-none first:rounded-l-md last:rounded-r-md"
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => navigateDate('prev')}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <h3 className="text-lg font-semibold min-w-[200px] text-center">
+                    {viewType === 'monthly' && format(selectedDate, 'yyyy')}
+                    {viewType === 'weekly' && `Week of ${format(startOfWeek(selectedDate), 'MMM d, yyyy')}`}
+                    {viewType === 'daily' && format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={() => navigateDate('next')}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {loading ? (
+                <SectionLoader text="Loading calendar..." variant="dots" />
+              ) : (
+                <>
+                  {viewType === 'monthly' && renderMonthlyView()}
+                  {viewType === 'weekly' && renderWeeklyView()}
+                  {viewType === 'daily' && renderDailyView()}
+                </>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="scheduled" className="mt-6">
+            {loading ? (
+              <SectionLoader text="Loading scheduled interviews..." variant="dots" />
+            ) : (
+              renderScheduledInterviewsList()
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
 
       <AddInterviewModal
