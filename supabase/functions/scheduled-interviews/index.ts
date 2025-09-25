@@ -102,7 +102,23 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
       case 'POST':
-        const newInterview: ScheduledInterview = await req.json();
+        let newInterview: ScheduledInterview;
+        try {
+          const body = await req.text();
+          if (!body.trim()) {
+            return new Response(
+              JSON.stringify({ error: 'Request body is required for POST' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          newInterview = JSON.parse(body);
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError);
+          return new Response(
+            JSON.stringify({ error: 'Invalid JSON in request body' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         
         // Validate required fields
         if (!newInterview.candidate_name || !newInterview.interview_title || !newInterview.invited_email || !newInterview.scheduled_at) {
@@ -144,7 +160,23 @@ const handler = async (req: Request): Promise<Response> => {
         );
 
       case 'PUT':
-        const updates: Partial<ScheduledInterview> = await req.json();
+        let updates: Partial<ScheduledInterview>;
+        try {
+          const body = await req.text();
+          if (!body.trim()) {
+            return new Response(
+              JSON.stringify({ error: 'Request body is required for PUT' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          updates = JSON.parse(body);
+        } catch (parseError) {
+          console.error('JSON parsing error:', parseError);
+          return new Response(
+            JSON.stringify({ error: 'Invalid JSON in request body' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         
         const { data: updateData, error: updateError } = await supabase
           .from('scheduled_interviews')
