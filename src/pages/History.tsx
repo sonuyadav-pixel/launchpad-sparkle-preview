@@ -276,7 +276,7 @@ const History = () => {
                 {sessions.map((session) => (
                   <Card 
                     key={session.id}
-                    className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:rotate-1 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
+                    className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
                     onClick={() => handleSessionClick(session)}
                   >
                     {/* Content with blur effect on hover */}
