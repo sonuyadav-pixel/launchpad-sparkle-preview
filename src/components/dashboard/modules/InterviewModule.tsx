@@ -198,7 +198,23 @@ const InterviewModule = () => {
             /* No Active Session - Start New */
             <div className="text-center space-y-4">
               <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
-                <Video className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <div className="relative h-12 w-12 mx-auto mb-4">
+                  {/* Camera Body */}
+                  <div className="absolute inset-0 bg-primary rounded-lg shadow-lg animate-pulse">
+                    {/* Camera Lens */}
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-primary-foreground rounded-full border-2 border-primary"></div>
+                    {/* Flash Animation */}
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0s', animationDuration: '2s' }}></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.5s', animationDuration: '2s' }}></div>
+                    <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '1s', animationDuration: '2s' }}></div>
+                    {/* Shooting Effect */}
+                    <div className="absolute inset-0 bg-white/30 rounded-lg opacity-0 animate-pulse" style={{ animationDelay: '1.5s', animationDuration: '0.2s' }}></div>
+                  </div>
+                  {/* Shooting Particles */}
+                  <div className="absolute -top-2 -right-2 w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                  <div className="absolute -bottom-2 -left-2 w-1 h-1 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.8s' }}></div>
+                  <div className="absolute -top-1 left-0 w-1 h-1 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '1.2s' }}></div>
+                </div>
                 <h3 className="text-lg font-semibold mb-2">Ready to Practice?</h3>
                 <p className="text-muted-foreground mb-4">
                   Start your AI interview session and get personalized feedback
