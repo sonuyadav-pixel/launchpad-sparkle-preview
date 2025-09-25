@@ -125,6 +125,7 @@ export type Database = {
           duration_minutes: number
           id: string
           interview_title: string
+          invited_email: string | null
           scheduled_at: string
           session_id: string | null
           status: string
@@ -137,6 +138,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           interview_title: string
+          invited_email?: string | null
           scheduled_at: string
           session_id?: string | null
           status?: string
@@ -149,6 +151,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           interview_title?: string
+          invited_email?: string | null
           scheduled_at?: string
           session_id?: string | null
           status?: string
