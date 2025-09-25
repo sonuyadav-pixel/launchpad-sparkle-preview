@@ -337,8 +337,8 @@ const History = () => {
                     className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
                     onClick={() => handleSessionClick(session)}
                   >
-                    {/* Content with blur effect on hover */}
-                    <div className="group-hover:blur-sm transition-all duration-300">
+                    {/* Content without blur effect */}
+                    <div className="transition-all duration-300">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 space-y-1">
