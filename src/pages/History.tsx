@@ -373,16 +373,16 @@ const History = () => {
                       </CardContent>
                     </div>
 
-                    {/* Left CTA Overlay */}
-                    <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center pl-4">
+                    {/* Right CTA Overlay */}
+                    <div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center pr-4">
                       <Button 
                         size="sm" 
-                        className="bg-primary text-white shadow-lg transform -translate-x-4 group-hover:translate-x-0 transition-all duration-300"
+                        className="bg-primary text-white shadow-lg transform translate-x-4 group-hover:translate-x-0 transition-all duration-300"
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         Explore
                       </Button>
-                     </div>
+                    </div>
                   </Card>
                 ))}
               </div>
