@@ -90,15 +90,15 @@ const ProductValueProposition = () => {
                 }}
               >
                 <div className="flex items-start gap-3 relative">
-                  <div className={`${prop.bgColor} p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3`}>
-                    <IconComponent className={`h-4 w-4 ${prop.color} group-hover:scale-110 transition-transform duration-300`} />
+                  <div className={`${prop.bgColor} p-3 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3`}>
+                    <IconComponent className={`h-8 w-8 ${prop.color} group-hover:scale-125 transition-all duration-500 animate-pulse group-hover:animate-bounce-gentle`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium text-sm group-hover:text-primary transition-colors duration-300">
                         {prop.title}
                       </h4>
-                      <Badge variant="secondary" className="text-xs group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
+                      <Badge className="text-xs bg-primary text-primary-foreground group-hover:bg-primary/90 transition-all duration-300 font-medium">
                         {prop.badge}
                       </Badge>
                     </div>
