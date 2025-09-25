@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
@@ -15,15 +15,25 @@ export type DashboardModule =
   | "resume-builder" 
   | "learning" 
   | "jobs" 
-  | "interview-plus";
+  | "interview-plus"
+  | "history";
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeModule, setActiveModule] = useState<DashboardModule>("interview");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const handleModuleChange = (module: DashboardModule) => {
+    if (module === "history") {
+      navigate("/history");
+    } else {
+      setActiveModule(module);
+    }
+  };
 
   // Check for feedback parameter on mount
   useEffect(() => {
@@ -49,7 +59,7 @@ const Dashboard = () => {
       <div className="flex">
         <DashboardSidebar 
           activeModule={activeModule}
-          onModuleChange={setActiveModule}
+          onModuleChange={handleModuleChange}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}

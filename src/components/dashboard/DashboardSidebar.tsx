@@ -12,7 +12,8 @@ import {
   Sparkles,
   ChevronLeft,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  History
 } from "lucide-react";
 import { DashboardModule } from "@/pages/Dashboard";
 
@@ -31,6 +32,12 @@ const menuItems = [
         label: "Interview",
         icon: MessageSquare,
         description: "Start an AI interview session.",
+      },
+      {
+        id: "history" as DashboardModule,
+        label: "History",
+        icon: History,
+        description: "View your past interview sessions.",
       },
       {
         id: "calendar" as DashboardModule,
