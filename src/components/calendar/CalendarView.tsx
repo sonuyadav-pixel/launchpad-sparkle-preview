@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, Plus, Trash2, X, Laptop, Users } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, addYears, subYears } from 'date-fns';
 import { useScheduledInterviews, type ScheduledInterview } from '@/hooks/useScheduledInterviews';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import { AddInterviewModal } from './AddInterviewModal';
 import { SectionLoader } from '@/components/ui/loader';
@@ -25,6 +26,7 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
   const [modalSelectedTime, setModalSelectedTime] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('calendar');
   const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, loading } = useScheduledInterviews();
+  const { profile } = useUserProfile();
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -247,8 +249,15 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
     );
   };
 
+  // Filter interviews to only show those where current user is invited (not creator)
+  const invitedInterviews = scheduledInterviews.filter(interview => 
+    interview.invited_email && interview.invited_email === profile?.email
+  );
+
+  const hasInvitedInterviews = invitedInterviews.length > 0;
+
   const renderScheduledInterviewsList = () => {
-    if (scheduledInterviews.length === 0) {
+    if (invitedInterviews.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="relative mb-6">
@@ -258,21 +267,17 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
             </div>
           </div>
           <h3 className="text-2xl font-semibold text-muted-foreground mb-2">
-            No Interview Scheduled
+            No Invited Interviews
           </h3>
           <p className="text-muted-foreground/70 mb-6 max-w-md">
-            You haven't scheduled any interviews yet. Click "Add Interview" to get started.
+            You haven't been invited to any interviews yet.
           </p>
-          <Button onClick={handleAddInterviewClick} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Schedule Your First Interview
-          </Button>
         </div>
       );
     }
 
-    // Sort interviews by date
-    const sortedInterviews = [...scheduledInterviews].sort(
+    // Sort invited interviews by date
+    const sortedInterviews = [...invitedInterviews].sort(
       (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
     );
 
@@ -349,9 +354,9 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
       
       <CardContent className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={hasInvitedInterviews ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
             <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled Interviews</TabsTrigger>
+            {hasInvitedInterviews && <TabsTrigger value="scheduled">My Invited Interviews</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="calendar" className="mt-6">
@@ -397,13 +402,15 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
             </div>
           </TabsContent>
           
-          <TabsContent value="scheduled" className="mt-6">
-            {loading ? (
-              <SectionLoader text="Loading scheduled interviews..." variant="dots" />
-            ) : (
-              renderScheduledInterviewsList()
-            )}
-          </TabsContent>
+          {hasInvitedInterviews && (
+            <TabsContent value="scheduled" className="mt-6">
+              {loading ? (
+                <SectionLoader text="Loading invited interviews..." variant="dots" />
+              ) : (
+                renderScheduledInterviewsList()
+              )}
+            </TabsContent>
+          )}
         </Tabs>
       </CardContent>
 
