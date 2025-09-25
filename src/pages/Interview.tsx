@@ -732,14 +732,14 @@ const Interview = () => {
     const hasActive = sessionManager.hasActiveSession();
     const activeId = sessionManager.getActiveSessionId();
     
+    console.log('🔍 Session check:', { hasActive, activeId, currentSessionId: sessionId });
+    
+    // If there's a different active session, end it first
     if (hasActive && activeId !== sessionId) {
-      toast({
-        title: "Active Interview Detected",
-        description: "Please end your current interview before starting a new one.",
-        variant: "destructive"
-      });
-      return false;
+      console.log('🧹 Ending stale session:', activeId);
+      sessionManager.endSession();
     }
+    
     return true;
   };
 
@@ -1035,6 +1035,14 @@ const Interview = () => {
       console.log('🧹 Cleaning up interview component');
       stopVideo();
       stopSpeechRecognition();
+      
+      // Clear session manager if this component's session is active
+      const activeId = sessionManager.getActiveSessionId();
+      if (activeId === sessionId) {
+        console.log('🧹 Ending session in cleanup:', activeId);
+        sessionManager.endSession();
+      }
+      
       if (silenceTimeoutRef.current) {
         clearTimeout(silenceTimeoutRef.current);
       }
@@ -1051,7 +1059,7 @@ const Interview = () => {
         clearTimeout(acknowledgmentTimer.current);
       }
     };
-  }, []);
+  }, [sessionId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">
