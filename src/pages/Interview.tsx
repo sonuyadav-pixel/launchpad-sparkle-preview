@@ -1036,10 +1036,20 @@ const Interview = () => {
       stopVideo();
       stopSpeechRecognition();
       
-      // Clear session manager if this component's session is active
+      // Clear session manager and mark as abandoned if user left without ending properly
       const activeId = sessionManager.getActiveSessionId();
-      if (activeId === sessionId) {
-        console.log('🧹 Ending session in cleanup:', activeId);
+      if (activeId === sessionId && isInterviewActive) {
+        console.log('🧹 User left without ending - marking as abandoned:', activeId);
+        
+        // Update session as abandoned in database
+        updateSession(sessionId, { 
+          status: 'abandoned',
+          ended_at: new Date().toISOString(),
+          metadata: { reason: 'user_left_without_ending' }
+        }).catch(error => {
+          console.error('Failed to update session as abandoned:', error);
+        });
+        
         sessionManager.endSession();
       }
       
@@ -1059,7 +1069,7 @@ const Interview = () => {
         clearTimeout(acknowledgmentTimer.current);
       }
     };
-  }, [sessionId]);
+  }, [sessionId, isInterviewActive, updateSession]);
 
   return (
     <div className="min-h-screen bg-primary p-4">
