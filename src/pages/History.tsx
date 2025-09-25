@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp, ExternalLink, Filter, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
@@ -38,6 +39,11 @@ const History = () => {
   const [loading, setLoading] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filters, setFilters] = useState({
+    status: 'all',
+    dateRange: 'all',
+    duration: 'all'
+  });
 
   // Check if viewing a specific session from URL
   const sessionId = searchParams.get('session');
@@ -142,6 +148,59 @@ const History = () => {
     }
   };
 
+  // Filter sessions based on current filters
+  const filteredSessions = sessions.filter(session => {
+    // Status filter
+    if (filters.status !== 'all' && session.status !== filters.status) {
+      return false;
+    }
+
+    // Date range filter
+    if (filters.dateRange !== 'all') {
+      const sessionDate = new Date(session.created_at);
+      const now = new Date();
+      const daysDiff = Math.floor((now.getTime() - sessionDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      switch (filters.dateRange) {
+        case 'today':
+          if (daysDiff > 0) return false;
+          break;
+        case 'week':
+          if (daysDiff > 7) return false;
+          break;
+        case 'month':
+          if (daysDiff > 30) return false;
+          break;
+      }
+    }
+
+    // Duration filter
+    if (filters.duration !== 'all') {
+      const duration = session.duration_seconds || 0;
+      switch (filters.duration) {
+        case 'short':
+          if (duration > 300) return false; // > 5 minutes
+          break;
+        case 'medium':
+          if (duration <= 300 || duration > 1800) return false; // 5-30 minutes
+          break;
+        case 'long':
+          if (duration <= 1800) return false; // > 30 minutes
+          break;
+      }
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setFilters({
+      status: 'all',
+      dateRange: 'all',
+      duration: 'all'
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background p-4">
@@ -194,7 +253,7 @@ const History = () => {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Interviews</p>
-                      <p className="text-2xl font-bold">{sessions.length}</p>
+                      <p className="text-2xl font-bold">{filteredSessions.length}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -209,7 +268,7 @@ const History = () => {
                     <div>
                       <p className="text-sm text-muted-foreground">Total Minutes</p>
                       <p className="text-2xl font-bold">
-                        {Math.round(sessions.reduce((total, session) => total + (session.duration_seconds || 0), 0) / 60)}
+                        {Math.round(filteredSessions.reduce((total, session) => total + (session.duration_seconds || 0), 0) / 60)}
                       </p>
                     </div>
                   </div>
@@ -231,10 +290,78 @@ const History = () => {
               </Card>
             </div>
 
+            {/* Filters */}
+            <div className="bg-muted/50 p-4 rounded-lg mb-6">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Filters:</span>
+                </div>
+                
+                <Select 
+                  value={filters.status} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="abandoned">Abandoned</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={filters.dateRange} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, dateRange: value }))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">This Week</SelectItem>
+                    <SelectItem value="month">This Month</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={filters.duration} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, duration: value }))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Duration</SelectItem>
+                    <SelectItem value="short">Short (&lt; 5min)</SelectItem>
+                    <SelectItem value="medium">Medium (5-30min)</SelectItem>
+                    <SelectItem value="long">Long (&gt; 30min)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(filters.status !== 'all' || filters.dateRange !== 'all' || filters.duration !== 'all') && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    className="flex items-center gap-1"
+                  >
+                    <X className="h-3 w-3" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
             {/* View Toggle */}
             <div className="flex items-center justify-between mb-6">
               <div className="text-sm text-muted-foreground">
-                {sessions.length} interview{sessions.length !== 1 ? 's' : ''} found
+                {filteredSessions.length} interview{filteredSessions.length !== 1 ? 's' : ''} found
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -257,7 +384,7 @@ const History = () => {
                 </Button>
               </div>
             </div>
-            {sessions.length === 0 ? (
+            {filteredSessions.length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent>
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -273,7 +400,7 @@ const History = () => {
             ) : viewMode === 'grid' ? (
               // Grid View
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {sessions.map((session) => (
+                {filteredSessions.map((session) => (
                   <Card 
                     key={session.id}
                     className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
@@ -331,7 +458,7 @@ const History = () => {
             ) : (
               // List View
               <div className="space-y-3">
-                {sessions.map((session) => (
+                {filteredSessions.map((session) => (
                   <Card 
                     key={session.id}
                     className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
