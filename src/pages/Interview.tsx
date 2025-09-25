@@ -430,7 +430,7 @@ const Interview = () => {
         timestamp: new Date()
       };
 
-      setLocalTranscript(prev => [...prev, acknowledgmentMessage]);
+      setLocalTranscript(prev => [acknowledgmentMessage, ...prev]);
       
       // Save to database
       await addTranscriptMessage(acknowledgmentMessage);
