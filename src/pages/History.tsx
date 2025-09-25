@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
@@ -184,6 +184,53 @@ const History = () => {
         {!selectedSession ? (
           // History View
           <div>
+            {/* Stats Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Interviews</p>
+                      <p className="text-2xl font-bold">{sessions.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Minutes</p>
+                      <p className="text-2xl font-bold">
+                        {Math.round(sessions.reduce((total, session) => total + (session.duration_seconds || 0), 0) / 60)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Avg Feedback</p>
+                      <p className="text-2xl font-bold">-</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* View Toggle */}
             <div className="flex items-center justify-between mb-6">
               <div className="text-sm text-muted-foreground">
@@ -225,16 +272,16 @@ const History = () => {
               </Card>
             ) : viewMode === 'grid' ? (
               // Grid View
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {sessions.map((session) => (
                   <Card 
                     key={session.id}
                     className="cursor-pointer hover:shadow-md transition-shadow hover-scale"
                     onClick={() => handleSessionClick(session)}
                   >
-                    <CardHeader className="pb-3">
+                    <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-base font-medium line-clamp-2">
+                        <CardTitle className="text-sm font-medium line-clamp-2">
                           {session.title}
                         </CardTitle>
                         <Badge className={`text-xs ${getStatusColor(session.status)}`}>
@@ -242,23 +289,23 @@ const History = () => {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <User className="h-4 w-4" />
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <User className="h-3 w-3" />
                         <span>{profile?.first_name || 'You'}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{format(new Date(session.created_at), 'MMM dd')}</span>
                       </div>
                       
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
                         <span>{formatDuration(session.duration_seconds)}</span>
                       </div>
                       
-                      <div className="pt-2">
+                      <div className="pt-1">
                         <Badge variant="outline" className="text-xs">
                           {session.interview_type}
                         </Badge>
