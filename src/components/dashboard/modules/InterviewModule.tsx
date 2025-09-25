@@ -116,7 +116,7 @@ const InterviewModule = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Video className="h-7 w-7 text-primary" />
-              <CardTitle className="text-xl">AI-Powered Interview</CardTitle>
+              <CardTitle className="text-2xl font-bold">AI-Powered Interview</CardTitle>
             </div>
             <div className="flex items-center gap-3">
               {activeSession && activeSession.status !== 'active' && <Badge className={`${getStatusColor(activeSession.status)} text-white`}>
