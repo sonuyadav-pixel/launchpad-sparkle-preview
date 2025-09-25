@@ -31,8 +31,14 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!candidateName.trim() || !interviewTitle.trim()) {
+    if (!candidateName.trim() || !interviewTitle.trim() || !invitedEmail.trim()) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Validate email format
+    if (!invitedEmail.includes('@') || !invitedEmail.endsWith('.com')) {
+      toast.error('Please enter a valid email address (must contain @ and end with .com)');
       return;
     }
 
@@ -50,7 +56,7 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
         scheduled_at: scheduledAt.toISOString(),
         duration_minutes: duration,
         status: 'scheduled',
-        invited_email: invitedEmail.trim() || undefined
+        invited_email: invitedEmail.trim()
       });
 
       toast.success('Interview scheduled successfully!');
@@ -107,16 +113,17 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invitedEmail">Invite Email (Optional)</Label>
+            <Label htmlFor="invitedEmail">Invite Email *</Label>
             <Input
               id="invitedEmail"
               type="email"
               value={invitedEmail}
               onChange={(e) => setInvitedEmail(e.target.value)}
               placeholder="candidate@example.com"
+              required
             />
             <p className="text-sm text-muted-foreground">
-              If provided, the interview will appear on the invited person's calendar instead of yours.
+              Interview link will be shared automatically
             </p>
           </div>
 
