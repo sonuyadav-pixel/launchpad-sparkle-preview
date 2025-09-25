@@ -115,7 +115,7 @@ const InterviewModule = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Video className="h-7 w-7 text-primary" />
+              <Video className="h-9 w-9 text-primary" />
               <h1 className="text-3xl font-bold">AI-Powered Interview</h1>
             </div>
             <div className="flex items-center gap-3">
