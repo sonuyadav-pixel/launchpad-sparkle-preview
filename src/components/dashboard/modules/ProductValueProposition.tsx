@@ -56,39 +56,59 @@ const ProductValueProposition = () => {
 
   return (
     <Card className="mt-6">
-      <CardContent className="p-6">
-        <div className="text-center mb-6">
-          <h3 className="text-xl font-semibold mb-2">Why Choose Our AI Interview Platform?</h3>
-          <p className="text-muted-foreground">
+      <CardContent className="p-6 relative overflow-hidden">
+        {/* Floating 3D Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-4 right-8 w-16 h-16 bg-primary/5 rounded-full animate-float"></div>
+          <div className="absolute bottom-8 left-12 w-12 h-12 bg-accent/10 rounded-full animate-bounce-gentle"></div>
+          <div className="absolute top-1/2 right-4 w-8 h-8 bg-secondary/10 rounded-full animate-pulse"></div>
+        </div>
+        
+        <div className="text-center mb-6 relative z-10">
+          <h3 className="text-xl font-semibold mb-2 animate-fade-in">Why Choose Our AI Interview Platform?</h3>
+          <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Transform your interview skills with cutting-edge AI technology
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
           {valueProps.map((prop, index) => {
             const IconComponent = prop.icon;
             return (
               <div 
                 key={index}
-                className="group p-4 rounded-lg border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm"
+                className="group p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 transform-gpu perspective-1000 animate-scale-in cursor-pointer"
+                style={{ 
+                  animationDelay: `${index * 0.1}s`,
+                  transformStyle: 'preserve-3d'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px) rotateX(5deg) rotateY(5deg)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0px) rotateX(0deg) rotateY(0deg)';
+                }}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`${prop.bgColor} p-2 rounded-lg flex-shrink-0`}>
-                    <IconComponent className={`h-4 w-4 ${prop.color}`} />
+                <div className="flex items-start gap-3 relative">
+                  <div className={`${prop.bgColor} p-2 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3`}>
+                    <IconComponent className={`h-4 w-4 ${prop.color} group-hover:scale-110 transition-transform duration-300`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-sm group-hover:text-primary transition-colors">
+                      <h4 className="font-medium text-sm group-hover:text-primary transition-colors duration-300">
                         {prop.title}
                       </h4>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
                         {prop.badge}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <p className="text-xs text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-300">
                       {prop.description}
                     </p>
                   </div>
+                  
+                  {/* 3D Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
               </div>
             );
