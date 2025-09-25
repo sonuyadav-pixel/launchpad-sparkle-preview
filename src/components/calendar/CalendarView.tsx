@@ -8,6 +8,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks,
 import { useScheduledInterviews, type ScheduledInterview } from '@/hooks/useScheduledInterviews';
 import { toast } from 'sonner';
 import { AddInterviewModal } from './AddInterviewModal';
+import { SectionLoader } from '@/components/ui/loader';
 
 type CalendarViewType = 'monthly' | 'weekly' | 'daily';
 
@@ -19,7 +20,7 @@ interface CalendarViewProps {
 export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) => {
   const [viewType, setViewType] = useState<CalendarViewType>('monthly');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview } = useScheduledInterviews();
+  const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, loading } = useScheduledInterviews();
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -255,9 +256,15 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
         </div>
       </CardHeader>
       <CardContent className="p-6">
-        {viewType === 'monthly' && renderMonthlyView()}
-        {viewType === 'weekly' && renderWeeklyView()}
-        {viewType === 'daily' && renderDailyView()}
+        {loading ? (
+          <SectionLoader text="Loading calendar..." variant="dots" />
+        ) : (
+          <>
+            {viewType === 'monthly' && renderMonthlyView()}
+            {viewType === 'weekly' && renderWeeklyView()}
+            {viewType === 'daily' && renderDailyView()}
+          </>
+        )}
       </CardContent>
 
       <AddInterviewModal

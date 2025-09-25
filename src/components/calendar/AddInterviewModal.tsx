@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { useScheduledInterviews } from '@/hooks/useScheduledInterviews';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Loader } from '@/components/ui/loader';
 
 interface AddInterviewModalProps {
   isOpen: boolean;
@@ -188,7 +189,11 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddIntervie
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Scheduling...' : 'Schedule Interview'}
+              {loading ? (
+                <Loader size="sm" variant="spinner" />
+              ) : (
+                'Schedule Interview'
+              )}
             </Button>
           </div>
         </form>

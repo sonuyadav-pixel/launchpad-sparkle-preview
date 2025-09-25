@@ -8,10 +8,11 @@ import { useScheduledInterviews } from '@/hooks/useScheduledInterviews';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
 import { toast } from 'sonner';
+import { SectionLoader } from '@/components/ui/loader';
 
 export const UpcomingInterviewSection = () => {
   const navigate = useNavigate();
-  const { getUpcomingInterview, updateScheduledInterview } = useScheduledInterviews();
+  const { getUpcomingInterview, updateScheduledInterview, loading } = useScheduledInterviews();
   const { createSession } = useInterviewSession();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showTimeError, setShowTimeError] = useState(false);
@@ -86,6 +87,10 @@ export const UpcomingInterviewSection = () => {
       toast.error('Failed to start interview');
     }
   };
+
+  if (loading) {
+    return <SectionLoader text="Loading upcoming interviews..." variant="pulse" />;
+  }
 
   if (!upcomingInterview) {
     return null;
