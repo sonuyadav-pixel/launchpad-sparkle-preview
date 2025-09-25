@@ -56,12 +56,12 @@ const ProductValueProposition = () => {
 
   return (
     <Card className="mt-6">
-      <CardContent className="p-6 relative overflow-hidden">
+      <CardContent className="group p-6 relative overflow-hidden">
         {/* Floating 3D Background Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-4 right-8 w-16 h-16 bg-primary/5 rounded-full animate-float"></div>
-          <div className="absolute bottom-8 left-12 w-12 h-12 bg-accent/10 rounded-full animate-bounce-gentle"></div>
-          <div className="absolute top-1/2 right-4 w-8 h-8 bg-secondary/10 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 pointer-events-none group-hover:animate-float">
+          <div className="absolute top-4 right-8 w-16 h-16 bg-primary/5 rounded-full group-hover:animate-float"></div>
+          <div className="absolute bottom-8 left-12 w-12 h-12 bg-accent/10 rounded-full group-hover:animate-bounce-gentle"></div>
+          <div className="absolute top-1/2 right-4 w-8 h-8 bg-secondary/10 rounded-full group-hover:animate-pulse"></div>
         </div>
         
         <div className="text-center mb-6 relative z-10">
@@ -91,7 +91,7 @@ const ProductValueProposition = () => {
               >
                 <div className="flex items-start gap-3 relative">
                   <div className={`${prop.bgColor} p-3 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3`}>
-                    <IconComponent className={`h-8 w-8 ${prop.color} group-hover:scale-125 transition-all duration-500 animate-pulse group-hover:animate-bounce-gentle`} />
+                    <IconComponent className={`h-8 w-8 ${prop.color} group-hover:scale-125 transition-all duration-500 group-hover:animate-bounce-gentle`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
