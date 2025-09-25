@@ -207,8 +207,11 @@ const InterviewModule = () => {
                     <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0s', animationDuration: '2s' }}></div>
                     <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '0.5s', animationDuration: '2s' }}></div>
                     <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping" style={{ animationDelay: '1s', animationDuration: '2s' }}></div>
-                    {/* Shooting Effect */}
-                    <div className="absolute inset-0 bg-white/30 rounded-lg opacity-0 animate-pulse" style={{ animationDelay: '1.5s', animationDuration: '0.2s' }}></div>
+                    {/* Multi-Shot Flash Effect */}
+                    <div className="absolute inset-0 bg-white/80 rounded-lg opacity-0 animate-ping" style={{ animationDelay: '0s', animationDuration: '0.3s' }}></div>
+                    <div className="absolute inset-0 bg-yellow-300/60 rounded-lg opacity-0 animate-ping" style={{ animationDelay: '0.6s', animationDuration: '0.2s' }}></div>
+                    <div className="absolute inset-0 bg-white/90 rounded-lg opacity-0 animate-ping" style={{ animationDelay: '1.2s', animationDuration: '0.15s' }}></div>
+                    <div className="absolute inset-0 bg-blue-200/50 rounded-lg opacity-0 animate-ping" style={{ animationDelay: '1.8s', animationDuration: '0.25s' }}></div>
                   </div>
                   {/* Shooting Particles */}
                   <div className="absolute -top-2 -right-2 w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
