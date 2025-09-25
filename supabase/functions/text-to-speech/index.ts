@@ -37,7 +37,7 @@ serve(async (req) => {
       'shimmer': 'shimmer'
     }
 
-    const selectedVoice = voiceMapping[voice] || 'alloy'
+    const selectedVoice = voiceMapping[voice as keyof typeof voiceMapping] || 'alloy'
 
     // Generate speech using OpenAI TTS API
     const openaiResponse = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -84,10 +84,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Text-to-speech error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message || 'Internal server error' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

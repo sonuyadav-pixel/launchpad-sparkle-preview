@@ -295,13 +295,13 @@ serve(async (req) => {
         throw new Error(`Invalid action: ${finalAction}`);
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in interview-session function:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error stack:', error?.stack);
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
-      details: error.stack
+      error: error?.message || 'Internal server error',
+      details: error?.stack
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

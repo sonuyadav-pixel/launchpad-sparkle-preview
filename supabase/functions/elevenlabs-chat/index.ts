@@ -50,7 +50,9 @@ function setCachedResponse(key: string, response: string): void {
   // Clean old cache entries
   if (responseCache.size > 100) {
     const oldestKey = responseCache.keys().next().value;
-    responseCache.delete(oldestKey);
+    if (oldestKey) {
+      responseCache.delete(oldestKey);
+    }
   }
 }
 
