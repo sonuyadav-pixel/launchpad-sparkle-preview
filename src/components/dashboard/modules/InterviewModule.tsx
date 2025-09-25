@@ -131,9 +131,6 @@ const InterviewModule = () => {
               </div>
             </div>
           </div>
-          <CardDescription>
-            Practice interviews with AI-powered feedback and analysis
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Active Session (non-active status) or Start New */}
