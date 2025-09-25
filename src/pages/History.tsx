@@ -334,41 +334,55 @@ const History = () => {
                 {sessions.map((session) => (
                   <Card 
                     key={session.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="group cursor-pointer relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/30 hover:bg-primary/5 border-2 hover:border-primary/60 border-border"
                     onClick={() => handleSessionClick(session)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-medium">{session.title}</h3>
-                            <Badge className={`text-xs ${getStatusColor(session.status)}`}>
-                              {session.status}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {session.interview_type}
-                            </Badge>
+                    {/* Content with blur effect on hover */}
+                    <div className="group-hover:blur-sm transition-all duration-300">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-medium group-hover:text-primary transition-colors duration-300">{session.title}</h3>
+                              <Badge className={`text-xs ${getStatusColor(session.status)} group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300`}>
+                                {session.status}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs group-hover:border-primary/50 group-hover:text-primary/80 transition-colors duration-300">
+                                {session.interview_type}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-6 text-sm text-muted-foreground group-hover:text-primary/80 transition-colors duration-300">
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span>{profile?.first_name || 'You'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>{formatDuration(session.duration_seconds)}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              <span>{profile?.first_name || 'You'}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{formatDuration(session.duration_seconds)}</span>
-                            </div>
+                          <div className="text-muted-foreground group-hover:text-primary/60 transition-colors duration-300">
+                            <MessageSquare className="h-5 w-5" />
                           </div>
                         </div>
-                        <div className="text-muted-foreground">
-                          <MessageSquare className="h-5 w-5" />
-                        </div>
-                      </div>
-                    </CardContent>
+                      </CardContent>
+                    </div>
+
+                    {/* Left CTA Overlay */}
+                    <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center pl-4">
+                      <Button 
+                        size="sm" 
+                        className="bg-primary text-white shadow-lg transform -translate-x-4 group-hover:translate-x-0 transition-all duration-300"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Explore
+                      </Button>
+                     </div>
                   </Card>
                 ))}
               </div>
