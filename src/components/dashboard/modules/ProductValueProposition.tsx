@@ -6,16 +6,16 @@ const ProductValueProposition = () => {
   const valueProps = [
     {
       icon: Brain,
-      title: "AI-Powered Analysis",
-      description: "Get detailed feedback on your responses, body language, and communication skills",
+      title: "AI Analysis",
+      description: "Smart feedback on responses and communication",
       color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950/20",
       badge: "Smart"
     },
     {
       icon: Target,
-      title: "Personalized Questions",
-      description: "Questions tailored to your industry, role, and experience level",
+      title: "Custom Questions",
+      description: "Questions tailored to your role",
       color: "text-blue-600",
       bgColor: "bg-blue-50 dark:bg-blue-950/20",
       badge: "Adaptive"
@@ -23,31 +23,31 @@ const ProductValueProposition = () => {
     {
       icon: Zap,
       title: "Instant Feedback",
-      description: "Real-time scoring and suggestions to improve your interview performance",
+      description: "Real-time scoring and tips",
       color: "text-yellow-600",
       bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
       badge: "Fast"
     },
     {
       icon: Trophy,
-      title: "Performance Tracking",
-      description: "Monitor your progress and see improvement over multiple sessions",
+      title: "Track Progress",
+      description: "Monitor improvement over time",
       color: "text-green-600",
       bgColor: "bg-green-50 dark:bg-green-950/20",
       badge: "Growth"
     },
     {
       icon: Users,
-      title: "Industry Experts",
-      description: "Questions and scenarios designed by hiring managers and industry professionals",
+      title: "Expert Designed",
+      description: "Created by hiring professionals",
       color: "text-orange-600",
       bgColor: "bg-orange-50 dark:bg-orange-950/20",
       badge: "Expert"
     },
     {
       icon: TrendingUp,
-      title: "Success Analytics",
-      description: "Detailed reports showing your strengths and areas for improvement",
+      title: "Detailed Reports",
+      description: "Insights on strengths and gaps",
       color: "text-indigo-600",
       bgColor: "bg-indigo-50 dark:bg-indigo-950/20",
       badge: "Insights"
@@ -65,9 +65,9 @@ const ProductValueProposition = () => {
         </div>
         
         <div className="text-center mb-6 relative z-10">
-          <h3 className="text-xl font-semibold mb-2 animate-fade-in">Why Choose Our AI Interview Platform?</h3>
-          <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            Transform your interview skills with cutting-edge AI technology
+          <h3 className="text-xl font-semibold mb-2 animate-fade-in">AI Interview Platform</h3>
+          <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            Transform your interview skills with AI
           </p>
         </div>
         
