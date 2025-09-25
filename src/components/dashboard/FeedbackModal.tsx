@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { X, CheckCircle } from 'lucide-react';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -40,7 +39,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
   const [platformRating, setPlatformRating] = useState<number[]>([50]);
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,26 +54,25 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
         feedback 
       });
       
-      toast({
-        title: "Thank you for your feedback!",
-        description: "Your feedback helps us improve the interview experience.",
-      });
+      // Show success popup instead of toast
+      setShowSuccessPopup(true);
       
-      // Reset form and close modal
-      setAiResponseRating([50]);
-      setPlatformRating([50]);
-      setFeedback('');
-      onClose();
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit feedback. Please try again.",
-        variant: "destructive"
-      });
+      // For errors, we'll keep a simple alert for now
+      alert('Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessPopup(false);
+    // Reset form and close modal
+    setAiResponseRating([50]);
+    setPlatformRating([50]);
+    setFeedback('');
+    onClose();
   };
 
   const handleClose = () => {
@@ -85,124 +83,156 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="relative">
-          <DialogTitle className="text-xl font-semibold text-center pr-8">
-            Interview Feedback
-          </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-0 top-0 h-6 w-6 rounded-full"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-8 mt-6">
-          {/* AI Response Rating */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium">
-              How would you rate the AI's responses?
-            </Label>
-            <div className="space-y-4">
-              <div className="flex items-center justify-center">
-                <div className="text-6xl animate-scale-in">
-                  {getEmoji(aiResponseRating[0])}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Slider
-                  value={aiResponseRating}
-                  onValueChange={setAiResponseRating}
-                  max={100}
-                  min={0}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Poor</span>
-                  <span className="font-medium text-primary">
-                    {getRatingText(aiResponseRating[0])} ({aiResponseRating[0]}%)
-                  </span>
-                  <span>Excellent</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Platform Rating */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium">
-              How would you rate the platform experience?
-            </Label>
-            <div className="space-y-4">
-              <div className="flex items-center justify-center">
-                <div className="text-6xl animate-scale-in">
-                  {getEmoji(platformRating[0])}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Slider
-                  value={platformRating}
-                  onValueChange={setPlatformRating}
-                  max={100}
-                  min={0}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Poor</span>
-                  <span className="font-medium text-primary">
-                    {getRatingText(platformRating[0])} ({platformRating[0]}%)
-                  </span>
-                  <span>Excellent</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Feedback Text */}
-          <div className="space-y-3">
-            <Label htmlFor="feedback" className="text-base font-medium">
-              Additional Comments (Optional)
-            </Label>
-            <Textarea
-              id="feedback"
-              placeholder="Tell us about your interview experience. What went well? What could be improved?"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              className="min-h-[120px] resize-none"
-              maxLength={1000}
-            />
-            <p className="text-sm text-muted-foreground text-right">
-              {feedback.length}/1000
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
+    <>
+      {/* Main Feedback Modal */}
+      <Dialog open={isOpen && !showSuccessPopup} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="relative">
+            <DialogTitle className="text-xl font-semibold text-center pr-8">
+              Interview Feedback
+            </DialogTitle>
             <Button
-              type="button"
-              variant="outline"
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-0 h-6 w-6 rounded-full"
               onClick={handleClose}
-              className="flex-1"
-              disabled={isSubmitting}
             >
-              Skip
+              <X className="h-4 w-4" />
             </Button>
-            <Button
-              type="submit"
-              className="flex-1 hover-scale"
-              disabled={isSubmitting}
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+            {/* AI Response Rating */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium">
+                How would you rate the AI's responses?
+              </Label>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="text-6xl animate-scale-in">
+                    {getEmoji(aiResponseRating[0])}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Slider
+                    value={aiResponseRating}
+                    onValueChange={setAiResponseRating}
+                    max={100}
+                    min={0}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Poor</span>
+                    <span className="font-medium text-primary">
+                      {getRatingText(aiResponseRating[0])} ({aiResponseRating[0]}%)
+                    </span>
+                    <span>Excellent</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Rating */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium">
+                How would you rate the platform experience?
+              </Label>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="text-6xl animate-scale-in">
+                    {getEmoji(platformRating[0])}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Slider
+                    value={platformRating}
+                    onValueChange={setPlatformRating}
+                    max={100}
+                    min={0}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Poor</span>
+                    <span className="font-medium text-primary">
+                      {getRatingText(platformRating[0])} ({platformRating[0]}%)
+                    </span>
+                    <span>Excellent</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feedback Text */}
+            <div className="space-y-3">
+              <Label htmlFor="feedback" className="text-base font-medium">
+                Additional Comments (Optional)
+              </Label>
+              <Textarea
+                id="feedback"
+                placeholder="Tell us about your interview experience. What went well? What could be improved?"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                className="min-h-[120px] resize-none"
+                maxLength={1000}
+              />
+              <p className="text-sm text-muted-foreground text-right">
+                {feedback.length}/1000
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                Skip
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 hover-scale"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Popup */}
+      <Dialog open={showSuccessPopup} onOpenChange={handleSuccessClose}>
+        <DialogContent className="sm:max-w-[400px] text-center">
+          <div className="space-y-6 py-4">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl font-semibold text-green-700">
+                Thank You!
+              </h2>
+              <p className="text-muted-foreground">
+                Your feedback helps us improve the interview experience.
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleSuccessClose}
+              className="w-full hover-scale"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+              Continue to Dashboard
             </Button>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
