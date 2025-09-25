@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Calendar, User, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
@@ -37,6 +37,7 @@ const History = () => {
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Check if viewing a specific session from URL
   const sessionId = searchParams.get('session');
@@ -181,8 +182,34 @@ const History = () => {
         </div>
 
         {!selectedSession ? (
-          // History Grid View
+          // History View
           <div>
+            {/* View Toggle */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-sm text-muted-foreground">
+                {sessions.length} interview{sessions.length !== 1 ? 's' : ''} found
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="flex items-center gap-2"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                  Grid
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="flex items-center gap-2"
+                >
+                  <List className="h-4 w-4" />
+                  List
+                </Button>
+              </div>
+            </div>
             {sessions.length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent>
@@ -196,7 +223,8 @@ const History = () => {
                   </Button>
                 </CardContent>
               </Card>
-            ) : (
+            ) : viewMode === 'grid' ? (
+              // Grid View
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sessions.map((session) => (
                   <Card 
@@ -234,6 +262,50 @@ const History = () => {
                         <Badge variant="outline" className="text-xs">
                           {session.interview_type}
                         </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              // List View
+              <div className="space-y-3">
+                {sessions.map((session) => (
+                  <Card 
+                    key={session.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleSessionClick(session)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-medium">{session.title}</h3>
+                            <Badge className={`text-xs ${getStatusColor(session.status)}`}>
+                              {session.status}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {session.interview_type}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              <span>{profile?.first_name || 'You'}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{format(new Date(session.created_at), 'MMM dd, yyyy')}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{formatDuration(session.duration_seconds)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <MessageSquare className="h-5 w-5" />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
