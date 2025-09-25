@@ -178,13 +178,28 @@ const InterviewModule = () => {
               </div>
             </div> : !activeSession ? (/* No Active Session - Start New */
         <div className="text-center space-y-4">
-              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
-                <Video className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <h3 className="text-lg font-semibold mb-2">Ready to Practice?</h3>
-                <p className="text-muted-foreground mb-4">
+              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6 relative overflow-hidden group/3d">
+                {/* 3D Floating Elements - Only visible on hover */}
+                <div className="absolute inset-0 pointer-events-none opacity-0 group-hover/3d:opacity-100 transition-opacity duration-500">
+                  {/* Floating geometric shapes */}
+                  <div className="absolute top-4 right-8 w-16 h-16 bg-primary/20 rounded-full animate-pulse group-hover/3d:animate-bounce transform rotate-12 transition-all duration-700"></div>
+                  <div className="absolute bottom-6 left-8 w-12 h-12 bg-accent/30 rounded-lg animate-pulse group-hover/3d:animate-spin transform -rotate-12 transition-all duration-1000"></div>
+                  <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-secondary/25 rounded-full animate-pulse group-hover/3d:animate-ping transform rotate-45 transition-all duration-500"></div>
+                  <div className="absolute top-6 left-6 w-6 h-6 bg-primary/15 transform rotate-45 animate-pulse group-hover/3d:animate-bounce transition-all duration-800"></div>
+                  <div className="absolute bottom-8 right-12 w-10 h-10 bg-accent/20 rounded-full animate-pulse group-hover/3d:animate-pulse transform -rotate-45 transition-all duration-600"></div>
+                  
+                  {/* Floating particles */}
+                  <div className="absolute top-8 left-1/2 w-3 h-3 bg-primary/30 rounded-full animate-pulse group-hover/3d:animate-bounce transition-all duration-400" style={{ animationDelay: '0.5s' }}></div>
+                  <div className="absolute bottom-12 left-1/3 w-2 h-2 bg-accent/40 rounded-full animate-pulse group-hover/3d:animate-ping transition-all duration-300" style={{ animationDelay: '0.8s' }}></div>
+                  <div className="absolute top-1/3 right-6 w-4 h-4 bg-secondary/20 rounded-full animate-pulse group-hover/3d:animate-bounce transition-all duration-900" style={{ animationDelay: '0.3s' }}></div>
+                </div>
+                
+                <Video className="h-12 w-12 mx-auto mb-4 text-primary relative z-10" />
+                <h3 className="text-lg font-semibold mb-2 relative z-10">Ready to Practice?</h3>
+                <p className="text-muted-foreground mb-4 relative z-10">
                   Start your AI interview session and get personalized feedback
                 </p>
-                <Button onClick={handleStartNewInterview} size="lg" className="px-8 relative overflow-hidden group/btn" disabled={loading}>
+                <Button onClick={handleStartNewInterview} size="lg" className="px-8 relative overflow-hidden group/btn z-10" disabled={loading}>
                   <span className="absolute inset-0 bg-black transform -translate-x-full group-hover/btn:translate-x-0 transition-transform duration-500 ease-in-out"></span>
                   <Video className="h-4 w-4 mr-2 relative z-10" />
                   <span className="relative z-10">{loading ? 'Loading...' : 'Start New Interview'}</span>
