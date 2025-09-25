@@ -1043,7 +1043,7 @@ const Interview = () => {
         
         // Update session as abandoned in database
         updateSession(sessionId, { 
-          status: 'abandoned',
+          status: 'abandoned' as InterviewSessionStatus,
           ended_at: new Date().toISOString(),
           metadata: { reason: 'user_left_without_ending' }
         }).catch(error => {
@@ -1075,7 +1075,7 @@ const Interview = () => {
     <div className="min-h-screen bg-primary p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 bg-primary/10 p-4 rounded-lg border border-primary/20">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
