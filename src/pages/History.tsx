@@ -10,6 +10,7 @@ import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy,
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
+import { InterviewLoadingScreen } from '@/components/ui/InterviewLoadingScreen';
 
 interface InterviewSession {
   id: string;
@@ -202,25 +203,7 @@ const History = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/dashboard')}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold">Interview History</h1>
-          </div>
-          <div className="text-center py-8">
-            <div className="text-lg">Loading your interview history...</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <InterviewLoadingScreen />;
   }
 
   return (
