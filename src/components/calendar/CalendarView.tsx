@@ -20,6 +20,8 @@ interface CalendarViewProps {
 export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) => {
   const [viewType, setViewType] = useState<CalendarViewType>('monthly');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [modalSelectedDate, setModalSelectedDate] = useState<Date | undefined>(undefined);
+  const [modalSelectedTime, setModalSelectedTime] = useState<string | undefined>(undefined);
   const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, loading } = useScheduledInterviews();
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
@@ -30,6 +32,24 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
     } catch (error) {
       toast.error('Failed to delete interview');
     }
+  };
+
+  const handleDateTimeClick = (date: Date, time?: string) => {
+    setModalSelectedDate(date);
+    setModalSelectedTime(time);
+    setIsAddModalOpen(true);
+  };
+
+  const handleAddInterviewClick = () => {
+    setModalSelectedDate(selectedDate);
+    setModalSelectedTime(undefined);
+    setIsAddModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsAddModalOpen(false);
+    setModalSelectedDate(undefined);
+    setModalSelectedTime(undefined);
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
@@ -76,7 +96,12 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
             <Calendar
               mode="single"
               selected={isSameDay(month, selectedDate) ? selectedDate : undefined}
-              onSelect={(date) => date && onDateSelect(date)}
+              onSelect={(date) => {
+                if (date) {
+                  onDateSelect(date);
+                  handleDateTimeClick(date);
+                }
+              }}
               className="w-full text-xs"
               month={month}
               fixedWeeks={false}
@@ -131,10 +156,13 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
               return (
                 <div
                   key={`${day.toISOString()}-${hour}`}
-                  className={`p-1 cursor-pointer hover:bg-muted/50 ${
+                  className={`p-1 cursor-pointer hover:bg-muted/50 border border-transparent hover:border-primary/20 ${
                     isSameDay(day, selectedDate) ? 'bg-primary/5' : ''
                   }`}
-                  onClick={() => onDateSelect(day)}
+                  onClick={() => {
+                    onDateSelect(day);
+                    handleDateTimeClick(day, `${hour.toString().padStart(2, '0')}:00`);
+                  }}
                 >
                   {hourInterviews.map(interview => (
                     <div
@@ -175,7 +203,11 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
           });
 
           return (
-            <div key={hour} className="flex border-b border-border/50">
+            <div 
+              key={hour} 
+              className="flex border-b border-border/50 cursor-pointer hover:bg-muted/20"
+              onClick={() => handleDateTimeClick(selectedDate, `${hour.toString().padStart(2, '0')}:00`)}
+            >
               <div className="w-16 py-2 text-sm text-muted-foreground">
                 {hour.toString().padStart(2, '0')}:00
               </div>
@@ -235,7 +267,7 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
                 </Button>
               ))}
             </div>
-            <Button onClick={() => setIsAddModalOpen(true)} size="sm">
+            <Button onClick={handleAddInterviewClick} size="sm">
               <Plus className="h-4 w-4 mr-1" />
               Add Interview
             </Button>
@@ -269,8 +301,9 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
 
       <AddInterviewModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        selectedDate={selectedDate}
+        onClose={handleModalClose}
+        selectedDate={modalSelectedDate}
+        selectedTime={modalSelectedTime}
       />
     </Card>
   );

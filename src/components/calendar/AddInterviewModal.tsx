@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,18 +16,29 @@ interface AddInterviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate?: Date;
+  selectedTime?: string;
 }
 
-export const AddInterviewModal = ({ isOpen, onClose, selectedDate }: AddInterviewModalProps) => {
+export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime }: AddInterviewModalProps) => {
   const [candidateName, setCandidateName] = useState('');
   const [interviewTitle, setInterviewTitle] = useState('');
   const [invitedEmail, setInvitedEmail] = useState('');
   const [date, setDate] = useState<Date>(selectedDate || new Date());
-  const [time, setTime] = useState('09:00');
+  const [time, setTime] = useState(selectedTime || '09:00');
   const [duration, setDuration] = useState(60);
   const [loading, setLoading] = useState(false);
 
   const { createScheduledInterview } = useScheduledInterviews();
+
+  // Update form when props change
+  useEffect(() => {
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+    if (selectedTime) {
+      setTime(selectedTime);
+    }
+  }, [selectedDate, selectedTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
