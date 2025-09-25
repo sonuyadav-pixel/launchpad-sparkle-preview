@@ -206,11 +206,13 @@ const InterviewModule = () => {
                 <Button 
                   onClick={handleStartNewInterview} 
                   size="lg"
-                  className="px-8"
+                  className="px-8 relative overflow-hidden group bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
                   disabled={loading}
                 >
-                  <Video className="h-4 w-4 mr-2" />
-                  {loading ? 'Loading...' : 'Start New Interview'}
+                  {/* Black sweep overlay */}
+                  <div className="absolute inset-0 bg-black transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-in-out"></div>
+                  <Video className="h-4 w-4 mr-2 relative z-10" />
+                  <span className="relative z-10">{loading ? 'Loading...' : 'Start New Interview'}</span>
                 </Button>
               </div>
             </div>
