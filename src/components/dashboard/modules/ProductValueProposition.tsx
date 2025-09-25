@@ -77,7 +77,7 @@ const ProductValueProposition = () => {
             return (
               <div 
                 key={index}
-                className="group p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 transform-gpu perspective-1000 animate-scale-in cursor-pointer"
+                className="group/item p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 transform-gpu perspective-1000 animate-scale-in cursor-pointer"
                 style={{ 
                   animationDelay: `${index * 0.1}s`,
                   transformStyle: 'preserve-3d'
@@ -90,25 +90,25 @@ const ProductValueProposition = () => {
                 }}
               >
                 <div className="flex items-start gap-3 relative">
-                  <div className={`${prop.bgColor} p-3 rounded-lg flex-shrink-0 group-hover:scale-110 transition-transform duration-300 group-hover:rotate-3`}>
-                    <IconComponent className={`h-8 w-8 ${prop.color} group-hover:scale-125 transition-all duration-500 group-hover:animate-bounce-gentle`} />
+                  <div className={`${prop.bgColor} p-3 rounded-lg flex-shrink-0 group-hover/item:scale-110 transition-transform duration-300 group-hover/item:rotate-3`}>
+                    <IconComponent className={`h-8 w-8 ${prop.color} group-hover/item:scale-125 transition-all duration-500 group-hover/item:animate-bounce-gentle`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-sm group-hover:text-primary transition-colors duration-300">
+                      <h4 className="font-medium text-sm group-hover/item:text-primary transition-colors duration-300">
                         {prop.title}
                       </h4>
-                      <Badge className="text-xs bg-primary text-primary-foreground group-hover:bg-primary/90 transition-all duration-300 font-medium">
+                      <Badge className="text-xs bg-primary text-primary-foreground group-hover/item:bg-primary/90 transition-all duration-300 font-medium">
                         {prop.badge}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-300">
+                    <p className="text-xs text-muted-foreground leading-relaxed group-hover/item:text-foreground/80 transition-colors duration-300">
                       {prop.description}
                     </p>
                   </div>
                   
                   {/* 3D Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
               </div>
             );
