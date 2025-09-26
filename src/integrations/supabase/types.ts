@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      improvement_suggestions: {
+        Row: {
+          category: string
+          created_at: string
+          feedback_id: string
+          id: string
+          is_premium: boolean | null
+          priority: number | null
+          suggestion: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          feedback_id: string
+          id?: string
+          is_premium?: boolean | null
+          priority?: number | null
+          suggestion: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          feedback_id?: string
+          id?: string
+          is_premium?: boolean | null
+          priority?: number | null
+          suggestion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "improvement_suggestions_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "interview_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_feedback: {
+        Row: {
+          analysis_summary: string | null
+          body_language_score: number | null
+          clarity_score: number | null
+          communication_score: number | null
+          confidence_score: number | null
+          created_at: string
+          domain_knowledge_score: number | null
+          generated_at: string
+          id: string
+          overall_score: number | null
+          session_id: string
+          strengths: string[] | null
+          updated_at: string
+          user_id: string
+          weaknesses: string[] | null
+        }
+        Insert: {
+          analysis_summary?: string | null
+          body_language_score?: number | null
+          clarity_score?: number | null
+          communication_score?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          domain_knowledge_score?: number | null
+          generated_at?: string
+          id?: string
+          overall_score?: number | null
+          session_id: string
+          strengths?: string[] | null
+          updated_at?: string
+          user_id: string
+          weaknesses?: string[] | null
+        }
+        Update: {
+          analysis_summary?: string | null
+          body_language_score?: number | null
+          clarity_score?: number | null
+          communication_score?: number | null
+          confidence_score?: number | null
+          created_at?: string
+          domain_knowledge_score?: number | null
+          generated_at?: string
+          id?: string
+          overall_score?: number | null
+          session_id?: string
+          strengths?: string[] | null
+          updated_at?: string
+          user_id?: string
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "interview_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interview_sessions: {
         Row: {
           created_at: string | null
