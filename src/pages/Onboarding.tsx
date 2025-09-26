@@ -244,12 +244,12 @@ const Onboarding = () => {
                 }}
               ></div>
               
-              {/* Progress Line - showing completion progress between circles */}
+              {/* Progress Line - connecting completed circle centers progressively */}
               <div 
                 className="absolute top-1/2 h-0.5 bg-primary transition-all duration-1000 ease-out transform -translate-y-1/2 z-0"
                 style={{ 
                   left: '1rem',
-                  width: `calc((100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})`
+                  width: currentStep > 0 ? `calc((100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})` : '0%'
                 }}
               ></div>
               
