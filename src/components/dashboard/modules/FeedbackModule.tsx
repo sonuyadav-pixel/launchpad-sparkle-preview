@@ -40,6 +40,7 @@ interface InterviewSession {
 export const FeedbackModule = () => {
   const { profile } = useUserProfile();
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
+  const [feedbackData, setFeedbackData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedbackSidebarOpen, setFeedbackSidebarOpen] = useState(false);
   const [selectedSessionForFeedback, setSelectedSessionForFeedback] = useState<string | null>(null);
@@ -77,6 +78,16 @@ export const FeedbackModule = () => {
       }
 
       setSessions(data || []);
+
+      // Fetch feedback data for statistics
+      const { data: feedbacks, error: feedbackError } = await supabase
+        .from('interview_feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!feedbackError) {
+        setFeedbackData(feedbacks || []);
+      }
     } catch (error) {
       console.error('Error fetching interview history:', error);
     } finally {
@@ -165,6 +176,15 @@ export const FeedbackModule = () => {
     return true;
   });
 
+  // Calculate statistics
+  const avgScore = feedbackData.length > 0 
+    ? (feedbackData.reduce((sum, f) => sum + (f.overall_score || 0), 0) / feedbackData.length).toFixed(1)
+    : '-';
+  
+  const bestScore = feedbackData.length > 0 
+    ? Math.max(...feedbackData.map(f => f.overall_score || 0)).toFixed(1)
+    : '-';
+
   const clearFilters = () => {
     setFilters({
       status: 'all',
@@ -230,7 +250,7 @@ export const FeedbackModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg Score</p>
-                <p className="text-2xl font-bold">-</p>
+                <p className="text-2xl font-bold">{avgScore}</p>
               </div>
             </div>
           </CardContent>
@@ -244,7 +264,7 @@ export const FeedbackModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Best Score</p>
-                <p className="text-2xl font-bold">-</p>
+                <p className="text-2xl font-bold">{bestScore}</p>
               </div>
             </div>
           </CardContent>
@@ -370,9 +390,10 @@ export const FeedbackModule = () => {
                   onClick={() => handleShowFeedback(session.id)}
                   className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
                   size="sm"
+                  disabled={generating && selectedSessionForFeedback === session.id}
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  View Feedback
+                  {generating && selectedSessionForFeedback === session.id ? 'Generating...' : 'View Feedback'}
                 </Button>
               </CardContent>
             </Card>

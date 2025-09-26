@@ -152,6 +152,34 @@ serve(async (req) => {
         }
 
         console.log('Session updated:', session.id, 'Status:', session.status);
+
+        // If session is completed, automatically generate feedback
+        if (session.status === 'completed') {
+          console.log('Interview completed, triggering feedback generation...');
+          
+          // Call generate-feedback function in background (non-blocking)
+          try {
+            const authHeader = req.headers.get('Authorization');
+            
+            // Use fetch to call the function without blocking the response
+            fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-feedback`, {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader!,
+                'Content-Type': 'application/json',
+                'apikey': Deno.env.get('SUPABASE_ANON_KEY')!,
+              },
+              body: JSON.stringify({ session_id: session.id })
+            }).then(response => {
+              console.log('Feedback generation initiated:', response.status);
+            }).catch(error => {
+              console.error('Failed to initiate feedback generation:', error);
+            });
+          } catch (error) {
+            console.error('Error initiating feedback generation:', error);
+          }
+        }
+
         return new Response(JSON.stringify({ session }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, TrendingUp, Lock, ArrowRight } from 'lucide-react';
+import { X, TrendingUp, Lock, ArrowRight, Target, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -85,102 +85,159 @@ export function FeedbackSidebar({
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="p-8 text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Generating AI feedback...</p>
           </div>
         ) : !feedback ? (
-          <div className="text-center text-muted-foreground py-8">
-            <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No feedback available for this session.</p>
+          <div className="p-8 text-center">
+            <Brain className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No feedback available yet.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="p-4 space-y-4">
             {activeTab === 'overview' && (
-              <>
-                {/* Overall Score */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Overall Score</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-3xl font-bold">{feedback.overall_score.toFixed(1)}</span>
-                      <Badge variant="secondary">{getScoreLabel(feedback.overall_score)}</Badge>
+              <div className="space-y-6">
+                {/* Overall Score Card */}
+                <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+                  <CardContent className="p-6">
+                    <div className="text-center space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Overall Interview Score</h3>
+                        <div className="relative w-24 h-24 mx-auto">
+                          <div className="absolute inset-0 rounded-full border-8 border-muted"></div>
+                          <div 
+                            className="absolute inset-0 rounded-full border-8 border-transparent border-t-primary border-r-primary transform -rotate-90"
+                            style={{
+                              clipPath: `polygon(50% 50%, 50% 0%, ${50 + (feedback.overall_score / 10) * 50}% 0%, ${50 + (feedback.overall_score / 10) * 50}% 100%, 50% 100%)`
+                            }}
+                          ></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-primary">{feedback.overall_score.toFixed(1)}</div>
+                              <div className="text-xs text-muted-foreground">/ 10</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Badge variant="outline" className={`${getScoreColor(feedback.overall_score)} border-current`}>
+                          {getScoreLabel(feedback.overall_score)}
+                        </Badge>
+                      </div>
                     </div>
-                    <Progress value={feedback.overall_score * 10} className="mb-2" />
-                    <p className="text-xs text-muted-foreground">Out of 10</p>
                   </CardContent>
                 </Card>
 
-                {/* Individual Scores */}
+                {/* Score Breakdown */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Detailed Breakdown</CardTitle>
+                    <CardTitle className="text-sm">Score Breakdown</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {scoreItems.map((item) => (
-                      <div key={item.label} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>{item.label}</span>
-                          <span className={getScoreColor(item.score)}>
-                            {item.score.toFixed(1)}
-                          </span>
+                  <CardContent className="space-y-4">
+                    {scoreItems.filter(item => item.score !== null).map((item) => (
+                      <div key={item.label} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{item.label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-semibold ${getScoreColor(item.score!)}`}>
+                              {item.score!.toFixed(1)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">/ 10</span>
+                          </div>
                         </div>
-                        <Progress value={item.score * 10} className="h-2" />
+                        <Progress 
+                          value={(item.score! / 10) * 100} 
+                          className="h-2"
+                        />
                       </div>
                     ))}
                   </CardContent>
                 </Card>
-              </>
+
+                {/* Quick Summary */}
+                {feedback.analysis_summary && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm">AI Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {feedback.analysis_summary}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             )}
 
             {activeTab === 'analysis' && (
               <>
-                {/* Summary */}
+                {/* What Went Well */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Analysis Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {feedback.analysis_summary}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                {/* Strengths */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm text-green-600">Strengths</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2 text-green-600">
+                      <TrendingUp className="h-4 w-4" />
+                      What Went Well
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {feedback.strengths.map((strength, index) => (
+                      {feedback.strengths?.map((strength: string, index: number) => (
                         <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
-                          <span>{strength}</span>
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-muted-foreground">{strength}</span>
                         </li>
                       ))}
                     </ul>
                   </CardContent>
                 </Card>
 
-                {/* Weaknesses */}
+                {/* Areas for Improvement */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm text-red-600">Areas for Improvement</CardTitle>
+                    <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+                      <Target className="h-4 w-4" />
+                      What Went Wrong
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {feedback.weaknesses.map((weakness, index) => (
+                      {feedback.weaknesses?.map((weakness: string, index: number) => (
                         <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 flex-shrink-0" />
-                          <span>{weakness}</span>
+                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
+                          <span className="text-muted-foreground">{weakness}</span>
                         </li>
                       ))}
                     </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Interview Performance Insights */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      Performance Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <div className="text-lg font-semibold text-primary">
+                          {Math.round((feedback.communication_score + feedback.clarity_score) / 2 * 10)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">Communication</div>
+                      </div>
+                      <div className="text-center p-3 bg-muted/50 rounded-lg">
+                        <div className="text-lg font-semibold text-primary">
+                          {Math.round(feedback.confidence_score * 10)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">Confidence</div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </>
