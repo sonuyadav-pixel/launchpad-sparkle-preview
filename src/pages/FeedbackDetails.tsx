@@ -251,32 +251,65 @@ export const FeedbackDetails = () => {
           <h2 className="text-3xl font-bold mb-8">My Interview Score</h2>
           <Card className="max-w-md mx-auto bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 border-primary/20 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] animate-scale-in">
             <CardContent className="p-8">
-              <div className="text-center space-y-6">
-                <div className="relative w-40 h-40 mx-auto group">
-                  <div className="absolute inset-0 rounded-full border-8 border-muted/30"></div>
-                  <div 
-                    className="absolute inset-0 rounded-full border-8 border-transparent transition-all duration-1000 ease-out"
-                    style={{
-                      background: `conic-gradient(from -90deg, hsl(var(--primary)) ${(feedback.overall_score / 10) * 360}deg, transparent ${(feedback.overall_score / 10) * 360}deg)`,
-                      borderRadius: '50%',
-                      mask: 'radial-gradient(circle, transparent 60px, black 80px)',
-                      WebkitMask: 'radial-gradient(circle, transparent 60px, black 80px)'
-                    }}
-                  ></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center group-hover:scale-110 transition-transform">
-                      <div className="text-5xl font-bold text-primary animate-pulse">{feedback.overall_score.toFixed(1)}</div>
-                      <div className="text-lg text-muted-foreground">/ 10</div>
-                    </div>
+              <div className="text-center space-y-8">
+                {/* Large Score Display */}
+                <div className="space-y-4">
+                  <div className="text-7xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent animate-pulse">
+                    {feedback.overall_score.toFixed(1)}
                   </div>
-                  <div className={`absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl ${
-                    feedback.overall_score >= 7 
-                      ? 'bg-gradient-to-r from-green-400/20 to-green-600/20' 
-                      : feedback.overall_score >= 4 
-                      ? 'bg-gradient-to-r from-orange-400/20 to-orange-600/20' 
-                      : 'bg-gradient-to-r from-red-400/20 to-red-600/20'
-                  }`}></div>
+                  <div className="text-2xl text-muted-foreground font-medium">out of 10</div>
                 </div>
+
+                {/* Star Rating */}
+                <div className="flex justify-center space-x-2">
+                  {[...Array(5)].map((_, i) => {
+                    const filled = (feedback.overall_score / 2) > i;
+                    const halfFilled = (feedback.overall_score / 2) > i && (feedback.overall_score / 2) < i + 1;
+                    return (
+                      <div key={i} className="relative">
+                        <Star 
+                          className={`w-8 h-8 transition-all duration-300 ${
+                            filled ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
+                          }`}
+                        />
+                        {halfFilled && (
+                          <Star 
+                            className="absolute top-0 left-0 w-8 h-8 text-yellow-400 fill-yellow-400 transition-all duration-300"
+                            style={{ clipPath: 'inset(0 50% 0 0)' }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Performance Score</span>
+                    <span>{feedback.overall_score.toFixed(1)}/10</span>
+                  </div>
+                  <div className="relative h-4 bg-muted/30 rounded-full overflow-hidden">
+                    <div 
+                      className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ease-out ${
+                        feedback.overall_score >= 7 
+                          ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                          : feedback.overall_score >= 4 
+                          ? 'bg-gradient-to-r from-orange-400 to-orange-600' 
+                          : 'bg-gradient-to-r from-red-400 to-red-600'
+                      }`}
+                      style={{ width: `${(feedback.overall_score / 10) * 100}%` }}
+                    />
+                    <div className={`absolute -inset-1 rounded-full opacity-0 hover:opacity-100 transition-opacity blur-xl ${
+                      feedback.overall_score >= 7 
+                        ? 'bg-gradient-to-r from-green-400/20 to-green-600/20' 
+                        : feedback.overall_score >= 4 
+                        ? 'bg-gradient-to-r from-orange-400/20 to-orange-600/20' 
+                        : 'bg-gradient-to-r from-red-400/20 to-red-600/20'
+                    }`}></div>
+                  </div>
+                </div>
+
                 <Badge variant="outline" className={`${getScoreColor(feedback.overall_score)} border-current text-lg px-8 py-3 hover:scale-105 transition-transform`}>
                   {getScoreLabel(feedback.overall_score)}
                 </Badge>
