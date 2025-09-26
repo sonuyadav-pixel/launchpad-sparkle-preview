@@ -169,8 +169,19 @@ const Onboarding = () => {
     }
   };
 
-  const handleSkipOnboarding = () => {
-    navigate('/dashboard');
+  const handleSkipOnboarding = async () => {
+    try {
+      // Mark onboarding as completed even when skipped
+      const profileUpdates = {
+        onboarding_completed: true,
+      };
+      
+      await updateProfile(profileUpdates);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      navigate('/dashboard'); // Still redirect even if update fails
+    }
   };
 
   const handleCompleteOnboarding = async () => {
@@ -179,6 +190,7 @@ const Onboarding = () => {
       const profileUpdates = {
         first_name: onboardingData.fullName.split(' ')[0] || '',
         last_name: onboardingData.fullName.split(' ').slice(1).join(' ') || '',
+        onboarding_completed: true,
         // Add other profile fields as needed
       };
       
@@ -189,7 +201,7 @@ const Onboarding = () => {
         description: "Your profile has been created successfully.",
       });
       
-      navigate('/dashboard?onboarding=complete');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast({

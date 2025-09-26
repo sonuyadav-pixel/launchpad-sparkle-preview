@@ -22,17 +22,39 @@ const Auth = () => {
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        navigate("/dashboard");
+        // Check if user has completed onboarding
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profile?.onboarding_completed) {
+          navigate("/dashboard");
+        } else {
+          navigate("/onboarding");
+        }
       }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (session) {
-          navigate("/dashboard");
+          // Check if user has completed onboarding
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profile?.onboarding_completed) {
+            navigate("/dashboard");
+          } else {
+            navigate("/onboarding");
+          }
         }
       }
     );
@@ -46,7 +68,7 @@ const Auth = () => {
     setError("");
 
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
+      const redirectUrl = `${window.location.origin}/onboarding`;
       
       const { error } = await supabase.auth.signUp({
         email,
