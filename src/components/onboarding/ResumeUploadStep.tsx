@@ -16,17 +16,30 @@ interface ResumeUploadStepProps {
 const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
   data,
   updateData,
-  onNext
+  onNext,
+  showValidationErrors = false
 }) => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [parseProgress, setParseProgress] = useState(0);
   const [isParsing, setIsParsing] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+
+  // Update validation display when showValidationErrors prop changes
+  React.useEffect(() => {
+    if (showValidationErrors) {
+      setShowValidation(true);
+    }
+  }, [showValidationErrors]);
+
+  const getFieldError = () => {
+    if (!showValidation) return '';
+    if (!data.resumeFile) return 'Resume upload is required';
+    return '';
+  };
   const handleFileSelect = (file: File) => {
     // Validate file type
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -136,7 +149,7 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
   };
   return <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Upload your resume</h2>
+        <h2 className="text-2xl font-bold">Upload your resume <span className="text-destructive">*</span></h2>
         
       </div>
 
@@ -219,6 +232,13 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileInputChange} className="hidden" />
 
+      {/* Validation Error */}
+      {getFieldError() && (
+        <div className="text-sm text-destructive flex items-center gap-1">
+          <AlertCircle className="h-4 w-4" />
+          {getFieldError()}
+        </div>
+      )}
     </div>;
 };
 export default ResumeUploadStep;

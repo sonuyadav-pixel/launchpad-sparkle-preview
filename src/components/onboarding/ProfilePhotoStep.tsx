@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Camera, Upload, X, User, Eye, RotateCcw } from 'lucide-react';
+import { Camera, Upload, X, User, Eye, RotateCcw, AlertCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
 interface ProfilePhotoStepProps {
   data: OnboardingData;
@@ -162,7 +162,7 @@ const ProfilePhotoStep: React.FC<ProfilePhotoStepProps> = ({
   };
   return <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Add a profile photo</h2>
+        <h2 className="text-2xl font-bold">Add a profile photo <span className="text-destructive">*</span></h2>
         
       </div>
 
@@ -253,6 +253,14 @@ const ProfilePhotoStep: React.FC<ProfilePhotoStepProps> = ({
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileInputChange} className="hidden" />
+
+      {/* Validation Error */}
+      {!data.profilePhoto && (
+        <div className="text-sm text-destructive flex items-center gap-1">
+          <AlertCircle className="h-4 w-4" />
+          Profile photo is required
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={onNext} className="px-6">

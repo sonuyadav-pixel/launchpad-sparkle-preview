@@ -243,6 +243,14 @@ export const useOnboardingProgress = () => {
     return desiredRoles.length > 0;
   };
 
+  const validateResumeUpload = () => {
+    return !!progress.onboardingData.resumeFile;
+  };
+
+  const validateProfilePhoto = () => {
+    return !!progress.onboardingData.profilePhoto;
+  };
+
   const canProceedFromStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 1: // Basic Info step
@@ -253,6 +261,10 @@ export const useOnboardingProgress = () => {
         return validateWorkExperience();
       case 4: // Career Preferences step
         return validateCareerPreferences();
+      case 5: // Resume Upload step
+        return validateResumeUpload();
+      case 6: // Profile Photo step
+        return validateProfilePhoto();
       default:
         return true; // Other steps are optional or have their own validation
     }
@@ -270,6 +282,8 @@ export const useOnboardingProgress = () => {
     validateBasicInfo,
     validateCurrentRole,
     validateWorkExperience,
-    validateCareerPreferences
+    validateCareerPreferences,
+    validateResumeUpload,
+    validateProfilePhoto
   };
 };
