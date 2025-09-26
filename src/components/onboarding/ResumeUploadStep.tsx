@@ -6,27 +6,26 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { FileText, Upload, X, Download, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
-
 interface ResumeUploadStepProps {
   data: OnboardingData;
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
 }
-
-const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({ 
-  data, 
-  updateData, 
-  onNext 
+const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
+  data,
+  updateData,
+  onNext
 }) => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [parseProgress, setParseProgress] = useState(0);
   const [isParsing, setIsParsing] = useState(false);
-
   const handleFileSelect = (file: File) => {
     // Validate file type
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -34,7 +33,7 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF or Word document.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -45,98 +44,88 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       toast({
         title: "File too large",
         description: "Please upload a file smaller than 5MB.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
 
     // Update data with file
-    updateData({ resumeFile: file });
-    
+    updateData({
+      resumeFile: file
+    });
+
     // Simulate upload progress
     simulateUpload();
   };
-
   const simulateUpload = () => {
     setIsUploading(true);
     setUploadProgress(0);
-
     const uploadInterval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
           clearInterval(uploadInterval);
           setIsUploading(false);
-          
+
           // Start parsing simulation
           setTimeout(() => {
             simulateParsing();
           }, 500);
-          
           return 100;
         }
         return prev + 10;
       });
     }, 100);
   };
-
   const simulateParsing = () => {
     setIsParsing(true);
     setParseProgress(0);
-
     const parseInterval = setInterval(() => {
       setParseProgress(prev => {
         if (prev >= 100) {
           clearInterval(parseInterval);
           setIsParsing(false);
-          
           toast({
             title: "Resume parsed successfully! ✨",
-            description: "AI extracted your information and will help autofill forms.",
+            description: "AI extracted your information and will help autofill forms."
           });
-          
           return 100;
         }
         return prev + 15;
       });
     }, 200);
   };
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       handleFileSelect(files[0]);
     }
   };
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
-
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
   };
-
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       handleFileSelect(files[0]);
     }
   };
-
   const removeFile = () => {
-    updateData({ resumeFile: undefined });
+    updateData({
+      resumeFile: undefined
+    });
     setUploadProgress(0);
     setParseProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -144,29 +133,14 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Upload your resume</h2>
-        <p className="text-muted-foreground">
-          Let AI parse your resume to automatically fill in your profile details
-        </p>
+        
       </div>
 
       {/* Upload Area */}
-      {!data.resumeFile ? (
-        <Card
-          className={`border-2 border-dashed transition-all cursor-pointer ${
-            isDragging 
-              ? 'border-primary bg-primary/5' 
-              : 'border-muted-foreground/25 hover:border-primary/50'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onClick={() => fileInputRef.current?.click()}
-        >
+      {!data.resumeFile ? <Card className={`border-2 border-dashed transition-all cursor-pointer ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}`} onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onClick={() => fileInputRef.current?.click()}>
           <CardContent className="p-12">
             <div className="flex flex-col items-center space-y-4">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
@@ -188,10 +162,8 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
               </Button>
             </div>
           </CardContent>
-        </Card>
-      ) : (
-        /* File Preview */
-        <Card>
+        </Card> : (/* File Preview */
+    <Card>
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-4">
@@ -206,19 +178,16 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
                   </p>
                   
                   {/* Upload Progress */}
-                  {isUploading && (
-                    <div className="mt-3 space-y-2">
+                  {isUploading && <div className="mt-3 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Uploading...</span>
                         <span>{uploadProgress}%</span>
                       </div>
                       <Progress value={uploadProgress} className="h-2" />
-                    </div>
-                  )}
+                    </div>}
                   
                   {/* Parse Progress */}
-                  {isParsing && (
-                    <div className="mt-3 space-y-2">
+                  {isParsing && <div className="mt-3 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="flex items-center gap-2">
                           <Sparkles className="h-4 w-4 text-primary" />
@@ -227,31 +196,22 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
                         <span>{parseProgress}%</span>
                       </div>
                       <Progress value={parseProgress} className="h-2" />
-                    </div>
-                  )}
+                    </div>}
                   
                   {/* Success State */}
-                  {!isUploading && !isParsing && uploadProgress === 100 && (
-                    <div className="mt-3 flex items-center gap-2 text-sm text-primary">
+                  {!isUploading && !isParsing && uploadProgress === 100 && <div className="mt-3 flex items-center gap-2 text-sm text-primary">
                       <CheckCircle className="h-4 w-4" />
                       <span>Resume uploaded and parsed successfully</span>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={removeFile}
-                className="text-muted-foreground hover:text-destructive"
-              >
+              <Button variant="ghost" size="sm" onClick={removeFile} className="text-muted-foreground hover:text-destructive">
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>)}
 
       {/* AI Enhancement Info */}
       <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
@@ -302,16 +262,13 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       </Card>
 
       {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx"
-        onChange={handleFileInputChange}
-        className="hidden"
-      />
+      <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileInputChange} className="hidden" />
 
-    </div>
-  );
+      <div className="flex justify-end">
+        <Button onClick={onNext} className="px-6">
+          Continue
+        </Button>
+      </div>
+    </div>;
 };
-
 export default ResumeUploadStep;
