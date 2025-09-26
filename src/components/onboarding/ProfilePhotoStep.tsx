@@ -262,11 +262,6 @@ const ProfilePhotoStep: React.FC<ProfilePhotoStepProps> = ({
         </div>
       )}
 
-      <div className="flex justify-end">
-        <Button onClick={onNext} className="px-6">
-          Continue
-        </Button>
-      </div>
     </div>;
 };
 export default ProfilePhotoStep;
