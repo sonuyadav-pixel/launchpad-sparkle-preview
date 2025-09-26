@@ -240,20 +240,6 @@ const Onboarding = () => {
         {/* Interactive Step Display */}
         <div className="mb-8">
           
-          {/* Animated Progress Journey */}
-          <div className="relative">
-            {/* Background Progress Track */}
-            <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-              {/* Animated Progress Fill */}
-              <div 
-                className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all duration-1000 ease-out relative"
-                style={{ width: `${progress}%` }}
-              >
-                {/* Animated shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-              </div>
-            </div>
-          </div>
             
             {/* Interactive Step Dots */}
             <div className="relative flex justify-between items-start mt-8 pb-8">
