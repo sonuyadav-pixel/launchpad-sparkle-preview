@@ -426,116 +426,100 @@ export const FeedbackDetails = () => {
           </div>
         </div>
 
-        {/* How to Improve Section - Only 2 Points */}
+
+        {/* How to Improve & Interview Plus Combined Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center mb-8">How to Improve</h2>
-          {freeSuggestions.length > 0 && (
-            <Card className="max-w-4xl mx-auto hover:shadow-lg transition-all duration-300 animate-fade-in">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 justify-center">
-                  <Zap className="h-5 w-5 text-primary" />
-                  Quick Improvements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {freeSuggestions.slice(0, 2).map((suggestion, index) => (
-                  <div key={suggestion.id} className="space-y-3 p-4 border border-muted rounded-lg hover:border-primary/50 transition-colors group">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="group-hover:bg-primary/10 transition-colors">
-                        {suggestion.category}
-                      </Badge>
-                      <Badge variant="secondary">
-                        Priority {suggestion.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">
-                      {suggestion.suggestion}
-                    </p>
+          <h2 className="text-2xl font-bold text-center mb-8">How to Improve & Unlock Premium Features</h2>
+          <div 
+            className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-500 group cursor-pointer"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)), url(${lightLandscapeBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              minHeight: '400px'
+            }}
+            onClick={() => navigate('/dashboard/interview-plus')}
+          >
+            {/* Blur overlay - removed on hover */}
+            <div className="absolute inset-0 backdrop-blur-[2px] bg-white/30 group-hover:backdrop-blur-none group-hover:bg-white/10 transition-all duration-500"></div>
+            
+            {/* Lock Icon - hidden on hover */}
+            <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity duration-500">
+              <div className="p-6 bg-primary/90 rounded-full shadow-xl animate-pulse">
+                <Lock className="h-12 w-12 text-white" />
+              </div>
+            </div>
+
+            {/* Content - revealed on hover */}
+            <div className="relative p-8 lg:p-12 opacity-30 group-hover:opacity-100 transition-opacity duration-500">
+              
+              {/* Quick Improvements Section */}
+              {freeSuggestions.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2 justify-center">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Quick Improvements Available
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {freeSuggestions.slice(0, 2).map((suggestion, index) => (
+                      <div key={suggestion.id} className="p-4 bg-card/80 border border-border rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="text-xs">
+                            {suggestion.category}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Priority {suggestion.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {suggestion.suggestion}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Arrow Animation */}
-        <div className="flex justify-center mb-8">
-          <div className="animate-bounce">
-            <ArrowDown className="h-8 w-8 text-primary" />
-          </div>
-        </div>
-
-        {/* Interview Plus Landscape Banner */}
-        <div 
-          className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 group cursor-pointer"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)), url(${lightLandscapeBg})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            minHeight: '300px'
-          }}
-          onClick={() => navigate('/dashboard/interview-plus')}
-        >
-          {/* Light overlay for better text contrast */}
-          <div className="absolute inset-0 bg-white/20"></div>
-          
-          {/* Lock Icon */}
-          <div className="absolute top-6 right-6 p-4 bg-primary/80 rounded-full">
-            <Lock className="h-8 w-8 text-white animate-pulse" />
-          </div>
-
-          {/* Discount Badge */}
-          <div className="absolute top-6 left-6 px-4 py-2 bg-red-500 rounded-full text-white font-bold text-lg animate-pulse">
-            50% OFF
-          </div>
-
-          <div className="relative p-8 lg:p-12 grid grid-cols-1 gap-8 items-center min-h-[300px]">
-            {/* Content */}
-            <div className="space-y-6 text-foreground text-center">
-              <div className="space-y-4">
-                <h3 className="text-3xl font-bold">🔒 Unlock Interview Plus</h3>
-                <p className="text-xl text-muted-foreground">Prioritize your improvement areas and boost your score</p>
-              </div>
-
-              {/* Value Propositions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                  <Target className="h-6 w-6 text-primary flex-shrink-0" />
-                  <span className="font-medium">Personalized improvement roadmap</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                  <Brain className="h-6 w-6 text-primary flex-shrink-0" />
-                  <span className="font-medium">Advanced AI-powered analysis</span>
+              )}
+
+              {/* Interview Plus Features */}
+              <div className="text-center space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold">🔒 Unlock Interview Plus</h3>
+                  <p className="text-lg text-muted-foreground">Prioritize your improvement areas and boost your score</p>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                  <Star className="h-6 w-6 text-primary flex-shrink-0" />
-                  <span className="font-medium">Priority-based scoring system</span>
+
+                {/* Value Propositions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
+                    <Target className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm">Personalized improvement roadmap</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
+                    <Brain className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm">Advanced AI-powered analysis</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
+                    <Star className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm">Priority-based scoring system</span>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm">Track progress over time</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-primary flex-shrink-0" />
-                  <span className="font-medium">Track progress over time</span>
+
+                {/* CTA Button */}
+                <div className="flex justify-center">
+                  <Button 
+                    size="default" 
+                    className="hover:scale-105 transition-all duration-300 px-8"
+                  >
+                    <Crown className="h-5 w-5 mr-2" />
+                    Unlock Interview Plus
+                    <ChevronRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
                 </div>
               </div>
-
-              {/* Discount Offer */}
-              <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
-                <div className="text-center space-y-3">
-                  <div className="text-2xl font-bold text-red-600">Limited Time Offer!</div>
-                  <div className="text-lg text-foreground">Get 50% off your first month</div>
-                  <div className="text-sm text-muted-foreground">Upgrade now and see immediate improvements</div>
-                </div>
-              </div>
-
-              {/* CTA Button */}
-              <Button 
-                size="lg" 
-                className="w-full hover:scale-105 transition-all duration-300 text-lg py-6"
-              >
-                <Crown className="h-6 w-6 mr-3" />
-                Unlock Interview Plus - 50% Off
-                <ChevronRight className="h-6 w-6 ml-3 group-hover:translate-x-1 transition-transform" />
-              </Button>
             </div>
           </div>
         </div>
