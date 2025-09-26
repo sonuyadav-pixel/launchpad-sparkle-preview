@@ -196,19 +196,22 @@ const Onboarding = () => {
 
   const handleCompleteOnboarding = async () => {
     try {
-      // Save onboarding data to profile
+      // First save all onboarding data to the server
+      await saveProgress();
+      
+      // Update the user's profile with basic info and completion status
       const profileUpdates = {
         first_name: onboardingData.fullName.split(' ')[0] || '',
         last_name: onboardingData.fullName.split(' ').slice(1).join(' ') || '',
+        email: onboardingData.email,
         onboarding_completed: true,
-        // Add other profile fields as needed
       };
       
       await updateProfile(profileUpdates);
       
       toast({
         title: "Welcome aboard! 🎉",
-        description: "Your profile has been created successfully.",
+        description: "Your profile has been created successfully. All your onboarding information has been saved.",
       });
       
       navigate('/dashboard/overview');
