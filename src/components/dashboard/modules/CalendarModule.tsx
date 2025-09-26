@@ -109,9 +109,9 @@ const CalendarModule = () => {
   return (
     <div className="h-full">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
-          <TabsTrigger value="scheduled" className="font-semibold text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Scheduled Interviews</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-muted p-1">
+          <TabsTrigger value="calendar" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">Interview Calendar</TabsTrigger>
+          <TabsTrigger value="scheduled" className="font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">Scheduled Interviews</TabsTrigger>
         </TabsList>
         
         <TabsContent value="calendar" className="flex-1 mt-4">
