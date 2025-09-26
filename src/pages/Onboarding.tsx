@@ -201,7 +201,7 @@ const Onboarding = () => {
         description: "Your profile has been created successfully.",
       });
       
-      navigate('/dashboard');
+      navigate('/dashboard/overview');
     } catch (error) {
       console.error('Error completing onboarding:', error);
       toast({

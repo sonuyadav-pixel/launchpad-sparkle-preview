@@ -40,8 +40,8 @@ const Auth = () => {
             // If profile doesn't exist or error, redirect to onboarding
             navigate("/onboarding", { replace: true });
           } else if (profile?.onboarding_completed) {
-            console.log('Auth.tsx - Redirecting to dashboard');
-            navigate("/dashboard", { replace: true });
+            console.log('Auth.tsx - Redirecting to dashboard overview');
+            navigate("/dashboard/overview", { replace: true });
           } else {
             console.log('Auth.tsx - Redirecting to onboarding');
             navigate("/onboarding", { replace: true });
@@ -66,7 +66,7 @@ const Auth = () => {
             .single();
             
           if (profile?.onboarding_completed) {
-            navigate("/dashboard");
+            navigate("/dashboard/overview");
           } else {
             navigate("/onboarding");
           }
