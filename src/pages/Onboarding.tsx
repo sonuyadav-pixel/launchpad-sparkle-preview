@@ -284,12 +284,12 @@ const Onboarding = () => {
                       )}
                     </div>
                     
-                    {/* Step Label - Alternating top/bottom positions */}
-                    {(isActive || Math.abs(index - currentStep) <= 1) && (
+                    {/* Step Label - Always show for completed, active, and nearby steps */}
+                    {(isCompleted || isActive || Math.abs(index - currentStep) <= 1) && (
                       <div className={`${
                         index % 2 === 0 ? 'mt-3' : 'absolute -top-8 left-1/2 transform -translate-x-1/2'
                       } text-xs font-medium text-center whitespace-nowrap transition-opacity duration-300 ${
-                        isActive ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70'
+                        isActive ? 'text-primary opacity-100' : isCompleted ? 'text-green-600 opacity-90' : 'text-muted-foreground opacity-70'
                       }`}>
                         {step.title}
                       </div>
