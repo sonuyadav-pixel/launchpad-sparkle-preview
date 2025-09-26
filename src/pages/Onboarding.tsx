@@ -111,7 +111,6 @@ const ONBOARDING_STEPS = [
   { id: 'career-preferences', title: 'Preferences', component: CareerPreferencesStep },
   { id: 'resume-upload', title: 'Resume', component: ResumeUploadStep },
   { id: 'profile-photo', title: 'Photo', component: ProfilePhotoStep },
-  { id: 'review', title: 'Review', component: ReviewStep },
 ];
 
 const Onboarding = () => {
