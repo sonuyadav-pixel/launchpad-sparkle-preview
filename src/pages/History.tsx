@@ -37,13 +37,15 @@ const History = () => {
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<InterviewSession | null>(null);
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
+  const [transcriptCounts, setTranscriptCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState({
     status: 'all',
     dateRange: 'all',
-    duration: 'all'
+    duration: 'all',
+    hasTranscript: 'all'
   });
 
   // Check if viewing a specific session from URL
@@ -75,6 +77,25 @@ const History = () => {
       }
 
       setSessions(data || []);
+
+      // Fetch transcript counts for each session
+      if (data && data.length > 0) {
+        const transcriptPromises = data.map(async (session) => {
+          const { count, error } = await supabase
+            .from('interview_transcripts')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id);
+          
+          return { sessionId: session.id, count: count || 0 };
+        });
+
+        const transcriptResults = await Promise.all(transcriptPromises);
+        const counts: Record<string, number> = {};
+        transcriptResults.forEach(({ sessionId, count }) => {
+          counts[sessionId] = count;
+        });
+        setTranscriptCounts(counts);
+      }
     } catch (error) {
       console.error('Error fetching interview history:', error);
     } finally {
@@ -192,6 +213,17 @@ const History = () => {
       }
     }
 
+    // Transcript filter
+    if (filters.hasTranscript !== 'all') {
+      const hasTranscript = (transcriptCounts[session.id] || 0) > 0;
+      if (filters.hasTranscript === 'yes' && !hasTranscript) {
+        return false;
+      }
+      if (filters.hasTranscript === 'no' && hasTranscript) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -199,7 +231,8 @@ const History = () => {
     setFilters({
       status: 'all',
       dateRange: 'all',
-      duration: 'all'
+      duration: 'all',
+      hasTranscript: 'all'
     });
   };
 
@@ -328,7 +361,21 @@ const History = () => {
                   </SelectContent>
                 </Select>
 
-                {(filters.status !== 'all' || filters.dateRange !== 'all' || filters.duration !== 'all') && (
+                <Select 
+                  value={filters.hasTranscript} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, hasTranscript: value }))}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Has Transcript" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sessions</SelectItem>
+                    <SelectItem value="yes">With Transcript</SelectItem>
+                    <SelectItem value="no">Without Transcript</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(filters.status !== 'all' || filters.dateRange !== 'all' || filters.duration !== 'all' || filters.hasTranscript !== 'all') && (
                   <Button 
                     variant="outline" 
                     size="sm" 
