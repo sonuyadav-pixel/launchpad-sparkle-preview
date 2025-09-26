@@ -196,9 +196,14 @@ const Onboarding = () => {
   };
 
   const handleCompleteOnboarding = async () => {
+    console.log('🎯 Save and Continue button clicked');
+    console.log('Current onboarding data:', onboardingData);
+    
     try {
+      console.log('💾 Saving onboarding progress...');
       // First save all onboarding data to the server
       await saveProgress();
+      console.log('✅ Progress saved successfully');
       
       // Update the user's profile with basic info and completion status
       const profileUpdates = {
@@ -208,16 +213,19 @@ const Onboarding = () => {
         onboarding_completed: true,
       };
       
+      console.log('👤 Updating profile with:', profileUpdates);
       await updateProfile(profileUpdates);
+      console.log('✅ Profile updated successfully');
       
       toast({
         title: "Welcome aboard! 🎉",
         description: "Your profile has been created successfully. All your onboarding information has been saved.",
       });
       
+      console.log('🚀 Navigating to dashboard...');
       navigate('/dashboard/overview');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
       toast({
         title: "Error",
         description: "Failed to save your profile. Please try again.",

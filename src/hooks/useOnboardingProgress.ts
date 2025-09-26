@@ -167,10 +167,12 @@ export const useOnboardingProgress = () => {
 
   const saveProgress = async () => {
     try {
+      console.log('🔄 Starting saveProgress...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
+      console.log('👤 User authenticated:', user.id);
 
       const saveData = {
         user_id: user.id,
@@ -202,32 +204,46 @@ export const useOnboardingProgress = () => {
         preferred_industries: progress.onboardingData.preferredIndustries,
         preferred_employment_type: progress.onboardingData.preferredEmploymentType,
         salary_range: progress.onboardingData.salaryRange,
-        preferred_locations: progress.onboardingData.preferredLocations
+        preferred_locations: progress.onboardingData.preferredLocations,
+        resume_file_path: progress.onboardingData.resume_file_path,
+        profile_photo_path: progress.onboardingData.profile_photo_path
       };
+
+      console.log('💾 Saving data:', saveData);
 
       if (progress.id) {
         // Update existing record
+        console.log('📝 Updating existing record with ID:', progress.id);
         const { error } = await supabase
           .from('user_onboarding')
           .update(saveData)
           .eq('id', progress.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Update error:', error);
+          throw error;
+        }
+        console.log('✅ Record updated successfully');
       } else {
         // Create new record
+        console.log('📝 Creating new record...');
         const { data, error } = await supabase
           .from('user_onboarding')
           .insert(saveData)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Insert error:', error);
+          throw error;
+        }
         
+        console.log('✅ Record created successfully:', data);
         setProgress(prev => ({ ...prev, id: data.id }));
       }
     } catch (error) {
-      console.error('Error saving onboarding progress:', error);
-      // Error will be handled by the component if needed
+      console.error('❌ Error saving onboarding progress:', error);
+      throw error; // Re-throw so the calling function can handle it
     }
   };
 
