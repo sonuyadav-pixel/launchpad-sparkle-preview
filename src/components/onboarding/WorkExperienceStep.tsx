@@ -103,9 +103,6 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Your work experience</h2>
-        <p className="text-muted-foreground">
-          Add your previous roles to help AI understand your career progression
-        </p>
       </div>
 
       {/* Existing Experiences */}
