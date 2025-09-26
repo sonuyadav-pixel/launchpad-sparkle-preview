@@ -72,7 +72,7 @@ const OverviewModule = () => {
           <div className="flex flex-col md:flex-row items-start gap-6">
             <div className="flex items-center gap-6">
               <Avatar className="h-32 w-32 border-4 border-primary/20">
-                <AvatarImage src={onboardingData.profilePhoto ? URL.createObjectURL(onboardingData.profilePhoto) : undefined} />
+                <AvatarImage src={onboardingData.profile_photo_path} />
                 <AvatarFallback className="text-2xl font-bold">
                   {onboardingData.fullName ? onboardingData.fullName.split(' ').map(n => n[0]).join('') : 'U'}
                 </AvatarFallback>

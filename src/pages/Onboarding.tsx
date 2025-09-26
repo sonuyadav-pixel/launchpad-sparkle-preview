@@ -100,6 +100,7 @@ export interface OnboardingData {
   // Resume & Photo
   resumeFile?: File;
   profilePhoto?: File;
+  profile_photo_path?: string;
 }
 
 const ONBOARDING_STEPS = [
