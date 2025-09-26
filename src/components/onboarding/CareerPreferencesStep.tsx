@@ -23,9 +23,6 @@ const POPULAR_ROLES = [
 ];
 
 
-const EMPLOYMENT_TYPES = [
-  'Full-time', 'Part-time', 'Contract', 'Freelance', 'Remote', 'Hybrid', 'Internship'
-];
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'INR'];
 
@@ -70,18 +67,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
     });
   };
 
-  const toggleEmploymentType = (type: string) => {
-    const currentTypes = data.preferredEmploymentType || [];
-    if (currentTypes.includes(type)) {
-      updateData({ 
-        preferredEmploymentType: currentTypes.filter(t => t !== type) 
-      });
-    } else {
-      updateData({ 
-        preferredEmploymentType: [...currentTypes, type] 
-      });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -171,36 +156,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         </CardContent>
       </Card>
 
-
-      {/* Employment Type */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5" />
-            Employment Preferences
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Preferred employment types:</Label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {EMPLOYMENT_TYPES.map((type) => (
-                <div
-                  key={type}
-                  className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                    data.preferredEmploymentType.includes(type)
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-muted hover:border-primary/50'
-                  }`}
-                  onClick={() => toggleEmploymentType(type)}
-                >
-                  <div className="text-center text-sm font-medium">{type}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Salary Range */}
       <Card>
