@@ -272,7 +272,7 @@ const Onboarding = () => {
                         isActive 
                           ? 'bg-primary border-primary text-primary-foreground relative before:content-[""] before:absolute before:w-12 before:h-12 before:border-2 before:border-dashed before:border-blue-400 before:rounded-full before:-inset-2' 
                           : isCompleted
-                          ? 'bg-primary/20 border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                          ? 'bg-green-100 border-green-500 text-green-600 hover:bg-green-500 hover:text-white'
                           : 'bg-background border-muted-foreground/30 text-muted-foreground'
                       }`}
                     >
