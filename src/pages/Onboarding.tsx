@@ -253,34 +253,6 @@ const Onboarding = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
               </div>
             </div>
-            
-            {/* Step Markers on Progress Bar */}
-            <div className="absolute top-0 w-full h-3 flex justify-between items-center">
-              {ONBOARDING_STEPS.map((step, index) => {
-                const stepProgress = ((index + 1) / ONBOARDING_STEPS.length) * 100;
-                const isCompleted = index < currentStep;
-                const isActive = index === currentStep;
-                const isPassed = progress >= stepProgress;
-                
-                return (
-                  <div 
-                    key={step.id}
-                    className={`w-4 h-4 rounded-full border-2 transition-all duration-500 transform ${
-                      isActive 
-                        ? 'bg-primary border-primary scale-125 animate-pulse shadow-lg shadow-primary/50' 
-                        : isPassed || isCompleted
-                        ? 'bg-primary border-primary scale-110'
-                        : 'bg-background border-muted-foreground/30 scale-100'
-                    }`}
-                    style={{ 
-                      left: `${stepProgress}%`,
-                      transform: `translateX(-50%) scale(${isActive ? '1.25' : isPassed ? '1.1' : '1'})`,
-                      zIndex: 10
-                    }}
-                  />
-                );
-              })}
-            </div>
           </div>
             
             {/* Interactive Step Dots */}
