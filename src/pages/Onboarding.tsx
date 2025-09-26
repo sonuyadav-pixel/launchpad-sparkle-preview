@@ -289,9 +289,11 @@ const Onboarding = () => {
                       )}
                     </div>
                     
-                    {/* Step Label - Now positioned below the circle to prevent overlap */}
+                    {/* Step Label - Alternating top/bottom positions */}
                     {(isActive || Math.abs(index - currentStep) <= 1) && (
-                      <div className={`mt-3 text-xs font-medium text-center whitespace-nowrap transition-opacity duration-300 ${
+                      <div className={`${
+                        index % 2 === 0 ? 'mt-3' : 'absolute -top-8 left-1/2 transform -translate-x-1/2'
+                      } text-xs font-medium text-center whitespace-nowrap transition-opacity duration-300 ${
                         isActive ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70'
                       }`}>
                         {step.title}
