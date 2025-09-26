@@ -269,7 +269,13 @@ export const FeedbackDetails = () => {
                       <div className="text-lg text-muted-foreground">/ 10</div>
                     </div>
                   </div>
-                  <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity blur-xl"></div>
+                  <div className={`absolute -inset-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-xl ${
+                    feedback.overall_score >= 7 
+                      ? 'bg-gradient-to-r from-green-400/20 to-green-600/20' 
+                      : feedback.overall_score >= 4 
+                      ? 'bg-gradient-to-r from-orange-400/20 to-orange-600/20' 
+                      : 'bg-gradient-to-r from-red-400/20 to-red-600/20'
+                  }`}></div>
                 </div>
                 <Badge variant="outline" className={`${getScoreColor(feedback.overall_score)} border-current text-lg px-8 py-3 hover:scale-105 transition-transform`}>
                   {getScoreLabel(feedback.overall_score)}
