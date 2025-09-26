@@ -96,29 +96,32 @@ serve(async (req) => {
       .map((t: TranscriptMessage) => `${t.speaker}: ${t.message}`)
       .join('\n');
 
-    // Get OpenAI API key
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Get Perplexity API key
+    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!perplexityApiKey) {
+      throw new Error('Perplexity API key not configured');
     }
 
     console.log('🤖 Analyzing transcript with AI...');
 
-    // Generate feedback using OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Generate feedback using Perplexity API
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${perplexityApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'llama-3.1-sonar-small-128k-online',
         messages: [
           {
             role: 'system',
-            content: `You are an expert interview coach. Analyze the interview transcript and provide detailed feedback.
+            content: 'You are an expert interview coach. Be precise and concise in your analysis.'
+          },
+          {
+            role: 'user',
+            content: `Analyze this interview transcript and provide detailed feedback. Return ONLY a valid JSON object with this exact structure:
 
-Return a JSON object with this exact structure:
 {
   "overall_score": number (0-10),
   "communication_score": number (0-10),
@@ -131,37 +134,46 @@ Return a JSON object with this exact structure:
   "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
   "improvement_suggestions": [
     {
-      "category": "communication|technical|presentation|confidence",
+      "category": "communication",
       "suggestion": "specific actionable advice",
-      "priority": number (1-5, 1=highest),
-      "is_premium": boolean
+      "priority": 1,
+      "is_premium": false
+    },
+    {
+      "category": "technical",
+      "suggestion": "advanced technical advice",
+      "priority": 2,
+      "is_premium": true
     }
   ]
 }
 
 Score criteria:
 - Communication: Clarity, articulation, listening skills
-- Body Language: Confidence indicators in speech patterns, pace, filler words
+- Body Language: Confidence indicators in speech patterns, pace, filler words  
 - Domain Knowledge: Technical accuracy, depth of understanding
 - Confidence: Assertiveness, hesitation patterns, certainty in responses
 - Clarity: Structure of answers, logical flow, conciseness
 
-Focus on actionable feedback. Mark advanced suggestions as premium (is_premium: true).`
-          },
-          {
-            role: 'user',
-            content: `Interview Type: ${session.interview_type}\nTranscript:\n${conversationText}`
+Interview Type: ${session.interview_type}
+Transcript:
+${conversationText}
+
+Respond with ONLY the JSON object, no other text.`
           }
         ],
-        max_tokens: 1500,
-        temperature: 0.7,
+        temperature: 0.2,
+        top_p: 0.9,
+        max_tokens: 1000,
+        frequency_penalty: 1,
+        presence_penalty: 0
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Perplexity API error:', response.status, errorText);
+      throw new Error(`Perplexity API error: ${response.status}`);
     }
 
     const aiData = await response.json();
