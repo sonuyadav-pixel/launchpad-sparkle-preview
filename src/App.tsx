@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Interview from "./pages/Interview";
 import History from "./pages/History";
 import { FeedbackDetails } from "./pages/FeedbackDetails";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,28 +28,33 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={
+                <Route path="/onboarding" element={
                   <ProtectedRoute>
+                    <Onboarding />
+                  </ProtectedRoute>
+                } />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute requireOnboarding>
                     <Dashboard />
                   </ProtectedRoute>
                 } />
                 <Route path="/dashboard/:module" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireOnboarding>
                     <Dashboard />
                   </ProtectedRoute>
                 } />
                 <Route path="/interview" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireOnboarding>
                     <Interview />
                   </ProtectedRoute>
                 } />
                 <Route path="/history" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireOnboarding>
                     <History />
                   </ProtectedRoute>
                 } />
                 <Route path="/feedback/:sessionId" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute requireOnboarding>
                     <FeedbackDetails />
                   </ProtectedRoute>
                 } />
