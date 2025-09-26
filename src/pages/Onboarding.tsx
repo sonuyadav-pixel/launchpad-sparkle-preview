@@ -103,7 +103,7 @@ export interface OnboardingData {
 const ONBOARDING_STEPS = [
   { id: 'welcome', title: 'Welcome', component: WelcomeStep },
   { id: 'basic-info', title: 'Basic Info', component: BasicInfoStep },
-  { id: 'professional-summary', title: 'Professional Summary', component: ProfessionalSummaryStep },
+  
   { id: 'current-role', title: 'Current Role', component: CurrentRoleStep },
   { id: 'work-experience', title: 'Experience', component: WorkExperienceStep },
   { id: 'education', title: 'Education', component: EducationStep },
