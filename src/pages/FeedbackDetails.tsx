@@ -12,7 +12,7 @@ import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import aiCandidatePhoto from '@/assets/ai-candidate-photo-light.jpg';
+import lightLandscapeBg from '@/assets/light-landscape-bg.jpg';
 
 export const FeedbackDetails = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -465,85 +465,72 @@ export const FeedbackDetails = () => {
           </div>
         </div>
 
-        {/* Interview Plus Landscape Banner with AI Bot Image */}
+        {/* Interview Plus Landscape Banner */}
         <div 
-          className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 group cursor-pointer backdrop-blur-sm"
+          className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 group cursor-pointer"
           style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url(${aiCandidatePhoto})`,
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)), url(${lightLandscapeBg})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
-            filter: 'blur(1px)',
             minHeight: '300px'
           }}
           onClick={() => navigate('/dashboard/interview-plus')}
         >
-          {/* Blur overlay to simulate locked state */}
-          <div className="absolute inset-0 backdrop-blur-sm bg-black/30"></div>
+          {/* Light overlay for better text contrast */}
+          <div className="absolute inset-0 bg-white/20"></div>
           
           {/* Lock Icon */}
-          <div className="absolute top-6 right-6 p-4 bg-primary/20 backdrop-blur-sm rounded-full">
+          <div className="absolute top-6 right-6 p-4 bg-primary/80 rounded-full">
             <Lock className="h-8 w-8 text-white animate-pulse" />
           </div>
 
           {/* Discount Badge */}
-          <div className="absolute top-6 left-6 px-4 py-2 bg-red-500/90 backdrop-blur-sm rounded-full text-white font-bold text-lg animate-pulse">
+          <div className="absolute top-6 left-6 px-4 py-2 bg-red-500 rounded-full text-white font-bold text-lg animate-pulse">
             50% OFF
           </div>
 
-          <div className="relative p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[300px]">
-            {/* Left Side - AI Bot Image */}
-            <div className="flex justify-center lg:justify-start">
-              <div className="relative">
-                <img 
-                  src={aiCandidatePhoto} 
-                  alt="AI Bot helping candidate in interview" 
-                  className="w-64 h-64 object-cover rounded-xl shadow-2xl"
-                />
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-primary/20 to-transparent"></div>
-              </div>
-            </div>
-
-            {/* Right Side - Content */}
-            <div className="space-y-6 text-white">
+          <div className="relative p-8 lg:p-12 grid grid-cols-1 gap-8 items-center min-h-[300px]">
+            {/* Content */}
+            <div className="space-y-6 text-foreground text-center">
               <div className="space-y-4">
                 <h3 className="text-3xl font-bold">🔒 Unlock Interview Plus</h3>
-                <p className="text-xl text-white/90">Prioritize your improvement areas and boost your score</p>
+                <p className="text-xl text-muted-foreground">Prioritize your improvement areas and boost your score</p>
               </div>
 
               {/* Value Propositions */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
                   <Target className="h-6 w-6 text-primary flex-shrink-0" />
                   <span className="font-medium">Personalized improvement roadmap</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
                   <Brain className="h-6 w-6 text-primary flex-shrink-0" />
                   <span className="font-medium">Advanced AI-powered analysis</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
                   <Star className="h-6 w-6 text-primary flex-shrink-0" />
                   <span className="font-medium">Priority-based scoring system</span>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
                   <TrendingUp className="h-6 w-6 text-primary flex-shrink-0" />
                   <span className="font-medium">Track progress over time</span>
                 </div>
               </div>
 
               {/* Discount Offer */}
-              <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-sm rounded-lg p-6 border border-red-500/30">
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6">
                 <div className="text-center space-y-3">
-                  <div className="text-2xl font-bold text-red-400">Limited Time Offer!</div>
-                  <div className="text-lg">Get 50% off your first month</div>
-                  <div className="text-sm text-white/80">Upgrade now and see immediate improvements</div>
+                  <div className="text-2xl font-bold text-red-600">Limited Time Offer!</div>
+                  <div className="text-lg text-foreground">Get 50% off your first month</div>
+                  <div className="text-sm text-muted-foreground">Upgrade now and see immediate improvements</div>
                 </div>
               </div>
 
               {/* CTA Button */}
               <Button 
                 size="lg" 
-                className="w-full bg-primary/90 hover:bg-primary text-white border-primary/50 hover:scale-105 transition-all duration-300 group-hover:shadow-xl text-lg py-6"
+                className="w-full hover:scale-105 transition-all duration-300 text-lg py-6"
               >
                 <Crown className="h-6 w-6 mr-3" />
                 Unlock Interview Plus - 50% Off
