@@ -12,7 +12,7 @@ import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import heroAIInterview from '@/assets/hero-ai-interview.jpg';
+import aiCandidatePhoto from '@/assets/ai-candidate-photo-light.jpg';
 
 export const FeedbackDetails = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -469,7 +469,7 @@ export const FeedbackDetails = () => {
         <div 
           className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-300 group cursor-pointer backdrop-blur-sm"
           style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url(${heroAIInterview})`,
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url(${aiCandidatePhoto})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
@@ -496,7 +496,7 @@ export const FeedbackDetails = () => {
             <div className="flex justify-center lg:justify-start">
               <div className="relative">
                 <img 
-                  src={heroAIInterview} 
+                  src={aiCandidatePhoto} 
                   alt="AI Bot helping candidate in interview" 
                   className="w-64 h-64 object-cover rounded-xl shadow-2xl"
                 />
