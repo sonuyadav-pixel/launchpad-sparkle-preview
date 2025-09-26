@@ -238,13 +238,73 @@ const Onboarding = () => {
           </Button>
         </div>
 
-        {/* Progress Bar */}
+        {/* Interactive Step Display */}
         <div className="mb-8">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>Getting Started</span>
-            <span>{currentStepData.title}</span>
-            <span>Complete</span>
+          <div className="text-center mb-6">
+            <div className="text-sm text-muted-foreground font-medium">Step {currentStep + 1}</div>
+            <div className="text-lg font-semibold text-primary">{currentStepData.title}</div>
+          </div>
+          
+          {/* Circular Progress with Interactive Dots */}
+          <div className="relative">
+            <Progress value={progress} className="h-3 rounded-full" />
+            
+            {/* Interactive Step Dots */}
+            <div className="flex justify-between items-center mt-4">
+              {ONBOARDING_STEPS.map((step, index) => {
+                const isActive = index === currentStep;
+                const isCompleted = index < currentStep;
+                const isUpcoming = index > currentStep;
+                
+                return (
+                  <div 
+                    key={step.id} 
+                    className={`relative group cursor-pointer transition-all duration-300 ${
+                      isActive ? 'scale-110' : 'hover:scale-105'
+                    }`}
+                    onClick={() => index < currentStep && setCurrentStep(index)}
+                  >
+                    {/* Step Circle */}
+                    <div 
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                        isActive 
+                          ? 'bg-primary border-primary text-primary-foreground shadow-lg animate-pulse' 
+                          : isCompleted
+                          ? 'bg-primary/20 border-primary text-primary hover:bg-primary hover:text-primary-foreground'
+                          : 'bg-background border-muted-foreground/30 text-muted-foreground'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <span className="text-xs font-medium">{index + 1}</span>
+                      )}
+                    </div>
+                    
+                    {/* Step Label - Only show for active and nearby steps */}
+                    {(isActive || Math.abs(index - currentStep) <= 1) && (
+                      <div className={`absolute top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap transition-opacity duration-300 ${
+                        isActive ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70'
+                      }`}>
+                        {step.title}
+                      </div>
+                    )}
+                    
+                    {/* Connecting Line */}
+                    {index < ONBOARDING_STEPS.length - 1 && (
+                      <div 
+                        className={`absolute top-4 left-8 w-full h-0.5 transition-all duration-500 ${
+                          index < currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
+                        }`}
+                        style={{ width: 'calc(100% + 1rem)' }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
