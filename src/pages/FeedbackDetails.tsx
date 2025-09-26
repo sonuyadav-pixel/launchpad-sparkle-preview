@@ -386,8 +386,18 @@ export const FeedbackDetails = () => {
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-center mb-8">Performance Analysis</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* What Went Well - Green Gradient */}
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 animate-fade-in">
+            {/* What Went Well - Green Gradient with Blur and Lock */}
+            <Card className="relative bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 animate-fade-in overflow-hidden group">
+              {/* Blur Overlay */}
+              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10"></div>
+              
+              {/* Lock Icon */}
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <div className="p-4 bg-white/80 rounded-full shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Lock className="h-8 w-8 text-green-600 group-hover:animate-pulse" />
+                </div>
+              </div>
+
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-700">
                   <TrendingUp className="h-5 w-5" />
@@ -406,8 +416,18 @@ export const FeedbackDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Areas for Improvement - Orange/Red Gradient */}
-            <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300 animate-fade-in" style={{animationDelay: '0.3s'}}>
+            {/* Areas for Improvement - Orange/Red Gradient with Blur and Lock */}
+            <Card className="relative bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300 animate-fade-in overflow-hidden group" style={{animationDelay: '0.3s'}}>
+              {/* Blur Overlay */}
+              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10"></div>
+              
+              {/* Lock Icon */}
+              <div className="absolute inset-0 flex items-center justify-center z-20">
+                <div className="p-4 bg-white/80 rounded-full shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Lock className="h-8 w-8 text-orange-600 group-hover:animate-pulse" />
+                </div>
+              </div>
+
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-orange-700">
                   <Target className="h-5 w-5" />
