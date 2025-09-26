@@ -74,16 +74,16 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         <CardContent className="space-y-4">
           {/* Current Desired Roles - Show first */}
           {data.desiredRoles.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected roles:</Label>
+            <div className="space-y-3">
+              <Label className="text-base font-medium">Selected roles:</Label>
               <div className="flex flex-wrap gap-2">
                 {data.desiredRoles.map((role) => (
                   <Badge
                     key={role}
                     variant="secondary"
-                    className="flex items-center gap-1 pr-1"
+                    className="flex items-center gap-1 pr-1 text-sm px-3 py-1"
                   >
-                    <span>{role}</span>
+                    <span className="text-sm font-medium">{role}</span>
                     <Button
                       type="button"
                       variant="ghost"
