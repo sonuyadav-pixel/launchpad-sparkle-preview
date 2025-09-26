@@ -33,9 +33,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
     <div className="max-h-[60vh] space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Basic Information</h2>
-        <p className="text-muted-foreground text-sm">
-          Let&apos;s get to know you better
-        </p>
       </div>
 
       <div className="space-y-4">
