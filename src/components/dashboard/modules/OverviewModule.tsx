@@ -110,10 +110,6 @@ const OverviewModule = () => {
             
             <div className="ml-auto flex gap-2">
               <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Edit className="h-4 w-4" />
-                Edit Profile
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 Upload Resume
               </Button>
