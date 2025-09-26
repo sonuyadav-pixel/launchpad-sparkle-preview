@@ -107,7 +107,7 @@ const ONBOARDING_STEPS = [
   
   { id: 'current-role', title: 'Current Role', component: CurrentRoleStep },
   { id: 'work-experience', title: 'Experience', component: WorkExperienceStep },
-  { id: 'education', title: 'Education', component: EducationStep },
+  
   { id: 'skills', title: 'Skills', component: SkillsStep },
   { id: 'certifications', title: 'Certifications', component: CertificationsStep },
   { id: 'career-preferences', title: 'Preferences', component: CareerPreferencesStep },
