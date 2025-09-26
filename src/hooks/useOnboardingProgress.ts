@@ -238,6 +238,11 @@ export const useOnboardingProgress = () => {
     return totalYearsOfExperience.trim();
   };
 
+  const validateCareerPreferences = () => {
+    const { desiredRoles } = progress.onboardingData;
+    return desiredRoles.length > 0;
+  };
+
   const canProceedFromStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 1: // Basic Info step
@@ -246,6 +251,8 @@ export const useOnboardingProgress = () => {
         return validateCurrentRole();
       case 3: // Work Experience step
         return validateWorkExperience();
+      case 4: // Career Preferences step
+        return validateCareerPreferences();
       default:
         return true; // Other steps are optional or have their own validation
     }
@@ -262,6 +269,7 @@ export const useOnboardingProgress = () => {
     canProceedFromStep,
     validateBasicInfo,
     validateCurrentRole,
-    validateWorkExperience
+    validateWorkExperience,
+    validateCareerPreferences
   };
 };

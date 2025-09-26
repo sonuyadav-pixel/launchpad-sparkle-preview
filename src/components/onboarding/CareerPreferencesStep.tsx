@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Target, MapPin, DollarSign, Plus, X, Briefcase, Building } from 'lucide-react';
+import { Target, MapPin, DollarSign, Plus, X, Briefcase, Building, AlertCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
 
 interface CareerPreferencesStepProps {
@@ -23,22 +23,41 @@ const POPULAR_ROLES = [
   'Project Manager', 'Full Stack Developer', 'Frontend Developer', 'Backend Developer'
 ];
 
-
-
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'INR'];
 
 const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({ 
   data, 
   updateData, 
-  onNext 
+  onNext,
+  showValidationErrors = false
 }) => {
+  const [showValidation, setShowValidation] = useState(false);
+
+  // Update validation display when showValidationErrors prop changes
+  React.useEffect(() => {
+    if (showValidationErrors) {
+      setShowValidation(true);
+    }
+  }, [showValidationErrors]);
+
   const [newRole, setNewRole] = useState('');
   
+  const getFieldError = () => {
+    if (!showValidation) return '';
+    if (data.desiredRoles.length === 0) return 'Please select at least one desired role';
+    return '';
+  };
+
+  const handleRoleChange = (field: keyof OnboardingData, value: string) => {
+    addItem(field, value);
+    setShowValidation(true); // Show validation after user starts selecting
+  };
 
   const addItem = (field: keyof OnboardingData, value: string) => {
     const currentArray = Array.isArray(data[field]) ? data[field] as string[] : [];
     if (value.trim() && !currentArray.includes(value.trim())) {
       updateData({ [field]: [...currentArray, value.trim()] });
+      setShowValidation(true); // Show validation after user starts selecting
     }
   };
 
@@ -69,7 +88,7 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
-            Desired Roles
+            Desired Roles <span className="text-destructive">*</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -143,6 +162,12 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
                   </Badge>
                 ))}
             </div>
+            {getFieldError() && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {getFieldError()}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
