@@ -22,11 +22,6 @@ const POPULAR_ROLES = [
   'Project Manager', 'Full Stack Developer', 'Frontend Developer', 'Backend Developer'
 ];
 
-const POPULAR_INDUSTRIES = [
-  'Technology', 'Healthcare', 'Finance', 'E-commerce', 'Education',
-  'Manufacturing', 'Consulting', 'Media & Entertainment', 'Real Estate',
-  'Transportation', 'Energy', 'Government', 'Non-profit'
-];
 
 const EMPLOYMENT_TYPES = [
   'Full-time', 'Part-time', 'Contract', 'Freelance', 'Remote', 'Hybrid', 'Internship'
@@ -40,7 +35,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
   onNext 
 }) => {
   const [newRole, setNewRole] = useState('');
-  const [newIndustry, setNewIndustry] = useState('');
   const [newLocation, setNewLocation] = useState('');
   const [showSalaryFields, setShowSalaryFields] = useState(!!data.salaryRange);
 
@@ -62,7 +56,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
       addItem(field, value);
       // Reset the input based on field type
       if (field === 'desiredRoles') setNewRole('');
-      if (field === 'preferredIndustries') setNewIndustry('');
       if (field === 'preferredLocations') setNewLocation('');
     }
   };
@@ -178,87 +171,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Industries */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Preferred Industries
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Which industries interest you?</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="e.g., Healthcare Technology"
-                value={newIndustry}
-                onChange={(e) => setNewIndustry(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'preferredIndustries', newIndustry)}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                onClick={() => {
-                  addItem('preferredIndustries', newIndustry);
-                  setNewIndustry('');
-                }}
-                disabled={!newIndustry.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Current Industries */}
-          {data.preferredIndustries.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected industries:</Label>
-              <div className="flex flex-wrap gap-2">
-                {data.preferredIndustries.map((industry) => (
-                  <Badge
-                    key={industry}
-                    variant="secondary"
-                    className="flex items-center gap-1 pr-1"
-                  >
-                    <span>{industry}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeItem('preferredIndustries', industry)}
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground rounded-full"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Popular Industries */}
-          <div className="space-y-2">
-            <Label className="text-muted-foreground">Popular industries:</Label>
-            <div className="flex flex-wrap gap-2">
-              {POPULAR_INDUSTRIES
-                .filter(industry => !data.preferredIndustries.includes(industry))
-                .slice(0, 6)
-                .map((industry) => (
-                  <Badge
-                    key={industry}
-                    variant="outline"
-                    className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                    onClick={() => addItem('preferredIndustries', industry)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {industry}
-                  </Badge>
-                ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Employment Type */}
       <Card>
