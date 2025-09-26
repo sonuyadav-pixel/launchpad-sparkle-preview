@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Calendar, Plus, X, Edit3, MapPin } from 'lucide-react';
+import { Briefcase, Calendar, Plus, X, Edit3, MapPin, AlertCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
 
 interface WorkExperienceStepProps {
@@ -32,10 +32,12 @@ interface WorkExperience {
 const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({ 
   data, 
   updateData, 
-  onNext 
+  onNext,
+  showValidationErrors = false
 }) => {
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
   const [newExperience, setNewExperience] = useState<Omit<WorkExperience, 'id'>>({
     jobTitle: '',
     company: '',
@@ -46,6 +48,24 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
     achievements: []
   });
   const [newAchievement, setNewAchievement] = useState('');
+
+  // Update validation display when showValidationErrors prop changes
+  React.useEffect(() => {
+    if (showValidationErrors) {
+      setShowValidation(true);
+    }
+  }, [showValidationErrors]);
+
+  const handleYearsExperienceChange = (value: string) => {
+    updateData({ totalYearsOfExperience: value });
+    setShowValidation(true); // Show validation after user starts selecting
+  };
+
+  const getFieldError = () => {
+    if (!showValidation) return '';
+    if (!data.totalYearsOfExperience.trim()) return 'Years of experience is required';
+    return '';
+  };
 
   const addExperience = () => {
     if (newExperience.jobTitle.trim() && newExperience.company.trim()) {
@@ -117,12 +137,14 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="totalYearsOfExperience">How many years of professional experience do you have?</Label>
+            <Label htmlFor="totalYearsOfExperience">
+              How many years of professional experience do you have? <span className="text-destructive">*</span>
+            </Label>
             <Select 
               value={data.totalYearsOfExperience} 
-              onValueChange={(value) => updateData({ totalYearsOfExperience: value })}
+              onValueChange={handleYearsExperienceChange}
             >
-              <SelectTrigger className="w-full bg-background border border-input">
+              <SelectTrigger className={`w-full bg-background border ${getFieldError() ? 'border-destructive' : 'border-input'}`}>
                 <SelectValue placeholder="Select years of experience" />
               </SelectTrigger>
               <SelectContent className="bg-background border border-input shadow-lg z-50">
@@ -136,6 +158,12 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
                 <SelectItem value="15+">15+ years</SelectItem>
               </SelectContent>
             </Select>
+            {getFieldError() && (
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {getFieldError()}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

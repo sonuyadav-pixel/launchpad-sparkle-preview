@@ -233,12 +233,19 @@ export const useOnboardingProgress = () => {
     return currentJobTitle.trim() && currentCompany.trim();
   };
 
+  const validateWorkExperience = () => {
+    const { totalYearsOfExperience } = progress.onboardingData;
+    return totalYearsOfExperience.trim();
+  };
+
   const canProceedFromStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 1: // Basic Info step
         return validateBasicInfo();
-      case 2: // Current Role step (step 3 in UI, but index 2)
+      case 2: // Current Role step
         return validateCurrentRole();
+      case 3: // Work Experience step
+        return validateWorkExperience();
       default:
         return true; // Other steps are optional or have their own validation
     }
@@ -254,6 +261,7 @@ export const useOnboardingProgress = () => {
     loadOnboardingProgress,
     canProceedFromStep,
     validateBasicInfo,
-    validateCurrentRole
+    validateCurrentRole,
+    validateWorkExperience
   };
 };
