@@ -55,8 +55,7 @@ export const FeedbackModule = () => {
     suggestions, 
     loading: feedbackLoading, 
     generating,
-    fetchFeedback, 
-    generateFeedback,
+    loadOrGenerateFeedback,
     clearCurrentFeedback 
   } = useInterviewFeedback();
 
@@ -95,9 +94,20 @@ export const FeedbackModule = () => {
     }
   };
 
-  const handleShowFeedback = (sessionId: string) => {
+  const handleShowFeedback = async (sessionId: string) => {
+    setSelectedSessionForFeedback(sessionId);
+    
+    // Check if feedback exists, if not generate it, then navigate
+    await loadOrGenerateFeedback(sessionId);
+    
     // Navigate to full-screen feedback page
     window.location.href = `/feedback/${sessionId}`;
+    
+    setSelectedSessionForFeedback(null);
+  };
+
+  const hasFeedback = (sessionId: string) => {
+    return feedbackData.some(feedback => feedback.session_id === sessionId);
   };
 
   const handleCloseFeedback = () => {
@@ -385,7 +395,12 @@ export const FeedbackModule = () => {
                   disabled={generating && selectedSessionForFeedback === session.id}
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  {generating && selectedSessionForFeedback === session.id ? 'Generating...' : 'View Feedback'}
+                  {generating && selectedSessionForFeedback === session.id 
+                    ? 'Generating...' 
+                    : hasFeedback(session.id) 
+                      ? 'View Feedback' 
+                      : 'Generate Feedback'
+                  }
                 </Button>
               </CardContent>
             </Card>

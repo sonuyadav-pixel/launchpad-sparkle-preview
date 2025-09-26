@@ -16,9 +16,8 @@ export const FeedbackDetails = () => {
     currentFeedback: feedback, 
     suggestions, 
     loading, 
-    generating,
-    fetchFeedback, 
-    generateFeedback 
+    generating, 
+    loadOrGenerateFeedback
   } = useInterviewFeedback();
 
   useEffect(() => {
@@ -30,13 +29,8 @@ export const FeedbackDetails = () => {
   const handleLoadFeedback = async () => {
     if (!sessionId) return;
     
-    // Try to fetch existing feedback first
-    const existingFeedback = await fetchFeedback(sessionId);
-    
-    // If no feedback exists, generate it
-    if (!existingFeedback) {
-      await generateFeedback(sessionId);
-    }
+    // This function will check for existing feedback first, then generate if needed
+    await loadOrGenerateFeedback(sessionId);
   };
 
   const getScoreColor = (score: number) => {

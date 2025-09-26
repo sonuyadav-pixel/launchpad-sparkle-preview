@@ -45,16 +45,17 @@ export function useInterviewFeedback() {
         .from('interview_feedback')
         .select('*')
         .eq('session_id', sessionId)
-        .single();
+        .maybeSingle();
 
       if (feedbackError) {
-        if (feedbackError.code === 'PGRST116') {
-          // No feedback found
-          setCurrentFeedback(null);
-          setSuggestions([]);
-          return null;
-        }
         throw feedbackError;
+      }
+
+      if (!feedback) {
+        // No feedback found
+        setCurrentFeedback(null);
+        setSuggestions([]);
+        return null;
       }
 
       setCurrentFeedback(feedback);
@@ -117,6 +118,18 @@ export function useInterviewFeedback() {
     }
   };
 
+  const loadOrGenerateFeedback = async (sessionId: string) => {
+    // First try to fetch existing feedback
+    const existingFeedback = await fetchFeedback(sessionId);
+    
+    // If no feedback exists, generate it
+    if (!existingFeedback) {
+      await generateFeedback(sessionId);
+    }
+    
+    return existingFeedback;
+  };
+
   const fetchAllFeedbacks = async () => {
     setLoading(true);
     setError(null);
@@ -157,6 +170,7 @@ export function useInterviewFeedback() {
     error,
     fetchFeedback,
     generateFeedback,
+    loadOrGenerateFeedback,
     fetchAllFeedbacks,
     clearCurrentFeedback,
   };
