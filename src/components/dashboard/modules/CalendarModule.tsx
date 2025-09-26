@@ -111,7 +111,7 @@ const CalendarModule = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled Interviews</TabsTrigger>
+          <TabsTrigger value="scheduled" className="font-semibold text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Scheduled Interviews</TabsTrigger>
         </TabsList>
         
         <TabsContent value="calendar" className="flex-1 mt-4">
