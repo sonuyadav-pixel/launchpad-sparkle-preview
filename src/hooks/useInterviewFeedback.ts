@@ -180,9 +180,10 @@ export function useInterviewFeedback() {
     // First try to fetch existing feedback
     const existingFeedback = await fetchFeedback(sessionId);
     
-    // If no feedback exists, generate it
+    // If no feedback exists, generate it (this will now set the currentFeedback immediately)
     if (!existingFeedback) {
-      await generateFeedback(sessionId);
+      const generatedData = await generateFeedback(sessionId);
+      return generatedData?.feedback || null;
     }
     
     return existingFeedback;
