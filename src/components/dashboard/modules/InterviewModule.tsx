@@ -58,14 +58,8 @@ const InterviewModule = () => {
   const handleJoinActiveSession = async () => {
     if (!activeSession) return;
     try {
-      // Update session status to active if it's waiting
-      if (activeSession.status === 'waiting') {
-        await updateSession(activeSession.id, {
-          status: 'active'
-        });
-      }
-
       // Navigate to interview page with session ID
+      // Don't update status here - let the interview page handle the transition to 'active'
       navigate(`/interview?session=${activeSession.id}`);
     } catch (error) {
       console.error('Failed to join session:', error);

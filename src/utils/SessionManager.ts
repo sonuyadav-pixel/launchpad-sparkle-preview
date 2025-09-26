@@ -28,7 +28,7 @@ export class SessionManager {
       stream,
       recognition,
       isActive: true,
-      startTime: new Date(),
+      startTime: new Date(), // This tracks when the session manager started, not the interview
       pausedTime: null,
       participants: ['You'], // For now, just the current user
       title: title || 'AI Interview Session'
