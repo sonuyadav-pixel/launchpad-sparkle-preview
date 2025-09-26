@@ -216,7 +216,7 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
             <Button
               onClick={() => setIsAddingNew(true)}
               variant="ghost"
-              className="w-full h-auto p-4 flex flex-col items-center gap-2 text-muted-foreground hover:text-primary"
+              className="w-full h-auto p-4 flex flex-col items-center gap-2 text-muted-foreground hover:text-primary bg-transparent hover:bg-primary/20"
             >
               <Plus className="h-8 w-8" />
               <span className="text-lg">Add Work Experience</span>
