@@ -33,6 +33,9 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
     <div className="max-h-[60vh] space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Basic Information</h2>
+        <p className="text-muted-foreground">
+          Please fill in all mandatory fields marked with <span className="text-destructive">*</span>
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -41,14 +44,15 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium">
               <User className="h-4 w-4" />
-              Full Name *
+              Full Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="fullName"
               placeholder="Enter your full name"
               value={data.fullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
-              className="h-10"
+              className={`h-10 ${!data.fullName.trim() ? 'border-destructive/50' : ''}`}
+              required
             />
           </div>
 
@@ -71,7 +75,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
               <Mail className="h-4 w-4" />
-              Email Address *
+              Email Address <span className="text-destructive">*</span>
             </Label>
             <Input
               id="email"
@@ -79,15 +83,16 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               placeholder="your.email@example.com"
               value={data.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className="h-10"
+              className={`h-10 ${!data.email.trim() ? 'border-destructive/50' : ''}`}
               disabled={!!profile?.email}
+              required
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phoneNumber" className="flex items-center gap-2 text-sm font-medium">
               <Phone className="h-4 w-4" />
-              Phone Number *
+              Phone Number <span className="text-destructive">*</span>
             </Label>
             <Input
               id="phoneNumber"
@@ -95,7 +100,8 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               placeholder="+1 (555) 123-4567"
               value={data.phoneNumber}
               onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-              className="h-10"
+              className={`h-10 ${!data.phoneNumber.trim() ? 'border-destructive/50' : ''}`}
+              required
             />
           </div>
         </div>

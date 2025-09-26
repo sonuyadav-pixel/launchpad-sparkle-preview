@@ -307,6 +307,120 @@ export type Database = {
           },
         ]
       }
+      user_onboarding: {
+        Row: {
+          about_me: string | null
+          certifications: Json | null
+          completed_steps: number[] | null
+          created_at: string
+          current_company: string | null
+          current_job_title: string | null
+          current_role_end_date: string | null
+          current_role_start_date: string | null
+          current_step: number
+          desired_roles: string[] | null
+          education: Json | null
+          email: string | null
+          employment_type: string | null
+          full_name: string | null
+          github_url: string | null
+          headline: string | null
+          id: string
+          is_current_role: boolean | null
+          key_responsibilities: string[] | null
+          linkedin_url: string | null
+          location: string | null
+          phone_number: string | null
+          portfolio_url: string | null
+          preferred_employment_type: string[] | null
+          preferred_industries: string[] | null
+          preferred_locations: string[] | null
+          profile_photo_path: string | null
+          resume_file_path: string | null
+          salary_range: Json | null
+          skills: Json | null
+          skipped_steps: number[] | null
+          total_years_experience: string | null
+          updated_at: string
+          user_id: string
+          work_experience: Json | null
+        }
+        Insert: {
+          about_me?: string | null
+          certifications?: Json | null
+          completed_steps?: number[] | null
+          created_at?: string
+          current_company?: string | null
+          current_job_title?: string | null
+          current_role_end_date?: string | null
+          current_role_start_date?: string | null
+          current_step?: number
+          desired_roles?: string[] | null
+          education?: Json | null
+          email?: string | null
+          employment_type?: string | null
+          full_name?: string | null
+          github_url?: string | null
+          headline?: string | null
+          id?: string
+          is_current_role?: boolean | null
+          key_responsibilities?: string[] | null
+          linkedin_url?: string | null
+          location?: string | null
+          phone_number?: string | null
+          portfolio_url?: string | null
+          preferred_employment_type?: string[] | null
+          preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
+          profile_photo_path?: string | null
+          resume_file_path?: string | null
+          salary_range?: Json | null
+          skills?: Json | null
+          skipped_steps?: number[] | null
+          total_years_experience?: string | null
+          updated_at?: string
+          user_id: string
+          work_experience?: Json | null
+        }
+        Update: {
+          about_me?: string | null
+          certifications?: Json | null
+          completed_steps?: number[] | null
+          created_at?: string
+          current_company?: string | null
+          current_job_title?: string | null
+          current_role_end_date?: string | null
+          current_role_start_date?: string | null
+          current_step?: number
+          desired_roles?: string[] | null
+          education?: Json | null
+          email?: string | null
+          employment_type?: string | null
+          full_name?: string | null
+          github_url?: string | null
+          headline?: string | null
+          id?: string
+          is_current_role?: boolean | null
+          key_responsibilities?: string[] | null
+          linkedin_url?: string | null
+          location?: string | null
+          phone_number?: string | null
+          portfolio_url?: string | null
+          preferred_employment_type?: string[] | null
+          preferred_industries?: string[] | null
+          preferred_locations?: string[] | null
+          profile_photo_path?: string | null
+          resume_file_path?: string | null
+          salary_range?: Json | null
+          skills?: Json | null
+          skipped_steps?: number[] | null
+          total_years_experience?: string | null
+          updated_at?: string
+          user_id?: string
+          work_experience?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

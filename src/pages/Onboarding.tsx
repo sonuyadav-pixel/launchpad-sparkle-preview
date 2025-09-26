@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 // Import all onboarding steps
@@ -118,37 +119,37 @@ const Onboarding = () => {
   const { toast } = useToast();
   const { profile, updateProfile } = useUserProfile();
   
-  const [currentStep, setCurrentStep] = useState(0);
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>({
-    fullName: profile?.first_name && profile?.last_name 
-      ? `${profile.first_name} ${profile.last_name}` 
-      : '',
-    email: profile?.email || '',
-    phoneNumber: '',
-    location: '',
-    headline: '',
-    aboutMe: '',
-    currentJobTitle: '',
-    currentCompany: '',
-    employmentType: 'Full-time',
-    currentRoleStartDate: '',
-    isCurrentRole: true,
-    keyResponsibilities: [],
-    totalYearsOfExperience: '',
-    workExperience: [],
-    education: [],
-    skills: {
-      technical: [],
-      soft: [],
-      tools: [],
-      frameworks: []
-    },
-    certifications: [],
-    desiredRoles: [],
-    preferredIndustries: [],
-    preferredEmploymentType: ['Full-time'],
-    preferredLocations: []
-  });
+  const {
+    currentStep,
+    onboardingData,
+    loading,
+    error,
+    completedSteps,
+    updateOnboardingData,
+    setCurrentStep,
+    markStepCompleted,
+    saveProgress,
+    canProceedFromStep,
+    validateBasicInfo
+  } = useOnboardingProgress();
+
+  // Auto-save progress when data changes
+  useEffect(() => {
+    if (!loading) {
+      const timeoutId = setTimeout(() => {
+        saveProgress();
+      }, 1000); // Debounce saves
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [onboardingData, currentStep, loading, saveProgress]);
+
+  useEffect(() => {
+    // Autofill email from signed-in user
+    if (profile?.email && !onboardingData.email) {
+      updateOnboardingData({ email: profile.email });
+    }
+  }, [profile, onboardingData.email, updateOnboardingData]);
 
   const currentStepData = ONBOARDING_STEPS[currentStep];
   const StepComponent = currentStepData.component;
@@ -157,7 +158,18 @@ const Onboarding = () => {
   const progress = ((currentStep + 1) / ONBOARDING_STEPS.length) * 100;
 
   const handleNext = () => {
+    // Check if current step allows proceeding
+    if (!canProceedFromStep(currentStep)) {
+      toast({
+        title: "Required fields missing",
+        description: "Please fill in all mandatory fields before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < ONBOARDING_STEPS.length - 1) {
+      markStepCompleted(currentStep);
       setCurrentStep(currentStep + 1);
     }
   };
@@ -211,9 +223,6 @@ const Onboarding = () => {
     }
   };
 
-  const updateOnboardingData = (updates: Partial<OnboardingData>) => {
-    setOnboardingData(prev => ({ ...prev, ...updates }));
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
