@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Target, Brain, Lock, ArrowRight, Star, Zap, Crown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Target, Brain, Lock, ArrowRight, Star, Zap, Crown, ChevronRight, ChevronDown, ChevronUp, Calendar, Clock, User, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FeedbackLoadingScreen } from '@/components/feedback/FeedbackLoadingScreen';
 import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
 import heroAIInterview from '@/assets/hero-ai-interview.jpg';
 
 export const FeedbackDetails = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { profile } = useUserProfile();
+  const [sessionData, setSessionData] = useState<any>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const { 
     currentFeedback: feedback, 
     suggestions, 
@@ -24,8 +31,27 @@ export const FeedbackDetails = () => {
   useEffect(() => {
     if (sessionId) {
       handleLoadFeedback();
+      fetchSessionData();
     }
   }, [sessionId]);
+
+  const fetchSessionData = async () => {
+    if (!sessionId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('interview_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setSessionData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching session data:', error);
+    }
+  };
 
   const handleLoadFeedback = async () => {
     if (!sessionId) return;
@@ -106,7 +132,120 @@ export const FeedbackDetails = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        
+        {/* Interview Details Section - Collapsible */}
+        <Card className="border-primary/20 hover:shadow-lg transition-all duration-300 animate-fade-in">
+          <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    Interview Details
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">Session Info</Badge>
+                    {detailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Candidate Name */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">Candidate</span>
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Unknown Candidate'}
+                    </div>
+                  </div>
+
+                  {/* Role Applied */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Target className="h-4 w-4" />
+                      <span className="font-medium">Role Applied</span>
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {sessionData?.role_applied || 'Software Engineer'}
+                    </div>
+                  </div>
+
+                  {/* Company */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="h-4 w-4" />
+                      <span className="font-medium">Company</span>
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {sessionData?.company_name || 'Tech Company'}
+                    </div>
+                  </div>
+
+                  {/* Interview Date & Time */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-medium">Interview Date</span>
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {sessionData?.created_at ? format(new Date(sessionData.created_at), 'MMM dd, yyyy') : 'N/A'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {sessionData?.created_at ? format(new Date(sessionData.created_at), 'h:mm a') : ''}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Interview Stats */}
+                <Separator />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Duration</span>
+                    </div>
+                    <div className="text-lg font-bold text-primary">
+                      {sessionData?.duration_seconds 
+                        ? `${Math.floor(sessionData.duration_seconds / 60)}m ${sessionData.duration_seconds % 60}s`
+                        : 'N/A'
+                      }
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Interview Type</span>
+                    </div>
+                    <div className="text-lg font-bold text-primary capitalize">
+                      {sessionData?.interview_type || 'General'}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        Status
+                      </Badge>
+                    </div>
+                    <div className="text-lg font-bold text-primary capitalize">
+                      {sessionData?.status || 'Completed'}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Section 1: Overall Performance & Scores */}

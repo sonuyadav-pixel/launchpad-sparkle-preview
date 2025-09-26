@@ -116,12 +116,14 @@ export type Database = {
       }
       interview_sessions: {
         Row: {
+          company_name: string | null
           created_at: string | null
           duration_seconds: number | null
           ended_at: string | null
           id: string
           interview_type: string
           metadata: Json | null
+          role_applied: string | null
           settings: Json | null
           started_at: string | null
           status: string
@@ -129,12 +131,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_name?: string | null
           created_at?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           interview_type?: string
           metadata?: Json | null
+          role_applied?: string | null
           settings?: Json | null
           started_at?: string | null
           status?: string
@@ -142,12 +146,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_name?: string | null
           created_at?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
           interview_type?: string
           metadata?: Json | null
+          role_applied?: string | null
           settings?: Json | null
           started_at?: string | null
           status?: string
