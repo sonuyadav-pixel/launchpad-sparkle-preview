@@ -256,7 +256,16 @@ const Onboarding = () => {
           </div>
             
             {/* Interactive Step Dots */}
-            <div className="flex justify-between items-start mt-8 pb-8">
+            <div className="relative flex justify-between items-start mt-8 pb-8">
+              {/* Continuous Background Line */}
+              <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted-foreground/20"></div>
+              
+              {/* Progress Line */}
+              <div 
+                className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-1000 ease-out"
+                style={{ width: `${((currentStep) / (ONBOARDING_STEPS.length - 1)) * 100}%` }}
+              ></div>
+              
               {ONBOARDING_STEPS.map((step, index) => {
                 const isActive = index === currentStep;
                 const isCompleted = index < currentStep;
@@ -265,7 +274,7 @@ const Onboarding = () => {
                 return (
                   <div 
                     key={step.id} 
-                    className={`relative group cursor-pointer transition-all duration-300 flex flex-col items-center ${
+                    className={`relative group cursor-pointer transition-all duration-300 flex flex-col items-center z-10 ${
                       isActive ? 'scale-110' : 'hover:scale-105'
                     }`}
                     onClick={() => index < currentStep && setCurrentStep(index)}
@@ -298,16 +307,6 @@ const Onboarding = () => {
                       }`}>
                         {step.title}
                       </div>
-                    )}
-                    
-                    {/* Connecting Line */}
-                    {index < ONBOARDING_STEPS.length - 1 && (
-                      <div 
-                        className={`absolute top-4 left-8 w-full h-0.5 transition-all duration-500 ${
-                          index < currentStep ? 'bg-primary' : 'bg-muted-foreground/20'
-                        }`}
-                        style={{ width: 'calc(100% + 1rem)' }}
-                      />
                     )}
                   </div>
                 );
