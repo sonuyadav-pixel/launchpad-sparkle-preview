@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { InterviewLoadingScreen } from '@/components/ui/InterviewLoadingScreen';
+import { FeedbackLoadingScreen } from '@/components/feedback/FeedbackLoadingScreen';
 import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 
 export const FeedbackDetails = () => {
@@ -64,7 +64,7 @@ export const FeedbackDetails = () => {
   const premiumSuggestions = suggestions.filter(s => s.is_premium);
 
   if (loading || generating) {
-    return <InterviewLoadingScreen />;
+    return <FeedbackLoadingScreen variant="full" />;
   }
 
   if (!feedback) {

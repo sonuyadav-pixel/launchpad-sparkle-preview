@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { InterviewFeedback, ImprovementSuggestion } from '@/hooks/useInterviewFeedback';
+import { FeedbackLoadingScreen } from './FeedbackLoadingScreen';
 
 interface FeedbackSidebarProps {
   isOpen: boolean;
@@ -87,10 +88,7 @@ export function FeedbackSidebar({
       {/* Content */}
       <ScrollArea className="flex-1">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-sm text-muted-foreground">Generating AI feedback...</p>
-          </div>
+          <FeedbackLoadingScreen variant="sidebar" />
         ) : !feedback ? (
           <div className="p-8 text-center">
             <Brain className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
