@@ -333,12 +333,21 @@ const Onboarding = () => {
                 <span>Previous</span>
               </Button>
 
-              {!isLastStep && (
+              {!isLastStep ? (
                 <Button
                   onClick={handleNext}
                   className="flex items-center space-x-2"
                 >
                   <span>Next</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCompleteOnboarding}
+                  className="flex items-center space-x-2 bg-primary hover:bg-primary/90"
+                  size="lg"
+                >
+                  <span>Save and Continue</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               )}
