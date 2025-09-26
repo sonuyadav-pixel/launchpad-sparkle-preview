@@ -7,17 +7,35 @@ import { format, isAfter, differenceInMinutes } from 'date-fns';
 import { useScheduledInterviews } from '@/hooks/useScheduledInterviews';
 import { useNavigate } from 'react-router-dom';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import { SectionLoader } from '@/components/ui/loader';
 
 export const UpcomingInterviewSection = () => {
   const navigate = useNavigate();
-  const { getUpcomingInterview, updateScheduledInterview, loading } = useScheduledInterviews();
+  const { scheduledInterviews, updateScheduledInterview, loading } = useScheduledInterviews();
   const { createSession } = useInterviewSession();
+  const { user } = useUserProfile();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showTimeError, setShowTimeError] = useState(false);
 
-  const upcomingInterview = getUpcomingInterview();
+  // Filter to only show interviews where current user is invited (not the creator)
+  const getUpcomingInvitedInterview = () => {
+    if (!user?.email) return null;
+    
+    const now = new Date();
+    const invitedInterviews = scheduledInterviews.filter(interview => 
+      interview.invited_email === user.email && 
+      interview.status === 'scheduled' &&
+      new Date(interview.scheduled_at) > now
+    );
+    
+    return invitedInterviews.sort((a, b) => 
+      new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
+    )[0] || null;
+  };
+
+  const upcomingInterview = getUpcomingInvitedInterview();
 
   // Update current time every minute
   useEffect(() => {
