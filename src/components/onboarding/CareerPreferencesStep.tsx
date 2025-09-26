@@ -32,8 +32,7 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
   onNext 
 }) => {
   const [newRole, setNewRole] = useState('');
-  const [newLocation, setNewLocation] = useState('');
-  const [showSalaryFields, setShowSalaryFields] = useState(!!data.salaryRange);
+  
 
   const addItem = (field: keyof OnboardingData, value: string) => {
     const currentArray = Array.isArray(data[field]) ? data[field] as string[] : [];
@@ -53,19 +52,9 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
       addItem(field, value);
       // Reset the input based on field type
       if (field === 'desiredRoles') setNewRole('');
-      if (field === 'preferredLocations') setNewLocation('');
     }
   };
 
-  const updateSalaryRange = (field: 'min' | 'max' | 'currency', value: string | number) => {
-    const currentRange = data.salaryRange || { min: 0, max: 0, currency: 'USD' };
-    updateData({ 
-      salaryRange: { 
-        ...currentRange, 
-        [field]: field === 'currency' ? value : Number(value) 
-      } 
-    });
-  };
 
 
   return (
@@ -156,127 +145,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         </CardContent>
       </Card>
 
-
-      {/* Salary Range */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Salary Expectations
-            <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              checked={showSalaryFields}
-              onCheckedChange={setShowSalaryFields}
-            />
-            <Label>I want to specify salary expectations</Label>
-          </div>
-
-          {showSalaryFields && (
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Minimum Salary</Label>
-                <Input
-                  type="number"
-                  placeholder="50000"
-                  value={data.salaryRange?.min || ''}
-                  onChange={(e) => updateSalaryRange('min', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Maximum Salary</Label>
-                <Input
-                  type="number"
-                  placeholder="100000"
-                  value={data.salaryRange?.max || ''}
-                  onChange={(e) => updateSalaryRange('max', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Currency</Label>
-                <Select 
-                  value={data.salaryRange?.currency || 'USD'} 
-                  onValueChange={(value) => updateSalaryRange('currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CURRENCIES.map((currency) => (
-                      <SelectItem key={currency} value={currency}>
-                        {currency}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Locations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Preferred Locations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Where would you like to work?</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="e.g., San Francisco, Remote, New York"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'preferredLocations', newLocation)}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                onClick={() => {
-                  addItem('preferredLocations', newLocation);
-                  setNewLocation('');
-                }}
-                disabled={!newLocation.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {data.preferredLocations.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected locations:</Label>
-              <div className="flex flex-wrap gap-2">
-                {data.preferredLocations.map((location) => (
-                  <Badge
-                    key={location}
-                    variant="secondary"
-                    className="flex items-center gap-1 pr-1"
-                  >
-                    <span>{location}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeItem('preferredLocations', location)}
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground rounded-full"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
     </div>
   );
