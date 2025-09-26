@@ -232,24 +232,24 @@ const Onboarding = () => {
           
             
             {/* Interactive Step Dots */}
-            <div className="relative flex justify-between items-center mt-12 pt-8 pb-12">
-              {/* Continuous Background Line - connecting first to last circle center */}
+            <div className="relative flex justify-between items-center mt-12 pt-8 pb-12 bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl shadow-inner">
+              {/* 3D Background Track with depth effect */}
               <div 
-                className="absolute top-1/2 h-0.5 bg-muted-foreground/20 transform -translate-y-1/2 z-0"
+                className="absolute top-1/2 h-2 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 transform -translate-y-1/2 z-0 rounded-full shadow-inner"
                 style={{ 
-                  left: 'calc(50% / var(--steps) * 0)',
-                  right: 'calc(50% / var(--steps) * 0)',
-                  marginLeft: '1rem',
-                  marginRight: '1rem'
+                  left: '1rem',
+                  right: '1rem',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), inset 0 -1px 2px rgba(255,255,255,0.8)'
                 }}
               ></div>
               
-              {/* Progress Line - connecting completed circle centers progressively */}
+              {/* 3D Progress Line with gradient and depth */}
               <div 
-                className="absolute top-1/2 h-0.5 bg-primary transition-all duration-1000 ease-out transform -translate-y-1/2 z-0"
+                className="absolute top-1/2 h-2 bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 transform -translate-y-1/2 z-10 rounded-full transition-all duration-1000 ease-out"
                 style={{ 
                   left: '1rem',
-                  width: currentStep > 0 ? `calc((100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})` : '0%'
+                  width: currentStep > 0 ? `calc((100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})` : '0%',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4), 0 2px 4px rgba(99, 102, 241, 0.3), inset 0 1px 2px rgba(255,255,255,0.2)'
                 }}
               ></div>
               
@@ -261,27 +261,37 @@ const Onboarding = () => {
                 return (
                   <div 
                     key={step.id} 
-                    className={`relative group cursor-pointer transition-all duration-300 flex flex-col items-center z-10 ${
+                    className={`relative group cursor-pointer transition-all duration-300 flex flex-col items-center z-20 ${
                       isActive ? 'scale-110' : 'hover:scale-105'
                     }`}
                     onClick={() => index < currentStep && setCurrentStep(index)}
                   >
-                    {/* Step Circle */}
+                    {/* 3D Step Circle with enhanced depth */}
                     <div 
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                      className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 relative ${
                         isActive 
-                          ? 'bg-primary border-primary text-primary-foreground relative before:content-[""] before:absolute before:w-12 before:h-12 before:border-2 before:border-dashed before:border-blue-400 before:rounded-full before:-inset-2' 
+                          ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 border-purple-600 text-white shadow-lg' 
                           : isCompleted
-                          ? 'bg-green-100 border-green-500 text-green-600 hover:bg-green-500 hover:text-white'
-                          : 'bg-background border-muted-foreground/30 text-muted-foreground'
+                          ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 border-orange-600 text-white shadow-lg'
+                          : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 border-gray-400 text-gray-600 shadow-md'
                       }`}
+                      style={{
+                        boxShadow: isActive 
+                          ? '0 6px 20px rgba(139, 92, 246, 0.4), 0 3px 8px rgba(139, 92, 246, 0.3), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.1)'
+                          : isCompleted
+                          ? '0 6px 20px rgba(251, 146, 60, 0.4), 0 3px 8px rgba(251, 146, 60, 0.3), inset 0 1px 2px rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.1)'
+                          : '0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05), inset 0 1px 2px rgba(255,255,255,0.8), inset 0 -1px 2px rgba(0,0,0,0.05)'
+                      }}
                     >
+                      {/* 3D Inner highlight */}
+                      <div className="absolute inset-0.5 rounded-full bg-gradient-to-t from-transparent to-white/20 pointer-events-none"></div>
+                      
                       {isCompleted ? (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 relative z-10" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       ) : (
-                        <span className="text-xs font-medium">{index + 1}</span>
+                        <span className="text-sm font-bold relative z-10">{index + 1}</span>
                       )}
                     </div>
                     
