@@ -95,17 +95,9 @@ export const FeedbackModule = () => {
     }
   };
 
-  const handleShowFeedback = async (sessionId: string) => {
-    setSelectedSessionForFeedback(sessionId);
-    setFeedbackSidebarOpen(true);
-    
-    // Try to fetch existing feedback first
-    const feedback = await fetchFeedback(sessionId);
-    
-    // If no feedback exists, generate it
-    if (!feedback) {
-      await generateFeedback(sessionId);
-    }
+  const handleShowFeedback = (sessionId: string) => {
+    // Navigate to full-screen feedback page
+    window.location.href = `/feedback/${sessionId}`;
   };
 
   const handleCloseFeedback = () => {

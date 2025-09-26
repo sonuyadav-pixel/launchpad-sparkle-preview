@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Interview from "./pages/Interview";
 import History from "./pages/History";
+import { FeedbackDetails } from "./pages/FeedbackDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,11 @@ const App = () => (
                 <Route path="/history" element={
                   <ProtectedRoute>
                     <History />
+                  </ProtectedRoute>
+                } />
+                <Route path="/feedback/:sessionId" element={
+                  <ProtectedRoute>
+                    <FeedbackDetails />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
