@@ -107,16 +107,6 @@ const ProfessionalSummaryStep: React.FC<ProfessionalSummaryStepProps> = ({
                 maxLength={300}
               />
               <div className="flex justify-between items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateBioSuggestion}
-                  className="flex items-center gap-2"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  Generate with AI
-                </Button>
                 <span className="text-xs text-muted-foreground">
                   {data.aboutMe.length}/300 characters
                 </span>
