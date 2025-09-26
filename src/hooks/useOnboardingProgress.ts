@@ -228,10 +228,17 @@ export const useOnboardingProgress = () => {
     return fullName.trim() && email.trim() && phoneNumber.trim();
   };
 
+  const validateCurrentRole = () => {
+    const { currentJobTitle, currentCompany } = progress.onboardingData;
+    return currentJobTitle.trim() && currentCompany.trim();
+  };
+
   const canProceedFromStep = (stepIndex: number) => {
     switch (stepIndex) {
       case 1: // Basic Info step
         return validateBasicInfo();
+      case 2: // Current Role step (step 3 in UI, but index 2)
+        return validateCurrentRole();
       default:
         return true; // Other steps are optional or have their own validation
     }
@@ -246,6 +253,7 @@ export const useOnboardingProgress = () => {
     saveProgress,
     loadOnboardingProgress,
     canProceedFromStep,
-    validateBasicInfo
+    validateBasicInfo,
+    validateCurrentRole
   };
 };

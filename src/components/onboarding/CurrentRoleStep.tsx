@@ -23,9 +23,11 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
   onNext 
 }) => {
   const [newResponsibility, setNewResponsibility] = useState('');
+  const [showValidation, setShowValidation] = useState(false);
 
   const handleInputChange = (field: keyof OnboardingData, value: string | boolean) => {
     updateData({ [field]: value });
+    setShowValidation(true); // Show validation after user starts typing
   };
 
   const addResponsibility = () => {
@@ -49,6 +51,13 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
   };
 
   const isValid = data.currentJobTitle.trim() && data.currentCompany.trim();
+  
+  const getFieldError = (field: 'currentJobTitle' | 'currentCompany') => {
+    if (!showValidation) return '';
+    if (field === 'currentJobTitle' && !data.currentJobTitle.trim()) return 'Job title is required';
+    if (field === 'currentCompany' && !data.currentCompany.trim()) return 'Company name is required';
+    return '';
+  };
 
   return (
     <div className="space-y-6">
@@ -66,25 +75,33 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="currentJobTitle">Job Title *</Label>
+              <Label htmlFor="currentJobTitle">Job Title <span className="text-destructive">*</span></Label>
               <Input
                 id="currentJobTitle"
                 placeholder="e.g., Senior Product Manager"
                 value={data.currentJobTitle}
                 onChange={(e) => handleInputChange('currentJobTitle', e.target.value)}
-                className="transition-all focus:ring-2 focus:ring-primary"
+                className={`transition-all focus:ring-2 focus:ring-primary ${getFieldError('currentJobTitle') ? 'border-destructive' : ''}`}
+                required
               />
+              {getFieldError('currentJobTitle') && (
+                <p className="text-sm text-destructive">{getFieldError('currentJobTitle')}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currentCompany">Company Name *</Label>
+              <Label htmlFor="currentCompany">Company Name <span className="text-destructive">*</span></Label>
               <Input
                 id="currentCompany"
                 placeholder="e.g., Tech Corp Inc."
                 value={data.currentCompany}
                 onChange={(e) => handleInputChange('currentCompany', e.target.value)}
-                className="transition-all focus:ring-2 focus:ring-primary"
+                className={`transition-all focus:ring-2 focus:ring-primary ${getFieldError('currentCompany') ? 'border-destructive' : ''}`}
+                required
               />
+              {getFieldError('currentCompany') && (
+                <p className="text-sm text-destructive">{getFieldError('currentCompany')}</p>
+              )}
             </div>
           </div>
 
