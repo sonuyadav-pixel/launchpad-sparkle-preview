@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { OnboardingData } from '@/pages/Onboarding';
+import { useToast } from '@/components/ui/use-toast';
 
 interface OnboardingProgress {
   id?: string;
@@ -8,11 +9,13 @@ interface OnboardingProgress {
   completedSteps: number[];
   skippedSteps: number[];
   onboardingData: OnboardingData;
+  resumeData: any;
   loading: boolean;
   error: string | null;
 }
 
 export const useOnboardingProgress = () => {
+  const { toast } = useToast();
   const [progress, setProgress] = useState<OnboardingProgress>({
     currentStep: 0,
     completedSteps: [],
@@ -45,13 +48,44 @@ export const useOnboardingProgress = () => {
       preferredEmploymentType: ['Full-time'],
       preferredLocations: []
     },
+    resumeData: null,
     loading: true,
     error: null
   });
 
+  // Fetch resume data
+  const fetchResumeData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: resumeData, error } = await supabase
+        .from('parsed_resumes')
+        .select('parsed_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching resume data:', error);
+        return;
+      }
+
+      if (resumeData) {
+        setProgress(prev => ({
+          ...prev,
+          resumeData: resumeData.parsed_data
+        }));
+      }
+    } catch (error) {
+      console.error('Error in fetchResumeData:', error);
+    }
+  };
+
   // Load existing onboarding data on mount
   useEffect(() => {
     loadOnboardingProgress();
+    fetchResumeData();
   }, []);
 
   const loadOnboardingProgress = async () => {

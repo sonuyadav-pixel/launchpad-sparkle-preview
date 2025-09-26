@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 const OverviewModule = () => {
   const onboardingProgress = useOnboardingProgress();
   const { profile } = useUserProfile();
-  const { onboardingData, loading, completedSteps } = onboardingProgress;
+  const { onboardingData, resumeData, loading, completedSteps } = onboardingProgress;
 
   if (loading) {
     return (
@@ -62,6 +62,35 @@ const OverviewModule = () => {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+  };
+
+  // Helper function to get skills from resume data or onboarding data
+  const getSkillsData = () => {
+    if (resumeData?.skills) {
+      return {
+        technical: resumeData.skills.technical || [],
+        soft: resumeData.skills.soft || [],
+        tools: resumeData.skills.tools || [],
+        frameworks: resumeData.skills.frameworks || []
+      };
+    }
+    return onboardingData.skills;
+  };
+
+  // Helper function to get work experience from resume or onboarding
+  const getWorkExperience = () => {
+    if (resumeData?.workExperience && resumeData.workExperience.length > 0) {
+      return resumeData.workExperience;
+    }
+    return onboardingData.workExperience;
+  };
+
+  // Helper function to get education from resume or onboarding
+  const getEducation = () => {
+    if (resumeData?.education && resumeData.education.length > 0) {
+      return resumeData.education;
+    }
+    return onboardingData.education;
   };
 
   return (
@@ -222,7 +251,7 @@ const OverviewModule = () => {
           )}
 
           {/* Work Experience Timeline */}
-          {onboardingData.workExperience && onboardingData.workExperience.length > 0 && (
+          {getWorkExperience() && getWorkExperience().length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -231,8 +260,8 @@ const OverviewModule = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {onboardingData.workExperience.map((exp, index) => (
+              <div className="space-y-6">
+                {getWorkExperience().map((exp, index) => (
                     <div key={index} className="relative pl-6 border-l-2 border-muted last:border-l-0">
                       <div className="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
                       <div className="space-y-2">
@@ -260,7 +289,7 @@ const OverviewModule = () => {
           )}
 
           {/* Education */}
-          {onboardingData.education && onboardingData.education.length > 0 && (
+          {getEducation() && getEducation().length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -269,8 +298,8 @@ const OverviewModule = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {onboardingData.education.map((edu, index) => (
+              <div className="space-y-4">
+                {getEducation().map((edu, index) => (
                     <div key={index} className="p-4 bg-muted/50 rounded-lg">
                       <h4 className="font-semibold">{edu.degree} in {edu.major}</h4>
                       <p className="text-muted-foreground">{edu.university}</p>
@@ -288,7 +317,7 @@ const OverviewModule = () => {
           )}
 
           {/* Skills & Expertise */}
-          {onboardingData.skills && (
+          {getSkillsData() && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -297,44 +326,44 @@ const OverviewModule = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {onboardingData.skills.technical && onboardingData.skills.technical.length > 0 && (
+                {getSkillsData().technical && getSkillsData().technical.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Technical Skills</h4>
                     <div className="flex flex-wrap gap-2">
-                      {onboardingData.skills.technical.map((skill, index) => (
+                      {getSkillsData().technical.map((skill, index) => (
                         <Badge key={index} variant="secondary">{skill}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {onboardingData.skills.soft && onboardingData.skills.soft.length > 0 && (
+                {getSkillsData().soft && getSkillsData().soft.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Soft Skills</h4>
                     <div className="flex flex-wrap gap-2">
-                      {onboardingData.skills.soft.map((skill, index) => (
+                      {getSkillsData().soft.map((skill, index) => (
                         <Badge key={index} variant="outline">{skill}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {onboardingData.skills.tools && onboardingData.skills.tools.length > 0 && (
+                {getSkillsData().tools && getSkillsData().tools.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Tools & Technologies</h4>
                     <div className="flex flex-wrap gap-2">
-                      {onboardingData.skills.tools.map((tool, index) => (
+                      {getSkillsData().tools.map((tool, index) => (
                         <Badge key={index} variant="secondary">{tool}</Badge>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {onboardingData.skills.frameworks && onboardingData.skills.frameworks.length > 0 && (
+                {getSkillsData().frameworks && getSkillsData().frameworks.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2">Frameworks</h4>
                     <div className="flex flex-wrap gap-2">
-                      {onboardingData.skills.frameworks.map((framework, index) => (
+                      {getSkillsData().frameworks.map((framework, index) => (
                         <Badge key={index} variant="secondary">{framework}</Badge>
                       ))}
                     </div>
