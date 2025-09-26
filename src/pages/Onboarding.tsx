@@ -245,7 +245,7 @@ const Onboarding = () => {
             <Progress value={progress} className="h-3 rounded-full" />
             
             {/* Interactive Step Dots */}
-            <div className="flex justify-between items-center mt-4">
+            <div className="flex justify-between items-start mt-8 pb-8">
               {ONBOARDING_STEPS.map((step, index) => {
                 const isActive = index === currentStep;
                 const isCompleted = index < currentStep;
@@ -254,7 +254,7 @@ const Onboarding = () => {
                 return (
                   <div 
                     key={step.id} 
-                    className={`relative group cursor-pointer transition-all duration-300 ${
+                    className={`relative group cursor-pointer transition-all duration-300 flex flex-col items-center ${
                       isActive ? 'scale-110' : 'hover:scale-105'
                     }`}
                     onClick={() => index < currentStep && setCurrentStep(index)}
@@ -278,9 +278,9 @@ const Onboarding = () => {
                       )}
                     </div>
                     
-                    {/* Step Label - Only show for active and nearby steps */}
+                    {/* Step Label - Now positioned below the circle to prevent overlap */}
                     {(isActive || Math.abs(index - currentStep) <= 1) && (
-                      <div className={`absolute top-10 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap transition-opacity duration-300 ${
+                      <div className={`mt-3 text-xs font-medium text-center whitespace-nowrap transition-opacity duration-300 ${
                         isActive ? 'text-primary opacity-100' : 'text-muted-foreground opacity-70'
                       }`}>
                         {step.title}
