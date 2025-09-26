@@ -137,15 +137,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
         </div>
       </div>
 
-      <div className="flex justify-end pt-4">
-        <Button 
-          onClick={onNext}
-          disabled={!isValid}
-          className="px-8"
-        >
-          Next
-        </Button>
-      </div>
     </div>
   );
 };
