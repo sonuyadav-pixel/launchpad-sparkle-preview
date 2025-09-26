@@ -223,9 +223,6 @@ const Onboarding = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
             <h1 className="text-4xl font-bold">User Profile Setup</h1>
-            <div className="text-sm text-muted-foreground">
-              Step {currentStep + 1} of {ONBOARDING_STEPS.length}
-            </div>
           </div>
           
           {!isFirstStep && currentStep !== 1 && (
