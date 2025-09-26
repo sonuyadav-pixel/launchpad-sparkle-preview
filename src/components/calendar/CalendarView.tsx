@@ -354,14 +354,13 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
       
       <CardContent className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={hasInvitedInterviews ? "grid w-full grid-cols-2" : "grid w-full grid-cols-1"}>
-            <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
+          <TabsList className={hasInvitedInterviews ? "grid w-full grid-cols-1" : "hidden"}>
             {hasInvitedInterviews && <TabsTrigger value="scheduled">My Invited Interviews</TabsTrigger>}
           </TabsList>
           
-          <TabsContent value="calendar" className="mt-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+          {!hasInvitedInterviews ? (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex border rounded-md">
                   {(['monthly', 'weekly', 'daily'] as const).map(type => (
                     <Button
@@ -400,9 +399,7 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
                 </>
               )}
             </div>
-          </TabsContent>
-          
-          {hasInvitedInterviews && (
+          ) : (
             <TabsContent value="scheduled" className="mt-6">
               {loading ? (
                 <SectionLoader text="Loading invited interviews..." variant="dots" />
