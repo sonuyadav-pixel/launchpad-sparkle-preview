@@ -6,11 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp, ExternalLink, Filter, X } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, MessageSquare, Grid3X3, List, Trophy, TrendingUp, ExternalLink, Filter, X, BarChart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
 import { InterviewLoadingScreen } from '@/components/ui/InterviewLoadingScreen';
+import { FeedbackSidebar } from '@/components/feedback/FeedbackSidebar';
+import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 
 interface InterviewSession {
   id: string;
@@ -45,6 +47,18 @@ const History = () => {
     dateRange: 'all',
     duration: 'all'
   });
+  const [feedbackSidebarOpen, setFeedbackSidebarOpen] = useState(false);
+  const [selectedSessionForFeedback, setSelectedSessionForFeedback] = useState<string | null>(null);
+  
+  const { 
+    currentFeedback, 
+    suggestions, 
+    loading: feedbackLoading, 
+    generating,
+    fetchFeedback, 
+    generateFeedback,
+    clearCurrentFeedback 
+  } = useInterviewFeedback();
 
   // Check if viewing a specific session from URL
   const sessionId = searchParams.get('session');
@@ -116,9 +130,35 @@ const History = () => {
       setSelectedSession(null);
       setTranscript([]);
       navigate('/history', { replace: true });
+      setFeedbackSidebarOpen(false);
+      clearCurrentFeedback();
     } else {
       navigate('/dashboard');
     }
+  };
+
+  const handleShowFeedback = async (sessionId: string) => {
+    setSelectedSessionForFeedback(sessionId);
+    setFeedbackSidebarOpen(true);
+    
+    // Try to fetch existing feedback first
+    const feedback = await fetchFeedback(sessionId);
+    
+    // If no feedback exists, generate it
+    if (!feedback) {
+      await generateFeedback(sessionId);
+    }
+  };
+
+  const handleCloseFeedback = () => {
+    setFeedbackSidebarOpen(false);
+    setSelectedSessionForFeedback(null);
+    clearCurrentFeedback();
+  };
+
+  const handleUpgradeToPlus = () => {
+    // Navigate to Interview+ module or show pricing
+    console.log('Navigate to Interview+ upgrade');
   };
 
   const formatDuration = (seconds?: number) => {
@@ -426,14 +466,33 @@ const History = () => {
                     </div>
 
                     {/* Bottom CTA Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 p-3 flex justify-center">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 p-3 flex justify-center gap-2">
                       <Button 
                         size="sm" 
                         className="bg-primary text-white shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSessionClick(session);
+                        }}
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
-                        Explore
+                        View
                       </Button>
+                      {session.status === 'completed' && (
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          className="shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShowFeedback(session.id);
+                          }}
+                          disabled={generating}
+                        >
+                          <BarChart className="h-3 w-3 mr-1" />
+                          {generating ? 'Generating...' : 'Feedback'}
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 ))}
@@ -476,8 +535,32 @@ const History = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="text-muted-foreground group-hover:text-primary/60 transition-colors duration-300">
-                            <MessageSquare className="h-5 w-5" />
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSessionClick(session);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              View Transcript
+                            </Button>
+                            {session.status === 'completed' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleShowFeedback(session.id);
+                                }}
+                                disabled={generating}
+                              >
+                                <BarChart className="h-4 w-4 mr-2" />
+                                {generating ? 'Generating...' : 'Feedback'}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -570,6 +653,16 @@ const History = () => {
             </Card>
           </div>
         )}
+
+        {/* Feedback Sidebar */}
+        <FeedbackSidebar
+          isOpen={feedbackSidebarOpen}
+          onClose={handleCloseFeedback}
+          feedback={currentFeedback}
+          suggestions={suggestions}
+          loading={feedbackLoading}
+          onUpgrade={handleUpgradeToPlus}
+        />
       </div>
     </div>
   );
