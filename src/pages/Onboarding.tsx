@@ -107,13 +107,12 @@ export interface OnboardingData {
 const ONBOARDING_STEPS = [
   { id: 'welcome', title: 'Welcome', component: WelcomeStep },
   { id: 'basic-info', title: 'Basic Info', component: BasicInfoStep },
-  
   { id: 'current-role', title: 'Current Role', component: CurrentRoleStep },
   { id: 'work-experience', title: 'Experience', component: WorkExperienceStep },
-  
   { id: 'career-preferences', title: 'Preferences', component: CareerPreferencesStep },
   { id: 'resume-upload', title: 'Resume', component: ResumeUploadStep },
   { id: 'profile-photo', title: 'Photo', component: ProfilePhotoStep },
+  { id: 'review', title: 'Review', component: ReviewStep },
 ];
 
 const Onboarding = () => {
