@@ -29,10 +29,10 @@ export const useResumeParser = () => {
         throw new Error('User not authenticated');
       }
 
-      // Generate unique file path
+      // Generate unique file path that matches RLS policy structure
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `resumes/${fileName}`;
+      const fileName = `resume_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       // Upload file to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
