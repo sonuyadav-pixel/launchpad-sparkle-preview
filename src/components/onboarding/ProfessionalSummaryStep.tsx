@@ -94,7 +94,7 @@ const ProfessionalSummaryStep: React.FC<ProfessionalSummaryStepProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="aboutMe" className="flex items-center gap-2">
-              About Me
+              Professional Summary
               <span className="text-sm font-normal text-muted-foreground">(Optional)</span>
             </Label>
             <div className="space-y-2">
