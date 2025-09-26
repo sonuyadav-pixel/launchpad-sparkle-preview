@@ -270,9 +270,9 @@ const Onboarding = () => {
                     <div 
                       className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                         isActive 
-                          ? 'bg-primary border-primary text-primary-foreground relative before:content-[""] before:absolute before:w-12 before:h-12 before:border-2 before:border-dashed before:border-blue-400 before:rounded-full before:-inset-2' 
+                          ? 'bg-primary border-primary text-primary-foreground relative before:content-[""] before:absolute before:w-12 before:h-12 before:border-2 before:border-dashed before:border-blue-600 before:rounded-full before:-inset-2' 
                           : isCompleted
-                          ? 'bg-green-100 border-green-500 text-green-600 hover:bg-green-500 hover:text-white'
+                          ? 'bg-blue-900/10 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white'
                           : 'bg-background border-muted-foreground/30 text-muted-foreground'
                       }`}
                     >
@@ -290,7 +290,7 @@ const Onboarding = () => {
                       <div className={`${
                         index % 2 === 0 ? 'mt-3' : 'absolute -top-8 left-1/2 transform -translate-x-1/2'
                       } text-xs font-medium text-center whitespace-nowrap transition-opacity duration-300 ${
-                        isActive ? 'text-primary opacity-100' : isCompleted ? 'text-green-600 opacity-90' : 'text-muted-foreground opacity-70'
+                        isActive ? 'text-primary opacity-100' : isCompleted ? 'text-blue-900 opacity-90' : 'text-muted-foreground opacity-70'
                       }`}>
                         {step.title}
                       </div>
