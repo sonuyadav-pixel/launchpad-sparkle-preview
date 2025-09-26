@@ -25,7 +25,6 @@ const menuItems = [
         id: "overview" as DashboardModule,
         label: "Overview",
         icon: LayoutDashboard,
-        comingSoon: true,
       },
       {
         id: "interview" as DashboardModule,

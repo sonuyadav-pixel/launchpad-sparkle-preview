@@ -8,6 +8,7 @@ import { JobsModule } from "./modules/JobsModule";
 import { InterviewPlusModule } from "./modules/InterviewPlusModule";
 import CalendarModule from "./modules/CalendarModule";
 import { FeedbackModule } from "./modules/FeedbackModule";
+import { OverviewModule } from "./modules/OverviewModule";
 
 interface DashboardContentProps {
   activeModule: DashboardModule;
@@ -29,7 +30,7 @@ export const DashboardContent = ({ activeModule, sidebarOpen, sidebarCollapsed }
       case "interview-plus":
         return <InterviewPlusModule />;
       case "overview":
-        return <ComingSoonModule title="Overview" description="Dashboard overview is coming soon. Stay tuned for updates!" />;
+        return <OverviewModule />;
       case "calendar":
         return <CalendarModule />;
       case "feedback":
