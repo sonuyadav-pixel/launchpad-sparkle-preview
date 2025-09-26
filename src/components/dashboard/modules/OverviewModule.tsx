@@ -100,11 +100,6 @@ const OverviewModule = () => {
                       {onboardingData.totalYearsOfExperience} experience
                     </Badge>
                   )}
-                  {onboardingData.currentJobTitle && (
-                    <Badge variant="secondary">
-                      {onboardingData.currentJobTitle}
-                    </Badge>
-                  )}
                 </div>
               </div>
             </div>
