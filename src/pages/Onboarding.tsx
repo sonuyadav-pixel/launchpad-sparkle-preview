@@ -232,23 +232,21 @@ const Onboarding = () => {
             
             {/* Interactive Step Dots */}
             <div className="relative flex justify-between items-center mt-12 pt-8 pb-12">
-              {/* Continuous Background Line - connecting first to last circle center */}
-              <div 
-                className="absolute top-1/2 h-0.5 bg-muted-foreground/20 transform -translate-y-1/2 z-0"
-                style={{ 
-                  left: 'calc(50% / var(--steps) * 0)',
-                  right: 'calc(50% / var(--steps) * 0)',
-                  marginLeft: '1rem',
-                  marginRight: '1rem'
-                }}
-              ></div>
-              
               {/* Progress Line - connecting completed circle centers progressively */}
               <div 
                 className="absolute top-1/2 h-0.5 bg-primary transition-all duration-1000 ease-out transform -translate-y-1/2 z-0"
                 style={{ 
                   left: '1rem',
                   width: currentStep > 0 ? `calc((100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})` : '0%'
+                }}
+              ></div>
+              
+              {/* Dotted Line for Uncompleted - connecting remaining circle centers */}
+              <div 
+                className="absolute top-1/2 h-0.5 border-t-2 border-dotted border-muted-foreground/30 transition-all duration-1000 ease-out transform -translate-y-1/2 z-0"
+                style={{ 
+                  left: currentStep > 0 ? `calc(1rem + (100% - 2rem) * ${currentStep} / ${ONBOARDING_STEPS.length - 1})` : '1rem',
+                  right: '1rem'
                 }}
               ></div>
               
