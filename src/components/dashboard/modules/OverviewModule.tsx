@@ -101,6 +101,40 @@ const OverviewModule = () => {
                     </Badge>
                   )}
                 </div>
+                
+                {/* Contact Information */}
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {onboardingData.email && (
+                    <a href={`mailto:${onboardingData.email}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <Mail className="h-3 w-3" />
+                      {onboardingData.email}
+                    </a>
+                  )}
+                  {onboardingData.phoneNumber && (
+                    <a href={`tel:${onboardingData.phoneNumber}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <Phone className="h-3 w-3" />
+                      {onboardingData.phoneNumber}
+                    </a>
+                  )}
+                  {onboardingData.linkedinUrl && (
+                    <a href={onboardingData.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <Linkedin className="h-3 w-3" />
+                      LinkedIn
+                    </a>
+                  )}
+                  {onboardingData.githubUrl && (
+                    <a href={onboardingData.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <Github className="h-3 w-3" />
+                      GitHub
+                    </a>
+                  )}
+                  {onboardingData.portfolioUrl && (
+                    <a href={onboardingData.portfolioUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
+                      <Globe className="h-3 w-3" />
+                      Portfolio
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             
