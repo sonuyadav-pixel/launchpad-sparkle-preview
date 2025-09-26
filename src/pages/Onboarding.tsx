@@ -232,13 +232,13 @@ const Onboarding = () => {
           
             
             {/* Interactive Step Dots */}
-            <div className="relative flex justify-between items-start mt-12 pt-8 pb-12">
-              {/* Continuous Background Line */}
-              <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted-foreground/20"></div>
+            <div className="relative flex justify-between items-center mt-12 pt-8 pb-12">
+              {/* Continuous Background Line - positioned to go through circle centers */}
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-muted-foreground/20 transform -translate-y-1/2 z-0"></div>
               
-              {/* Progress Line */}
+              {/* Progress Line - positioned to go through circle centers */}
               <div 
-                className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-1000 ease-out"
+                className="absolute top-1/2 left-0 h-0.5 bg-primary transition-all duration-1000 ease-out transform -translate-y-1/2 z-0"
                 style={{ width: `${((currentStep) / (ONBOARDING_STEPS.length - 1)) * 100}%` }}
               ></div>
               
