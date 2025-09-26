@@ -116,55 +116,48 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert interview coach. Be precise and concise in your analysis.'
+            content: 'You are an expert interview coach. Be precise and concise. Return ONLY valid JSON.'
           },
           {
             role: 'user',
-            content: `Analyze this interview transcript and provide detailed feedback. Return ONLY a valid JSON object with this exact structure:
+            content: `Analyze this interview transcript and provide feedback. Return ONLY a valid JSON object:
 
 {
-  "overall_score": number (0-10),
-  "communication_score": number (0-10),
-  "body_language_score": number (0-10, infer from language patterns),
-  "domain_knowledge_score": number (0-10),
-  "confidence_score": number (0-10),
-  "clarity_score": number (0-10),
-  "analysis_summary": "Brief 2-3 sentence summary",
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
+  "overall_score": 7.5,
+  "communication_score": 8.0,
+  "body_language_score": 7.0,
+  "domain_knowledge_score": 8.5,
+  "confidence_score": 7.5,
+  "clarity_score": 8.0,
+  "analysis_summary": "Good overall performance with strong technical knowledge.",
+  "strengths": ["Clear communication", "Good technical depth", "Confident responses"],
+  "weaknesses": ["Could improve body language", "Some hesitation in answers", "Needs better structure"],
   "improvement_suggestions": [
     {
       "category": "communication",
-      "suggestion": "specific actionable advice",
+      "suggestion": "Practice speaking more confidently",
       "priority": 1,
       "is_premium": false
     },
     {
       "category": "technical",
-      "suggestion": "advanced technical advice",
+      "suggestion": "Review advanced algorithms",
       "priority": 2,
       "is_premium": true
     }
   ]
 }
 
-Score criteria:
-- Communication: Clarity, articulation, listening skills
-- Body Language: Confidence indicators in speech patterns, pace, filler words  
-- Domain Knowledge: Technical accuracy, depth of understanding
-- Confidence: Assertiveness, hesitation patterns, certainty in responses
-- Clarity: Structure of answers, logical flow, conciseness
+Interview: ${session.interview_type}
+Transcript: ${conversationText}
 
-Interview Type: ${session.interview_type}
-Transcript:
-${conversationText}
-
-Respond with ONLY the JSON object, no other text.`
+Return ONLY the JSON object above with your analysis.`
           }
         ],
         temperature: 0.2,
-        top_p: 0.9,
-        max_tokens: 1000,
+        max_tokens: 800,
+        return_images: false,
+        return_related_questions: false,
         frequency_penalty: 1,
         presence_penalty: 0
       }),
@@ -173,11 +166,34 @@ Respond with ONLY the JSON object, no other text.`
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Perplexity API error:', response.status, errorText);
-      throw new Error(`Perplexity API error: ${response.status}`);
+      throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
     }
 
     const aiData = await response.json();
-    const feedbackData = JSON.parse(aiData.choices[0].message.content);
+    console.log('🔍 Raw AI response:', JSON.stringify(aiData));
+    
+    let feedbackContent;
+    if (aiData.choices && aiData.choices[0] && aiData.choices[0].message) {
+      feedbackContent = aiData.choices[0].message.content;
+    } else {
+      console.error('Unexpected API response structure:', aiData);
+      throw new Error('Invalid API response structure');
+    }
+
+    // Clean the content and parse JSON
+    const cleanContent = feedbackContent.trim()
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .replace(/^[^{]*({.*})[^}]*$/s, '$1');
+
+    let feedbackData;
+    try {
+      feedbackData = JSON.parse(cleanContent);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      console.error('Content to parse:', cleanContent);
+      throw new Error(`Failed to parse AI response: ${(parseError as Error).message || 'Unknown error'}`);
+    }
 
     console.log('✅ AI feedback generated');
 
