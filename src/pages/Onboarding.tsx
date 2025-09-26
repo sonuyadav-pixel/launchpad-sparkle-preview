@@ -219,9 +219,33 @@ const Onboarding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
       <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-4xl font-bold">User Profile Setup</h1>
+            <div className="text-sm text-muted-foreground">
+              Step {currentStep + 1} of {ONBOARDING_STEPS.length}
+            </div>
+          </div>
+          
+          {!isFirstStep && currentStep !== 1 && (
+            <Button 
+              variant="ghost" 
+              onClick={handleSkipOnboarding}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Skip for now
+            </Button>
+          )}
+        </div>
 
         {/* Interactive Step Display */}
         <div className="mb-8">
+          <div className="text-center mb-6">
+            <div className="text-sm text-muted-foreground font-medium">Step {currentStep + 1}</div>
+            <div className="text-lg font-semibold text-primary">{currentStepData.title}</div>
+          </div>
           
           {/* Circular Progress with Interactive Dots */}
           <div className="relative">
