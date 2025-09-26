@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Laptop, Users, Plus, Calendar as CalendarIcon, Clock, User, Trash2 } from 'lucide-react';
 import { useScheduledInterviews, type ScheduledInterview } from '@/hooks/useScheduledInterviews';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { SectionLoader } from '@/components/ui/loader';
@@ -15,7 +14,6 @@ const CalendarModule = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('calendar');
   const { scheduledInterviews, deleteScheduledInterview, loading } = useScheduledInterviews();
-  const { user } = useUserProfile();
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -28,12 +26,7 @@ const CalendarModule = () => {
   };
 
   const renderScheduledInterviewsList = () => {
-    // Filter to only show interviews where the current user is invited (not created by them)
-    const invitedInterviews = scheduledInterviews.filter(interview => 
-      interview.invited_email === user?.email
-    );
-
-    if (invitedInterviews.length === 0) {
+    if (scheduledInterviews.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="relative mb-6">
@@ -46,14 +39,14 @@ const CalendarModule = () => {
             No Interview Scheduled
           </h3>
           <p className="text-muted-foreground/70 mb-6 max-w-md">
-            You haven't been invited to any interviews yet.
+            You haven't scheduled any interviews yet. Create your first interview to get started.
           </p>
         </div>
       );
     }
 
     // Sort interviews by date
-    const sortedInterviews = [...invitedInterviews].sort(
+    const sortedInterviews = [...scheduledInterviews].sort(
       (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
     );
 
