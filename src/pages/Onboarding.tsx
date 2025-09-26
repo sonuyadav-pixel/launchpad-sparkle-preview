@@ -222,10 +222,6 @@ const Onboarding = () => {
 
         {/* Interactive Step Display */}
         <div className="mb-8">
-          <div className="text-center mb-6">
-            <div className="text-sm text-muted-foreground font-medium">Step {currentStep + 1}</div>
-            <div className="text-lg font-semibold text-primary">{currentStepData.title}</div>
-          </div>
           
           {/* Circular Progress with Interactive Dots */}
           <div className="relative">
