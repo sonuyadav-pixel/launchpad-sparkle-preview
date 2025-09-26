@@ -94,12 +94,6 @@ const OverviewModule = () => {
                 )}
                 
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {onboardingData.location && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {onboardingData.location}
-                    </Badge>
-                  )}
                   {onboardingData.totalYearsOfExperience && (
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <Briefcase className="h-3 w-3" />
