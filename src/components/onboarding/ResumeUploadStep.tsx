@@ -234,11 +234,6 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileInputChange} className="hidden" />
 
-      <div className="flex justify-end">
-        <Button onClick={onNext} className="px-6">
-          Continue
-        </Button>
-      </div>
     </div>;
 };
 export default ResumeUploadStep;
