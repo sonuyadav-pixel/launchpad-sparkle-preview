@@ -77,15 +77,6 @@ const ProfessionalSummaryStep: React.FC<ProfessionalSummaryStepProps> = ({
                 onChange={(e) => handleInputChange('headline', e.target.value)}
                 className="flex-1 transition-all focus:ring-2 focus:ring-primary"
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={generateAISuggestion}
-                className="flex items-center gap-2 shrink-0"
-              >
-                <Sparkles className="h-4 w-4" />
-                AI Suggest
-              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               This will appear as your main professional title
