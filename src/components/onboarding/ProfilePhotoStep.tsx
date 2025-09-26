@@ -222,18 +222,7 @@ const ProfilePhotoStep: React.FC<ProfilePhotoStepProps> = ({
           </CardContent>
         </Card>) : (/* Photo Preview */
     <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Profile Photo
-              </span>
-              <Badge variant="secondary" className="gap-1">
-                <Eye className="h-3 w-3" />
-                Preview
-              </Badge>
-            </CardTitle>
-          </CardHeader>
+          
           <CardContent className="space-y-4">
             <div className="flex justify-center">
               <div className="relative">
