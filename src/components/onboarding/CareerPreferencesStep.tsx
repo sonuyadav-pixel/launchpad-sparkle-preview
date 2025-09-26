@@ -72,30 +72,7 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>What roles are you interested in?</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="e.g., Senior Software Engineer"
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                onKeyPress={(e) => handleKeyPress(e, 'desiredRoles', newRole)}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                onClick={() => {
-                  addItem('desiredRoles', newRole);
-                  setNewRole('');
-                }}
-                disabled={!newRole.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Current Desired Roles */}
+          {/* Current Desired Roles - Show first */}
           {data.desiredRoles.length > 0 && (
             <div className="space-y-2">
               <Label>Selected roles:</Label>
@@ -121,6 +98,30 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
               </div>
             </div>
           )}
+
+          {/* Search Input - Show second */}
+          <div className="space-y-2">
+            <Label>What roles are you interested in?</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="e.g., Senior Software Engineer"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, 'desiredRoles', newRole)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                onClick={() => {
+                  addItem('desiredRoles', newRole);
+                  setNewRole('');
+                }}
+                disabled={!newRole.trim()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
           {/* Popular Roles */}
           <div className="space-y-2">
