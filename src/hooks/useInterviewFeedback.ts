@@ -134,11 +134,14 @@ export function useInterviewFeedback() {
     setError(null);
 
     try {
+      console.log('🤖 Attempting to generate feedback for session:', sessionId);
+      
       const { data, error } = await supabase.functions.invoke('generate-feedback', {
         body: { session_id: sessionId }
       });
 
       if (error) {
+        console.error('❌ Feedback generation error:', error);
         throw new Error(error.message);
       }
 
@@ -166,9 +169,22 @@ export function useInterviewFeedback() {
     } catch (err: any) {
       console.error('Error generating feedback:', err);
       setError(err.message);
+      
+      // Provide more specific error messages based on the error
+      let errorTitle = "Error";
+      let errorDescription = "Failed to generate feedback. Please try again.";
+      
+      if (err.message?.includes('conversation transcript')) {
+        errorTitle = "No Interview Data";
+        errorDescription = "This session doesn't have interview conversation data. Please complete an actual interview first.";
+      } else if (err.message?.includes('transcript')) {
+        errorTitle = "No Transcript Available";
+        errorDescription = "Cannot generate feedback without interview conversation. Complete an interview first.";
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to generate feedback. Please try again.",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {

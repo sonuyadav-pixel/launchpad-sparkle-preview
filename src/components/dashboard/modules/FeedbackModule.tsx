@@ -65,6 +65,8 @@ export const FeedbackModule = () => {
 
   const fetchInterviewHistory = async () => {
     try {
+      console.log('🔍 Fetching completed interview sessions...');
+      
       const { data, error } = await supabase
         .from('interview_sessions')
         .select('*')
@@ -76,6 +78,7 @@ export const FeedbackModule = () => {
         return;
       }
 
+      console.log('📊 Found completed sessions:', data?.length || 0);
       setSessions(data || []);
 
       // Fetch feedback data for statistics
@@ -86,6 +89,7 @@ export const FeedbackModule = () => {
 
       if (!feedbackError) {
         setFeedbackData(feedbacks || []);
+        console.log('📈 Found existing feedback records:', feedbacks?.length || 0);
       }
     } catch (error) {
       console.error('Error fetching interview history:', error);

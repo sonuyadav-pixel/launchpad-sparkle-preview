@@ -74,7 +74,7 @@ serve(async (req) => {
     }
 
     if (!transcripts || transcripts.length === 0) {
-      throw new Error('No transcript found for this session');
+      throw new Error('This interview session does not have any conversation transcript. Please complete an actual interview first before generating feedback.');
     }
 
     // Check if feedback already exists
