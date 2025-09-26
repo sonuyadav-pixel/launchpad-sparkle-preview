@@ -101,9 +101,14 @@ const OverviewModule = () => {
           <div className="flex flex-col md:flex-row items-start gap-6">
             <div className="flex items-center gap-6">
               <Avatar className="h-64 w-64 border-4 border-primary/20">
-                <AvatarImage src={onboardingData.profile_photo_path} />
-                <AvatarFallback className="text-4xl font-bold">
-                  {onboardingData.fullName ? onboardingData.fullName.split(' ').map(n => n[0]).join('') : 'U'}
+                <AvatarImage 
+                  src={onboardingData.profile_photo_path} 
+                  alt={onboardingData.fullName || profile?.first_name || "User"}
+                  className="object-cover"
+                />
+                <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/70 text-white">
+                  {onboardingData.fullName ? onboardingData.fullName.split(' ').map(n => n[0]).join('') : 
+                   profile?.first_name ? (profile.first_name[0] + (profile.last_name?.[0] || '')) : 'U'}
                 </AvatarFallback>
               </Avatar>
               
