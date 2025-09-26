@@ -82,9 +82,9 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
                   <Badge
                     key={role}
                     variant="secondary"
-                    className="flex items-center gap-1 pr-1 text-sm px-3 py-1"
+                    className="flex items-center gap-1 pr-1 text-sm px-3 py-1 bg-blue-900 text-white hover:bg-blue-800 border-blue-900"
                   >
-                    <span className="text-sm font-medium">{role}</span>
+                    <span className="text-sm font-medium text-white">{role}</span>
                     <Button
                       type="button"
                       variant="ghost"
