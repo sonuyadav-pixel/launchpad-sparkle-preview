@@ -214,21 +214,6 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
           </CardContent>
         </Card>)}
 
-      {/* AI Enhancement Info */}
-      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-              <h3 className="font-medium mb-1">AI-Powered Resume Parsing</h3>
-              <p className="text-sm text-muted-foreground">
-                Our AI will automatically extract your experience, education, skills, and achievements to populate your profile. 
-                You can always review and edit the information before finalizing.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
 
       {/* Hidden file input */}
