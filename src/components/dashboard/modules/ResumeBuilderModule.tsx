@@ -1,10 +1,78 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, Sparkles, ArrowRight, Clock, Star } from "lucide-react";
-import resumeUploadImage from "@/assets/resume-upload.jpg";
-import resumeBuildImage from "@/assets/resume-build.jpg";
+import { Upload, FileText, Sparkles, ArrowRight, Clock, Star, ArrowLeft } from "lucide-react";
+import { ResumeUploadArea } from "@/components/resume/ResumeUploadArea";
+import { ResumeTemplate } from "@/components/resume/ResumeTemplate";
+import { ParsedResumeData } from "@/hooks/useResumeUpload";
 
 export const ResumeBuilderModule = () => {
+  const [view, setView] = useState<'home' | 'upload' | 'build' | 'template'>('home');
+  const [parsedResume, setParsedResume] = useState<ParsedResumeData | null>(null);
+
+  const handleUploadComplete = (data: ParsedResumeData) => {
+    setParsedResume(data);
+    setView('template');
+  };
+
+  if (view === 'upload') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-32 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-pulse animation-delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 container mx-auto px-6 py-12">
+          <div className="flex items-center gap-4 mb-8">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setView('home')}
+              className="hover:bg-primary/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-3xl font-bold">Upload Your Resume</h1>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <ResumeUploadArea onUploadComplete={handleUploadComplete} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'template' && parsedResume) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-6 py-12">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setView('home')}
+                className="hover:bg-primary/10"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <h1 className="text-3xl font-bold">Your Parsed Resume</h1>
+            </div>
+            <Button onClick={() => setView('upload')}>
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Another
+            </Button>
+          </div>
+
+          <ResumeTemplate parsedData={parsedResume} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -60,11 +128,9 @@ export const ResumeBuilderModule = () => {
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-xl mb-6">
-                <img 
-                  src={resumeUploadImage} 
-                  alt="Upload Resume" 
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                <div className="w-full h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <Upload className="h-16 w-16 text-primary opacity-50" />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
               </div>
               <CardDescription className="text-base leading-relaxed">
@@ -89,6 +155,7 @@ export const ResumeBuilderModule = () => {
               <Button 
                 size="lg" 
                 className="w-full group-hover:bg-primary group-hover:shadow-lg transition-all duration-300"
+                onClick={() => setView('upload')}
               >
                 <Upload className="mr-2 h-5 w-5" />
                 Upload & Enhance
@@ -122,11 +189,9 @@ export const ResumeBuilderModule = () => {
                 </div>
               </div>
               <div className="relative overflow-hidden rounded-xl mb-6">
-                <img 
-                  src={resumeBuildImage} 
-                  alt="Build Resume" 
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                <div className="w-full h-48 bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+                  <FileText className="h-16 w-16 text-secondary opacity-50" />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent"></div>
               </div>
               <CardDescription className="text-base leading-relaxed">
@@ -151,7 +216,7 @@ export const ResumeBuilderModule = () => {
               <Button 
                 size="lg" 
                 variant="outline"
-                className="w-full border-secondary/50 hover:bg-secondary hover:text-secondary-foreground hover:border-secondary group-hover:shadow-lg transition-all duration-300"
+                onClick={() => setView('build')}
               >
                 <Sparkles className="mr-2 h-5 w-5" />
                 Start Building
