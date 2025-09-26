@@ -15,6 +15,7 @@ interface BasicInfoStepProps {
 
 const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext }) => {
   const { profile } = useUserProfile();
+  const [showValidation, setShowValidation] = React.useState(false);
   
   React.useEffect(() => {
     // Autofill email from signed-in user
@@ -25,9 +26,18 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
 
   const handleInputChange = (field: keyof OnboardingData, value: string) => {
     updateData({ [field]: value });
+    setShowValidation(true); // Show validation after user starts typing
   };
 
   const isValid = data.fullName.trim() && data.email.trim() && data.phoneNumber.trim();
+  
+  const getFieldError = (field: 'fullName' | 'email' | 'phoneNumber') => {
+    if (!showValidation) return '';
+    if (field === 'fullName' && !data.fullName.trim()) return 'Full name is required';
+    if (field === 'email' && !data.email.trim()) return 'Email address is required';
+    if (field === 'phoneNumber' && !data.phoneNumber.trim()) return 'Phone number is required';
+    return '';
+  };
 
   return (
     <div className="max-h-[60vh] space-y-6">
@@ -51,9 +61,12 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               placeholder="Enter your full name"
               value={data.fullName}
               onChange={(e) => handleInputChange('fullName', e.target.value)}
-              className={`h-10 ${!data.fullName.trim() ? 'border-destructive/50' : ''}`}
+              className={`h-10 ${getFieldError('fullName') ? 'border-destructive' : ''}`}
               required
             />
+            {getFieldError('fullName') && (
+              <p className="text-sm text-destructive">{getFieldError('fullName')}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -83,10 +96,13 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               placeholder="your.email@example.com"
               value={data.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              className={`h-10 ${!data.email.trim() ? 'border-destructive/50' : ''}`}
+              className={`h-10 ${getFieldError('email') ? 'border-destructive' : ''}`}
               disabled={!!profile?.email}
               required
             />
+            {getFieldError('email') && (
+              <p className="text-sm text-destructive">{getFieldError('email')}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -100,9 +116,12 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               placeholder="+1 (555) 123-4567"
               value={data.phoneNumber}
               onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-              className={`h-10 ${!data.phoneNumber.trim() ? 'border-destructive/50' : ''}`}
+              className={`h-10 ${getFieldError('phoneNumber') ? 'border-destructive' : ''}`}
               required
             />
+            {getFieldError('phoneNumber') && (
+              <p className="text-sm text-destructive">{getFieldError('phoneNumber')}</p>
+            )}
           </div>
         </div>
 

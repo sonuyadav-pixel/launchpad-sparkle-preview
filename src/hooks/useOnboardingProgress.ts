@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 import { OnboardingData } from '@/pages/Onboarding';
 
 interface OnboardingProgress {
@@ -14,7 +13,6 @@ interface OnboardingProgress {
 }
 
 export const useOnboardingProgress = () => {
-  const { toast } = useToast();
   const [progress, setProgress] = useState<OnboardingProgress>({
     currentStep: 0,
     completedSteps: [],
@@ -195,11 +193,7 @@ export const useOnboardingProgress = () => {
       }
     } catch (error) {
       console.error('Error saving onboarding progress:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save progress. Please try again.",
-        variant: "destructive",
-      });
+      // Error will be handled by the component if needed
     }
   };
 

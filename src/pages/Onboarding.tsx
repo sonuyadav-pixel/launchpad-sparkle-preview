@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -160,12 +160,7 @@ const Onboarding = () => {
   const handleNext = () => {
     // Check if current step allows proceeding
     if (!canProceedFromStep(currentStep)) {
-      toast({
-        title: "Required fields missing",
-        description: "Please fill in all mandatory fields before proceeding.",
-        variant: "destructive",
-      });
-      return;
+      return; // Validation errors will be shown inline
     }
 
     if (currentStep < ONBOARDING_STEPS.length - 1) {
