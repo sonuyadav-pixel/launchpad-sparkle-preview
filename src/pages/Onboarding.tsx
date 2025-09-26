@@ -228,14 +228,16 @@ const Onboarding = () => {
             </div>
           </div>
           
-          <Button 
-            variant="ghost" 
-            onClick={handleSkipOnboarding}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Skip for now
-          </Button>
+          {!isFirstStep && (
+            <Button 
+              variant="ghost" 
+              onClick={handleSkipOnboarding}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Skip for now
+            </Button>
+          )}
         </div>
 
         {/* Interactive Step Display */}
