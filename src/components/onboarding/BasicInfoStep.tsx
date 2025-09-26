@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Mail, Phone, MapPin, Linkedin, Github, Globe } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Linkedin, Github, Globe, AlertCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
@@ -11,9 +11,10 @@ interface BasicInfoStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 
-const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext }) => {
+const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext, showValidationErrors = false }) => {
   const { profile } = useUserProfile();
   const [showValidation, setShowValidation] = React.useState(false);
   
@@ -23,6 +24,13 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
       updateData({ email: profile.email });
     }
   }, [profile, data.email, updateData]);
+
+  // Update validation display when showValidationErrors prop changes
+  React.useEffect(() => {
+    if (showValidationErrors) {
+      setShowValidation(true);
+    }
+  }, [showValidationErrors]);
 
   const handleInputChange = (field: keyof OnboardingData, value: string) => {
     updateData({ [field]: value });
@@ -65,7 +73,10 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               required
             />
             {getFieldError('fullName') && (
-              <p className="text-sm text-destructive">{getFieldError('fullName')}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {getFieldError('fullName')}
+              </p>
             )}
           </div>
 
@@ -101,7 +112,10 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               required
             />
             {getFieldError('email') && (
-              <p className="text-sm text-destructive">{getFieldError('email')}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {getFieldError('email')}
+              </p>
             )}
           </div>
 
@@ -120,7 +134,10 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
               required
             />
             {getFieldError('phoneNumber') && (
-              <p className="text-sm text-destructive">{getFieldError('phoneNumber')}</p>
+              <p className="text-sm text-destructive flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                {getFieldError('phoneNumber')}
+              </p>
             )}
           </div>
         </div>

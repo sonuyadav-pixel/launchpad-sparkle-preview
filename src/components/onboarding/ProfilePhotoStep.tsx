@@ -10,6 +10,7 @@ interface ProfilePhotoStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 const ProfilePhotoStep: React.FC<ProfilePhotoStepProps> = ({
   data,

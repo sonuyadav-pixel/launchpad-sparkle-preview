@@ -133,6 +133,8 @@ const Onboarding = () => {
     validateBasicInfo
   } = useOnboardingProgress();
 
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+
   // Auto-save progress when data changes
   useEffect(() => {
     if (!loading) {
@@ -160,12 +162,14 @@ const Onboarding = () => {
   const handleNext = () => {
     // Check if current step allows proceeding
     if (!canProceedFromStep(currentStep)) {
+      setShowValidationErrors(true); // Trigger validation display
       return; // Validation errors will be shown inline
     }
 
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       markStepCompleted(currentStep);
       setCurrentStep(currentStep + 1);
+      setShowValidationErrors(false); // Reset validation for next step
     }
   };
 
@@ -311,6 +315,7 @@ const Onboarding = () => {
                 updateData={updateOnboardingData}
                 onNext={handleNext}
                 onComplete={handleCompleteOnboarding}
+                showValidationErrors={showValidationErrors}
               />
             </CardContent>
           </Card>

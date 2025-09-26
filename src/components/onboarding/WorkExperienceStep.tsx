@@ -15,6 +15,7 @@ interface WorkExperienceStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 
 interface WorkExperience {

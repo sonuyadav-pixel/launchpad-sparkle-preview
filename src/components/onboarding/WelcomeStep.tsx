@@ -8,6 +8,7 @@ interface WelcomeStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 
 const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Calendar, Plus, X } from 'lucide-react';
+import { Briefcase, Calendar, Plus, X, AlertCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
 
 interface CurrentRoleStepProps {
@@ -15,15 +15,24 @@ interface CurrentRoleStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 
 const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({ 
   data, 
   updateData, 
-  onNext 
+  onNext,
+  showValidationErrors = false
 }) => {
   const [newResponsibility, setNewResponsibility] = useState('');
   const [showValidation, setShowValidation] = useState(false);
+
+  // Update validation display when showValidationErrors prop changes
+  React.useEffect(() => {
+    if (showValidationErrors) {
+      setShowValidation(true);
+    }
+  }, [showValidationErrors]);
 
   const handleInputChange = (field: keyof OnboardingData, value: string | boolean) => {
     updateData({ [field]: value });
@@ -85,7 +94,10 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
                 required
               />
               {getFieldError('currentJobTitle') && (
-                <p className="text-sm text-destructive">{getFieldError('currentJobTitle')}</p>
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4" />
+                  {getFieldError('currentJobTitle')}
+                </p>
               )}
             </div>
 
@@ -100,7 +112,10 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
                 required
               />
               {getFieldError('currentCompany') && (
-                <p className="text-sm text-destructive">{getFieldError('currentCompany')}</p>
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4" />
+                  {getFieldError('currentCompany')}
+                </p>
               )}
             </div>
           </div>

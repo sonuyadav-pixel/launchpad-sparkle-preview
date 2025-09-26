@@ -14,6 +14,7 @@ interface CareerPreferencesStepProps {
   updateData: (updates: Partial<OnboardingData>) => void;
   onNext: () => void;
   onComplete?: () => void;
+  showValidationErrors?: boolean;
 }
 
 const POPULAR_ROLES = [
