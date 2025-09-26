@@ -32,6 +32,11 @@ const App = () => (
                     <Dashboard />
                   </ProtectedRoute>
                 } />
+                <Route path="/dashboard/:module" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
                 <Route path="/interview" element={
                   <ProtectedRoute>
                     <Interview />

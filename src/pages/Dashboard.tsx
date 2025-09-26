@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
@@ -21,6 +21,7 @@ export type DashboardModule =
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { module } = useParams();
   const [activeModule, setActiveModule] = useState<DashboardModule>("interview");
   const [isPricingOpen, setIsPricingOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -34,6 +35,19 @@ const Dashboard = () => {
       setActiveModule(module);
     }
   };
+
+  // Set active module based on URL parameter
+  useEffect(() => {
+    if (module && module !== "history") {
+      const validModules: DashboardModule[] = [
+        "overview", "interview", "calendar", "feedback", 
+        "resume-builder", "learning", "jobs", "interview-plus"
+      ];
+      if (validModules.includes(module as DashboardModule)) {
+        setActiveModule(module as DashboardModule);
+      }
+    }
+  }, [module]);
 
   // Check for feedback parameter on mount
   useEffect(() => {
