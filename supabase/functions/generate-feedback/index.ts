@@ -186,7 +186,7 @@ Return ONLY the JSON object above with your analysis.`
       .replace(/```\n?/g, '')
       .replace(/^[^{]*({.*})[^}]*$/s, '$1');
 
-    let feedbackData;
+    let feedbackData: any;
     try {
       feedbackData = JSON.parse(cleanContent);
     } catch (parseError) {
@@ -197,54 +197,79 @@ Return ONLY the JSON object above with your analysis.`
 
     console.log('✅ AI feedback generated');
 
-    // Store feedback in database
-    const { data: feedback, error: feedbackError } = await supabase
-      .from('interview_feedback')
-      .insert({
-        session_id: session_id,
-        user_id: user.id,
-        overall_score: feedbackData.overall_score,
-        communication_score: feedbackData.communication_score,
-        body_language_score: feedbackData.body_language_score,
-        domain_knowledge_score: feedbackData.domain_knowledge_score,
-        confidence_score: feedbackData.confidence_score,
-        clarity_score: feedbackData.clarity_score,
-        analysis_summary: feedbackData.analysis_summary,
-        strengths: feedbackData.strengths,
-        weaknesses: feedbackData.weaknesses,
-      })
-      .select()
-      .single();
+    // Define background task to store feedback in database
+    async function storeFeedbackInDatabase() {
+      try {
+        console.log('📝 Starting background storage of feedback...');
+        
+        // Store feedback in database
+        const { data: feedback, error: feedbackError } = await supabase
+          .from('interview_feedback')
+          .insert({
+            session_id: session_id,
+            user_id: user!.id,
+            overall_score: feedbackData.overall_score,
+            communication_score: feedbackData.communication_score,
+            body_language_score: feedbackData.body_language_score,
+            domain_knowledge_score: feedbackData.domain_knowledge_score,
+            confidence_score: feedbackData.confidence_score,
+            clarity_score: feedbackData.clarity_score,
+            analysis_summary: feedbackData.analysis_summary,
+            strengths: feedbackData.strengths,
+            weaknesses: feedbackData.weaknesses,
+          })
+          .select()
+          .single();
 
-    if (feedbackError) {
-      console.error('Failed to store feedback:', feedbackError);
-      throw new Error('Failed to store feedback');
+        if (feedbackError) {
+          console.error('Failed to store feedback:', feedbackError);
+          return;
+        }
+
+        // Store improvement suggestions
+        const suggestions = feedbackData.improvement_suggestions.map((suggestion: any) => ({
+          feedback_id: feedback.id,
+          category: suggestion.category,
+          suggestion: suggestion.suggestion,
+          priority: suggestion.priority,
+          is_premium: suggestion.is_premium,
+        }));
+
+        const { error: suggestionsError } = await supabase
+          .from('improvement_suggestions')
+          .insert(suggestions);
+
+        if (suggestionsError) {
+          console.error('Failed to store suggestions:', suggestionsError);
+          return;
+        }
+
+        console.log('✅ Feedback stored successfully in background');
+      } catch (error) {
+        console.error('Background storage error:', error);
+      }
     }
 
-    // Store improvement suggestions
-    const suggestions = feedbackData.improvement_suggestions.map((suggestion: any) => ({
-      feedback_id: feedback.id,
-      category: suggestion.category,
-      suggestion: suggestion.suggestion,
-      priority: suggestion.priority,
-      is_premium: suggestion.is_premium,
-    }));
+    // Start background task to store in database (don't await)
+    storeFeedbackInDatabase();
 
-    const { error: suggestionsError } = await supabase
-      .from('improvement_suggestions')
-      .insert(suggestions);
-
-    if (suggestionsError) {
-      console.error('Failed to store suggestions:', suggestionsError);
-      throw new Error('Failed to store improvement suggestions');
-    }
-
-    console.log('✅ Feedback stored successfully');
-
+    // Return feedback immediately to user
     return new Response(
       JSON.stringify({ 
         message: 'Feedback generated successfully',
-        feedback_id: feedback.id 
+        feedback: {
+          session_id: session_id,
+          overall_score: feedbackData.overall_score,
+          communication_score: feedbackData.communication_score,
+          body_language_score: feedbackData.body_language_score,
+          domain_knowledge_score: feedbackData.domain_knowledge_score,
+          confidence_score: feedbackData.confidence_score,
+          clarity_score: feedbackData.clarity_score,
+          analysis_summary: feedbackData.analysis_summary,
+          strengths: feedbackData.strengths,
+          weaknesses: feedbackData.weaknesses,
+        },
+        suggestions: feedbackData.improvement_suggestions
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

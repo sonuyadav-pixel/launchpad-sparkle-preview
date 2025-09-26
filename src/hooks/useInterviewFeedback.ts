@@ -36,6 +36,52 @@ export function useInterviewFeedback() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Set up real-time subscription for feedback updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'interview_feedback'
+        },
+        (payload) => {
+          console.log('📡 Real-time feedback inserted:', payload);
+          const newFeedback = payload.new as InterviewFeedback;
+          
+          // If this is for the current session, update the current feedback
+          if (currentFeedback && currentFeedback.session_id === newFeedback.session_id) {
+            setCurrentFeedback(newFeedback);
+            // Also fetch the associated suggestions
+            fetchSuggestionsForFeedback(newFeedback.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentFeedback]);
+
+  const fetchSuggestionsForFeedback = async (feedbackId: string) => {
+    try {
+      const { data: suggestionsData, error } = await supabase
+        .from('improvement_suggestions')
+        .select('*')
+        .eq('feedback_id', feedbackId)
+        .order('priority', { ascending: true });
+
+      if (!error && suggestionsData) {
+        setSuggestions(suggestionsData);
+      }
+    } catch (err) {
+      console.error('Error fetching suggestions for real-time update:', err);
+    }
+  };
+
   const fetchFeedback = async (sessionId: string) => {
     setLoading(true);
     setError(null);
@@ -96,13 +142,25 @@ export function useInterviewFeedback() {
         throw new Error(error.message);
       }
 
+      // Set the feedback immediately from the API response
+      if (data?.feedback) {
+        const feedbackWithId = {
+          ...data.feedback,
+          id: `temp-${sessionId}`, // Temporary ID until saved to DB
+          user_id: data.feedback.session_id, // We'll get the real user_id from session
+          generated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        setCurrentFeedback(feedbackWithId);
+        setSuggestions(data.suggestions || []);
+      }
+
       toast({
         title: "Feedback Generated",
         description: "Your interview feedback is ready!",
       });
-
-      // Fetch the newly generated feedback
-      await fetchFeedback(sessionId);
 
       return data;
     } catch (err: any) {
