@@ -94,9 +94,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">What are you looking for?</h2>
-        <p className="text-muted-foreground">
-          Help us understand your career preferences and goals
-        </p>
       </div>
 
       {/* Desired Roles */}
