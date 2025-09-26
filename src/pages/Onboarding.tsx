@@ -242,7 +242,7 @@ const Onboarding = () => {
           
             
             {/* Interactive Step Dots */}
-            <div className="relative flex justify-between items-start mt-8 pb-8">
+            <div className="relative flex justify-between items-start mt-12 pt-8 pb-12">
               {/* Continuous Background Line */}
               <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted-foreground/20"></div>
               
