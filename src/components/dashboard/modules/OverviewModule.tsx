@@ -83,7 +83,7 @@ const OverviewModule = () => {
                   {onboardingData.fullName || 'Complete your profile'}
                 </h1>
                 {(onboardingData.currentJobTitle || onboardingData.currentCompany) && (
-                  <p className="text-lg text-muted-foreground font-medium">
+                  <p className="text-base text-foreground font-medium text-right ml-4">
                     {onboardingData.currentJobTitle}
                     {onboardingData.currentJobTitle && onboardingData.currentCompany && ' at '}
                     {onboardingData.currentCompany}
