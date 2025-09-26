@@ -40,7 +40,7 @@ const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         <Button 
           onClick={onNext}
           size="lg"
-          className="px-12 py-4 text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse"
+          className="px-12 py-4 text-xl font-semibold bg-gradient-to-r from-primary to-primary/80 hover:bg-black hover:from-black hover:to-black transition-all duration-300"
         >
           Start Building
         </Button>
