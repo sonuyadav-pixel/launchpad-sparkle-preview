@@ -54,9 +54,6 @@ const ProfessionalSummaryStep: React.FC<ProfessionalSummaryStepProps> = ({
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Tell us about your professional self</h2>
-        <p className="text-muted-foreground">
-          Help us understand your professional identity and aspirations
-        </p>
       </div>
 
       <Card>
