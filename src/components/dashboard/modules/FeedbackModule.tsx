@@ -41,13 +41,15 @@ export const FeedbackModule = () => {
   const { profile } = useUserProfile();
   const [sessions, setSessions] = useState<InterviewSession[]>([]);
   const [feedbackData, setFeedbackData] = useState<any[]>([]);
+  const [transcriptCounts, setTranscriptCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [feedbackSidebarOpen, setFeedbackSidebarOpen] = useState(false);
   const [selectedSessionForFeedback, setSelectedSessionForFeedback] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     dateRange: 'all',
-    type: 'all'
+    type: 'all',
+    hasTranscript: 'all'
   });
   
   const { 
@@ -80,6 +82,26 @@ export const FeedbackModule = () => {
 
       console.log('📊 Found completed sessions:', data?.length || 0);
       setSessions(data || []);
+
+      // Fetch transcript counts for each session
+      if (data && data.length > 0) {
+        const transcriptPromises = data.map(async (session) => {
+          const { count, error } = await supabase
+            .from('interview_transcripts')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', session.id);
+          
+          return { sessionId: session.id, count: count || 0 };
+        });
+
+        const transcriptResults = await Promise.all(transcriptPromises);
+        const counts: Record<string, number> = {};
+        transcriptResults.forEach(({ sessionId, count }) => {
+          counts[sessionId] = count;
+        });
+        setTranscriptCounts(counts);
+        console.log('📝 Transcript counts loaded:', counts);
+      }
 
       // Fetch feedback data for statistics
       const { data: feedbacks, error: feedbackError } = await supabase
@@ -180,6 +202,17 @@ export const FeedbackModule = () => {
       return false;
     }
 
+    // Transcript filter
+    if (filters.hasTranscript !== 'all') {
+      const hasTranscript = (transcriptCounts[session.id] || 0) > 0;
+      if (filters.hasTranscript === 'yes' && !hasTranscript) {
+        return false;
+      }
+      if (filters.hasTranscript === 'no' && hasTranscript) {
+        return false;
+      }
+    }
+
     return true;
   });
 
@@ -196,7 +229,8 @@ export const FeedbackModule = () => {
     setFilters({
       status: 'all',
       dateRange: 'all',
-      type: 'all'
+      type: 'all',
+      hasTranscript: 'all'
     });
   };
 
@@ -316,7 +350,21 @@ export const FeedbackModule = () => {
             </SelectContent>
           </Select>
 
-          {(filters.dateRange !== 'all' || filters.type !== 'all') && (
+          <Select 
+            value={filters.hasTranscript} 
+            onValueChange={(value) => setFilters(prev => ({ ...prev, hasTranscript: value }))}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Has Transcript" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sessions</SelectItem>
+              <SelectItem value="yes">With Transcript</SelectItem>
+              <SelectItem value="no">Without Transcript</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(filters.dateRange !== 'all' || filters.type !== 'all' || filters.hasTranscript !== 'all') && (
             <Button 
               variant="outline" 
               size="sm" 
