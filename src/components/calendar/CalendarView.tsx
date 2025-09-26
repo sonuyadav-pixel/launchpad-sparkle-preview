@@ -91,35 +91,51 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
     const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
 
     return (
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-full overflow-hidden">
         {months.map(month => (
-          <div key={month.toISOString()} className="border rounded-lg p-3">
+          <div key={month.toISOString()} className="border rounded-lg p-2 min-w-0 overflow-hidden">
             <div className="text-center font-semibold mb-2 text-sm">
               {format(month, 'MMM')}
             </div>
-            <Calendar
-              mode="single"
-              selected={isSameDay(month, selectedDate) ? selectedDate : undefined}
-              onSelect={(date) => {
-                if (date) {
-                  onDateSelect(date);
-                  handleDateTimeClick(date);
-                }
-              }}
-              className="w-full text-xs"
-              month={month}
-              fixedWeeks={false}
-              modifiers={{
-                hasInterview: (date) => getInterviewsForDate(date).length > 0
-              }}
-              modifiersStyles={{
-                hasInterview: { 
-                  backgroundColor: 'hsl(var(--primary))',
-                  color: 'hsl(var(--primary-foreground))',
-                  fontWeight: 'bold'
-                }
-              }}
-            />
+            <div className="w-full min-w-0">
+              <Calendar
+                mode="single"
+                selected={isSameDay(month, selectedDate) ? selectedDate : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    onDateSelect(date);
+                    handleDateTimeClick(date);
+                  }
+                }}
+                className="w-full text-xs p-1 min-w-0"
+                month={month}
+                fixedWeeks={false}
+                showOutsideDays={false}
+                modifiers={{
+                  hasInterview: (date) => getInterviewsForDate(date).length > 0
+                }}
+                modifiersStyles={{
+                  hasInterview: { 
+                    backgroundColor: 'hsl(var(--primary))',
+                    color: 'hsl(var(--primary-foreground))',
+                    fontWeight: 'bold'
+                  }
+                }}
+                classNames={{
+                  months: "flex flex-col space-y-2",
+                  month: "space-y-2 w-full min-w-0",
+                  caption: "flex justify-center relative items-center pb-1",
+                  caption_label: "text-xs font-medium",
+                  nav: "hidden",
+                  table: "w-full border-collapse min-w-0",
+                  head_row: "flex w-full",
+                  head_cell: "text-muted-foreground w-full font-normal text-[0.5rem] flex-1 min-w-0 text-center p-0",
+                  row: "flex w-full",
+                  cell: "text-center p-0 relative flex-1 min-w-0 aspect-square text-[0.5rem]",
+                  day: "w-full h-full p-0 font-normal text-[0.5rem] flex items-center justify-center min-w-0 hover:bg-accent"
+                }}
+              />
+            </div>
           </div>
         ))}
       </div>
