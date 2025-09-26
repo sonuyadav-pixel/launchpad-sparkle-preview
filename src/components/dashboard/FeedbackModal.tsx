@@ -86,9 +86,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
     <>
       {/* Main Feedback Modal */}
       <Dialog open={isOpen && !showSuccessPopup} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[550px] max-h-[95vh] overflow-y-auto mx-4">
           <DialogHeader className="relative">
-            <DialogTitle className="text-xl font-semibold text-center pr-8">
+            <DialogTitle className="text-lg sm:text-xl font-semibold text-center pr-8">
               Interview Feedback
             </DialogTitle>
             <Button
@@ -101,15 +101,15 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </Button>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-8 mt-6">
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 mt-4 sm:mt-6">
             {/* AI Response Rating */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
+            <div className="space-y-3 sm:space-y-4">
+              <Label className="text-sm sm:text-base font-medium">
                 How would you rate the AI's responses?
               </Label>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-center">
-                  <div className="text-6xl animate-scale-in">
+                  <div className="text-4xl sm:text-6xl animate-scale-in">
                     {getEmoji(aiResponseRating[0])}
                   </div>
                 </div>
@@ -122,9 +122,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-xs sm:text-sm text-muted-foreground gap-2">
                     <span>Poor</span>
-                    <span className="font-medium text-primary">
+                    <span className="font-medium text-primary text-center flex-1">
                       {getRatingText(aiResponseRating[0])} ({aiResponseRating[0]}%)
                     </span>
                     <span>Excellent</span>
@@ -134,13 +134,13 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </div>
 
             {/* Platform Rating */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">
+            <div className="space-y-3 sm:space-y-4">
+              <Label className="text-sm sm:text-base font-medium">
                 How would you rate the platform experience?
               </Label>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-center">
-                  <div className="text-6xl animate-scale-in">
+                  <div className="text-4xl sm:text-6xl animate-scale-in">
                     {getEmoji(platformRating[0])}
                   </div>
                 </div>
@@ -153,9 +153,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                     step={1}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-xs sm:text-sm text-muted-foreground gap-2">
                     <span>Poor</span>
-                    <span className="font-medium text-primary">
+                    <span className="font-medium text-primary text-center flex-1">
                       {getRatingText(platformRating[0])} ({platformRating[0]}%)
                     </span>
                     <span>Excellent</span>
@@ -165,8 +165,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
             </div>
 
             {/* Feedback Text */}
-            <div className="space-y-3">
-              <Label htmlFor="feedback" className="text-base font-medium">
+            <div className="space-y-2 sm:space-y-3">
+              <Label htmlFor="feedback" className="text-sm sm:text-base font-medium">
                 Additional Comments (Optional)
               </Label>
               <Textarea
@@ -174,28 +174,28 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
                 placeholder="Tell us about your interview experience. What went well? What could be improved?"
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
-                className="min-h-[120px] resize-none"
+                className="min-h-[100px] sm:min-h-[120px] resize-none text-sm"
                 maxLength={1000}
               />
-              <p className="text-sm text-muted-foreground text-right">
+              <p className="text-xs sm:text-sm text-muted-foreground text-right">
                 {feedback.length}/1000
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClose}
-                className="flex-1"
+                className="flex-1 order-2 sm:order-1"
                 disabled={isSubmitting}
               >
                 Skip
               </Button>
               <Button
                 type="submit"
-                className="flex-1 hover-scale"
+                className="flex-1 hover-scale order-1 sm:order-2"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
@@ -207,19 +207,19 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose })
 
       {/* Success Popup */}
       <Dialog open={showSuccessPopup} onOpenChange={handleSuccessClose}>
-        <DialogContent className="sm:max-w-[400px] text-center">
-          <div className="space-y-6 py-4">
+        <DialogContent className="w-[95vw] max-w-[400px] text-center mx-4">
+          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             <div className="flex justify-center">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="rounded-full bg-green-100 p-2 sm:p-3">
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-green-700">
+            <div className="space-y-1 sm:space-y-2">
+              <h2 className="text-xl sm:text-2xl font-semibold text-green-700">
                 Thank You!
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Your feedback helps us improve the interview experience.
               </p>
             </div>
