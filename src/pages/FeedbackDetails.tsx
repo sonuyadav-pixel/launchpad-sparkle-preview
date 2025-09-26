@@ -254,7 +254,7 @@ export const FeedbackDetails = () => {
               <div className="text-center space-y-8">
                 {/* Large Score Display */}
                 <div className="space-y-4">
-                  <div className={`text-[35px] font-bold animate-pulse ${
+                  <div className={`text-[40px] font-bold animate-pulse ${
                     feedback.overall_score < 5 
                       ? 'text-red-500' 
                       : feedback.overall_score <= 8 
@@ -263,7 +263,7 @@ export const FeedbackDetails = () => {
                   }`}>
                     {feedback.overall_score.toFixed(1)}
                   </div>
-                  <div className="text-2xl text-muted-foreground font-medium">out of 10</div>
+                  <div className="text-lg text-muted-foreground font-medium">out of 10</div>
                 </div>
 
 
