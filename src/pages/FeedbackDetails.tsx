@@ -12,7 +12,7 @@ import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import { InterviewPlusModule } from '@/components/dashboard/modules/InterviewPlusModule';
+
 
 export const FeedbackDetails = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -132,10 +132,7 @@ export const FeedbackDetails = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* Main Content */}
-          <div className="flex-1 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         
         {/* Interview Details Section - Collapsible */}
         <Card className="border-primary/20 hover:shadow-lg transition-all duration-300 animate-fade-in">
@@ -361,16 +358,6 @@ export const FeedbackDetails = () => {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-          </div>
-
-          {/* Sidebar */}
-          <div className="w-80 flex-shrink-0">
-            <div className="sticky top-24">
-              <InterviewPlusModule feedback={feedback} suggestions={suggestions} />
-            </div>
-          </div>
         </div>
       </div>
     </div>
