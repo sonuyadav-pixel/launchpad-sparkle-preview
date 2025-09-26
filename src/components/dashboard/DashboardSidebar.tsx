@@ -49,7 +49,7 @@ const menuItems = [
         id: "feedback" as DashboardModule,
         label: "Feedback",
         icon: Star,
-        comingSoon: true,
+        description: "View AI-powered interview feedback and insights.",
       },
     ],
   },
