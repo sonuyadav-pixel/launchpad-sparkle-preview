@@ -27,7 +27,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
     updateData({ [field]: value });
   };
 
-  const isValid = data.fullName.trim() && data.email.trim() && data.location.trim();
+  const isValid = data.fullName.trim() && data.email.trim() && data.phoneNumber.trim();
 
   return (
     <div className="max-h-[60vh] space-y-6">
@@ -87,7 +87,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, updateData, onNext 
           <div className="space-y-2">
             <Label htmlFor="phoneNumber" className="flex items-center gap-2 text-sm font-medium">
               <Phone className="h-4 w-4" />
-              Phone Number
+              Phone Number *
             </Label>
             <Input
               id="phoneNumber"
