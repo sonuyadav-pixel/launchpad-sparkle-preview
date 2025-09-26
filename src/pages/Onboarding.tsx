@@ -228,7 +228,7 @@ const Onboarding = () => {
             </div>
           </div>
           
-          {!isFirstStep && (
+          {!isFirstStep && currentStep !== 1 && (
             <Button 
               variant="ghost" 
               onClick={handleSkipOnboarding}
