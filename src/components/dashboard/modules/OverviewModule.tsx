@@ -25,8 +25,8 @@ export const OverviewModule = () => {
 
   return (
     <div className="relative space-y-6">
-      {/* Floating Welcome Card for Completed Onboarding */}
-      {hasCompletedOnboarding && (
+      {/* Floating CTA Card for Onboarding */}
+      {!hasCompletedOnboarding && (
         <div className="relative z-10 mx-auto max-w-2xl -mb-4">
           <Card className="relative overflow-hidden border-none shadow-xl bg-gradient-to-br from-primary/10 via-background to-secondary/10 backdrop-blur-sm">
             <div className="absolute inset-0 bg-gradient-to-r from-violet-200/20 via-teal-200/20 to-violet-200/20 animate-pulse" />
@@ -35,34 +35,35 @@ export const OverviewModule = () => {
                 <Sparkles className="h-8 w-8 text-primary animate-pulse" />
               </div>
               <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-violet-600 to-teal-600 bg-clip-text text-transparent">
-                ✨ Welcome to Your Career Command Center! ✨
+                ✨ Build Your Professional Profile ✨
               </h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                You've completed onboarding—amazing work 🎉!<br />
-                Your entire professional journey now lives right here, beautifully organized and ready to impress.
+                Complete your onboarding to unlock the full power of Interview4U!<br />
+                Create a comprehensive profile that showcases your skills and experience.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-sm">
                 <div className="flex items-center justify-center gap-2">
                   <span>💼</span>
-                  <span>Showcase experience & skills</span>
+                  <span>Add work experience</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  <span>📄</span>
-                  <span>Preview & update resume</span>
+                  <span>🎓</span>
+                  <span>Include education & skills</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <span>🤖</span>
-                  <span>AI insights for interviews</span>
+                  <span>Get AI-powered insights</span>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                This isn't just a profile—it's your story, ready to shine. Keep it fresh and let AI help you reach your dream role! 🌟
+                Your complete profile helps our AI provide better interview questions and personalized feedback! 🚀
               </p>
               <Button 
+                size="lg"
                 className="bg-gradient-to-r from-violet-500 to-teal-500 hover:from-violet-600 hover:to-teal-600 text-white border-0 shadow-lg"
-                onClick={() => navigate("/dashboard/resume-builder")}
+                onClick={() => navigate("/onboarding")}
               >
-                Let's Explore
+                Complete Onboarding
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
@@ -89,10 +90,10 @@ export const OverviewModule = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
               <User className="h-5 w-5" />
-              Continue Your Profile Setup
+              Quick Setup Reminder
             </CardTitle>
             <CardDescription className="text-amber-700 dark:text-amber-300">
-              You have some saved progress. Complete your profile to unlock personalized interview experiences and better feedback.
+              Continue where you left off to complete your profile setup.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -106,12 +107,6 @@ export const OverviewModule = () => {
                   <div className="bg-amber-600 h-2 rounded-full w-[30%]"></div>
                 </div>
               </div>
-              <Button 
-                onClick={() => navigate("/onboarding")}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-              >
-                Resume Your Journey
-              </Button>
             </div>
           </CardContent>
         </Card>
