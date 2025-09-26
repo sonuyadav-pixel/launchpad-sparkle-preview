@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -104,6 +105,39 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold">Your work experience</h2>
       </div>
+
+      {/* Years of Experience Dropdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5" />
+            Total Years of Experience
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="totalYearsOfExperience">How many years of professional experience do you have?</Label>
+            <Select 
+              value={data.totalYearsOfExperience} 
+              onValueChange={(value) => updateData({ totalYearsOfExperience: value })}
+            >
+              <SelectTrigger className="w-full bg-background border border-input">
+                <SelectValue placeholder="Select years of experience" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-input shadow-lg z-50">
+                <SelectItem value="0-1">0-1 years</SelectItem>
+                <SelectItem value="1-2">1-2 years</SelectItem>
+                <SelectItem value="2-3">2-3 years</SelectItem>
+                <SelectItem value="3-5">3-5 years</SelectItem>
+                <SelectItem value="5-7">5-7 years</SelectItem>
+                <SelectItem value="7-10">7-10 years</SelectItem>
+                <SelectItem value="10-15">10-15 years</SelectItem>
+                <SelectItem value="15+">15+ years</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Existing Experiences */}
       {data.workExperience.length > 0 && (

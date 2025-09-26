@@ -45,6 +45,7 @@ export interface OnboardingData {
   keyResponsibilities: string[];
   
   // Work Experience
+  totalYearsOfExperience: string;
   workExperience: Array<{
     id: string;
     jobTitle: string;
@@ -141,6 +142,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ open, onClose 
     currentRoleStartDate: '',
     isCurrentRole: true,
     keyResponsibilities: [],
+    totalYearsOfExperience: '',
     workExperience: [],
     education: [],
     skills: {

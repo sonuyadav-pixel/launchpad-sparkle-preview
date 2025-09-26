@@ -45,6 +45,7 @@ export interface OnboardingData {
   keyResponsibilities: string[];
   
   // Work Experience
+  totalYearsOfExperience: string;
   workExperience: Array<{
     id: string;
     jobTitle: string;
@@ -136,6 +137,7 @@ const Onboarding = () => {
     currentRoleStartDate: '',
     isCurrentRole: true,
     keyResponsibilities: [],
+    totalYearsOfExperience: '',
     workExperience: [],
     education: [],
     skills: {
