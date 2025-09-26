@@ -136,15 +136,6 @@ const ProfessionalSummaryStep: React.FC<ProfessionalSummaryStepProps> = ({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button 
-          onClick={onNext}
-          disabled={!isValid}
-          className="px-6"
-        >
-          Continue
-        </Button>
-      </div>
     </div>
   );
 };
