@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { FileText, Upload, X, Download, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { OnboardingData } from '@/pages/Onboarding';
+import { useResumeParser } from '@/hooks/useResumeParser';
 interface ResumeUploadStepProps {
   data: OnboardingData;
   updateData: (updates: Partial<OnboardingData>) => void;
@@ -22,11 +23,17 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [parseProgress, setParseProgress] = useState(0);
-  const [isParsing, setIsParsing] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(false);
+  
+  const { 
+    uploadAndParseResume, 
+    isUploading, 
+    isParsing, 
+    uploadProgress, 
+    parseProgress,
+    reset
+  } = useResumeParser();
 
   // Update validation display when showValidationErrors prop changes
   React.useEffect(() => {
@@ -40,7 +47,7 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
     if (!data.resumeFile) return 'Resume upload is required';
     return '';
   };
-  const handleFileSelect = (file: File) => {
+  const handleFileSelect = async (file: File) => {
     // Validate file type
     const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
@@ -63,50 +70,25 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
       return;
     }
 
+    // Reset processing state
+    setIsProcessingComplete(false);
+    
     // Update data with file
     updateData({
       resumeFile: file
     });
 
-    // Simulate upload progress
-    simulateUpload();
-  };
-  const simulateUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    const uploadInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(uploadInterval);
-          setIsUploading(false);
-
-          // Start parsing simulation
-          setTimeout(() => {
-            simulateParsing();
-          }, 500);
-          return 100;
-        }
-        return prev + 10;
+    // Upload and parse the resume
+    const parsedData = await uploadAndParseResume(file);
+    
+    if (parsedData) {
+      setIsProcessingComplete(true);
+      // Store the file path for later use
+      updateData({
+        resumeFile: file,
+        resume_file_path: parsedData.file_path
       });
-    }, 100);
-  };
-  const simulateParsing = () => {
-    setIsParsing(true);
-    setParseProgress(0);
-    const parseInterval = setInterval(() => {
-      setParseProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(parseInterval);
-          setIsParsing(false);
-          toast({
-            title: "Resume parsed successfully! ✨",
-            description: "AI extracted your information and will help autofill forms."
-          });
-          return 100;
-        }
-        return prev + 15;
-      });
-    }, 200);
+    }
   };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -132,10 +114,11 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
   };
   const removeFile = () => {
     updateData({
-      resumeFile: undefined
+      resumeFile: undefined,
+      resume_file_path: undefined
     });
-    setUploadProgress(0);
-    setParseProgress(0);
+    setIsProcessingComplete(false);
+    reset();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -213,10 +196,12 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
                     </div>}
                   
                   {/* Success State */}
-                  {!isUploading && !isParsing && uploadProgress === 100 && <div className="mt-3 flex items-center gap-2 text-sm text-primary">
+                  {!isUploading && !isParsing && isProcessingComplete && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-primary">
                       <CheckCircle className="h-4 w-4" />
                       <span>Resume uploaded and parsed successfully</span>
-                    </div>}
+                    </div>
+                  )}
                 </div>
               </div>
               
