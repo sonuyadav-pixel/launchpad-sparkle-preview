@@ -333,11 +333,6 @@ const WorkExperienceStep: React.FC<WorkExperienceStepProps> = ({
         </Card>
       )}
 
-      <div className="flex justify-end">
-        <Button onClick={onNext} className="px-6">
-          Continue
-        </Button>
-      </div>
     </div>
   );
 };

@@ -225,16 +225,6 @@ const Onboarding = () => {
             <h1 className="text-4xl font-bold">User Profile Setup</h1>
           </div>
           
-          {!isFirstStep && currentStep !== 1 && (
-            <Button 
-              variant="ghost" 
-              onClick={handleSkipOnboarding}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Skip for now
-            </Button>
-          )}
         </div>
 
         {/* Interactive Step Display */}

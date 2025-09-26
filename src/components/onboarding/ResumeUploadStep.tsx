@@ -310,11 +310,6 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
         className="hidden"
       />
 
-      <div className="flex justify-end">
-        <Button onClick={onNext} className="px-6">
-          Continue
-        </Button>
-      </div>
     </div>
   );
 };

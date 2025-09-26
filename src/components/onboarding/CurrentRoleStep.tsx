@@ -150,63 +150,6 @@ const CurrentRoleStep: React.FC<CurrentRoleStepProps> = ({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Key Responsibilities</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Add your main responsibilities and achievements</Label>
-            <div className="flex gap-2">
-              <Textarea
-                placeholder="e.g., Led cross-functional team of 8 engineers to deliver..."
-                value={newResponsibility}
-                onChange={(e) => setNewResponsibility(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1 min-h-[80px]"
-              />
-              <Button
-                type="button"
-                onClick={addResponsibility}
-                disabled={!newResponsibility.trim()}
-                className="shrink-0"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {data.keyResponsibilities.length > 0 && (
-            <div className="space-y-2">
-              <Label>Current Responsibilities:</Label>
-              <div className="space-y-2">
-                {data.keyResponsibilities.map((responsibility, index) => (
-                  <div key={index} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/30">
-                    <span className="flex-1 text-sm">{responsibility}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeResponsibility(index)}
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {data.keyResponsibilities.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Briefcase className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Add your key responsibilities to help AI generate better questions</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <div className="flex justify-end">
         <Button 
           onClick={onNext}

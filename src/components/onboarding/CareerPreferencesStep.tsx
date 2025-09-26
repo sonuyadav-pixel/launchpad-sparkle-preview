@@ -414,11 +414,6 @@ const CareerPreferencesStep: React.FC<CareerPreferencesStepProps> = ({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={onNext} className="px-6">
-          Continue
-        </Button>
-      </div>
     </div>
   );
 };
