@@ -266,28 +266,6 @@ export const FeedbackDetails = () => {
                   <div className="text-2xl text-muted-foreground font-medium">out of 10</div>
                 </div>
 
-                {/* Star Rating */}
-                <div className="flex justify-center space-x-2">
-                  {[...Array(5)].map((_, i) => {
-                    const filled = (feedback.overall_score / 2) > i;
-                    const halfFilled = (feedback.overall_score / 2) > i && (feedback.overall_score / 2) < i + 1;
-                    return (
-                      <div key={i} className="relative">
-                        <Star 
-                          className={`w-8 h-8 transition-all duration-300 ${
-                            filled ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground/30'
-                          }`}
-                        />
-                        {halfFilled && (
-                          <Star 
-                            className="absolute top-0 left-0 w-8 h-8 text-yellow-400 fill-yellow-400 transition-all duration-300"
-                            style={{ clipPath: 'inset(0 50% 0 0)' }}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
 
                 {/* Progress Bar */}
                 <div className="space-y-3">
