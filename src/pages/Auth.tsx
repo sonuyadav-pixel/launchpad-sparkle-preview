@@ -23,18 +23,32 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('Auth.tsx - Initial session check:', session?.user?.email || 'No session');
       if (session) {
-        // Check if user has completed onboarding
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', session.user.id)
-          .single();
+        try {
+          // Check if user has completed onboarding
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', session.user.id)
+            .single();
+            
+          console.log('Auth.tsx - Profile query result:', { profile, error });
           
-        if (profile?.onboarding_completed) {
-          navigate("/dashboard");
-        } else {
-          navigate("/onboarding");
+          if (error) {
+            console.error('Auth.tsx - Profile query error:', error);
+            // If profile doesn't exist or error, redirect to onboarding
+            navigate("/onboarding", { replace: true });
+          } else if (profile?.onboarding_completed) {
+            console.log('Auth.tsx - Redirecting to dashboard');
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.log('Auth.tsx - Redirecting to onboarding');
+            navigate("/onboarding", { replace: true });
+          }
+        } catch (err) {
+          console.error('Auth.tsx - Unexpected error:', err);
+          navigate("/onboarding", { replace: true });
         }
       }
     });
@@ -42,6 +56,7 @@ const Auth = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth.tsx - Auth state change:', event, session?.user?.email || 'No session');
         if (session) {
           // Check if user has completed onboarding
           const { data: profile } = await supabase
