@@ -230,37 +230,6 @@ const ResumeUploadStep: React.FC<ResumeUploadStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Tips */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            Tips for Better Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-medium mb-2">✅ Best Practices</h4>
-              <ul className="space-y-1 text-muted-foreground">
-                <li>• Use a standard resume format</li>
-                <li>• Include clear section headers</li>
-                <li>• List skills and technologies used</li>
-                <li>• Include quantifiable achievements</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">⚠️ Avoid</h4>
-              <ul className="space-y-1 text-muted-foreground">
-                <li>• Heavily formatted or creative layouts</li>
-                <li>• Images or graphics as text</li>
-                <li>• Scanned documents (low quality)</li>
-                <li>• Password-protected files</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" onChange={handleFileInputChange} className="hidden" />
