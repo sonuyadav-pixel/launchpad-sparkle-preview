@@ -109,7 +109,7 @@ const CalendarModule = () => {
   return (
     <div className="h-full">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 text-black">`
           <TabsTrigger value="calendar">Interview Calendar</TabsTrigger>
           <TabsTrigger value="scheduled">Scheduled Interviews</TabsTrigger>
         </TabsList>
