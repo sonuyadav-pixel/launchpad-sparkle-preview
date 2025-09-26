@@ -12,7 +12,7 @@ import { useInterviewFeedback } from '@/hooks/useInterviewFeedback';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
-import lightLandscapeBg from '@/assets/light-landscape-bg.jpg';
+import { InterviewPlusModule } from '@/components/dashboard/modules/InterviewPlusModule';
 
 export const FeedbackDetails = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -132,7 +132,10 @@ export const FeedbackDetails = () => {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* Main Content */}
+          <div className="flex-1 space-y-8">
         
         {/* Interview Details Section - Collapsible */}
         <Card className="border-primary/20 hover:shadow-lg transition-all duration-300 animate-fade-in">
@@ -360,166 +363,12 @@ export const FeedbackDetails = () => {
           </Card>
         </div>
 
-        {/* Performance Analysis Section */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">Performance Analysis</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* What Went Well - Green Gradient with Blur and Lock */}
-            <Card className="relative bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 animate-fade-in overflow-hidden group">
-              {/* Blur Overlay */}
-              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10"></div>
-              
-              {/* Lock Icon */}
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="p-4 bg-white/80 rounded-full shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Lock className="h-8 w-8 text-green-600 group-hover:animate-pulse" />
-                </div>
-              </div>
-
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-700">
-                  <TrendingUp className="h-5 w-5" />
-                  What Went Well
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-4">
-                  {feedback.strengths?.map((strength: string, index: number) => (
-                    <li key={index} className="flex items-start gap-3 group hover:bg-green-200/50 p-3 rounded-lg transition-colors">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0 group-hover:scale-125 transition-transform"></div>
-                      <span className="text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Areas for Improvement - Orange/Red Gradient with Blur and Lock */}
-            <Card className="relative bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300 animate-fade-in overflow-hidden group" style={{animationDelay: '0.3s'}}>
-              {/* Blur Overlay */}
-              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10"></div>
-              
-              {/* Lock Icon */}
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="p-4 bg-white/80 rounded-full shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Lock className="h-8 w-8 text-orange-600 group-hover:animate-pulse" />
-                </div>
-              </div>
-
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-700">
-                  <Target className="h-5 w-5" />
-                  Areas for Improvement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-4">
-                  {feedback.weaknesses?.map((weakness: string, index: number) => (
-                    <li key={index} className="flex items-start gap-3 group hover:bg-orange-200/50 p-3 rounded-lg transition-colors">
-                      <div className="w-3 h-3 bg-orange-500 rounded-full mt-1 flex-shrink-0 group-hover:scale-125 transition-transform"></div>
-                      <span className="text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">{weakness}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
           </div>
-        </div>
 
-
-        {/* How to Improve & Interview Plus Combined Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-center mb-8">How to Improve & Unlock Premium Features</h2>
-          <div 
-            className="relative overflow-hidden rounded-xl border-2 border-primary/30 hover:border-primary/50 transition-all duration-500 group cursor-pointer"
-            style={{
-              backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9)), url(${lightLandscapeBg})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              minHeight: '400px'
-            }}
-            onClick={() => navigate('/dashboard/interview-plus')}
-          >
-            {/* Blur overlay - removed on hover */}
-            <div className="absolute inset-0 backdrop-blur-[2px] bg-white/30 group-hover:backdrop-blur-none group-hover:bg-white/10 transition-all duration-500"></div>
-            
-            {/* Lock Icon - hidden on hover */}
-            <div className="absolute inset-0 flex items-center justify-center group-hover:opacity-0 transition-opacity duration-500">
-              <div className="p-6 bg-primary/90 rounded-full shadow-xl animate-pulse">
-                <Lock className="h-12 w-12 text-white" />
-              </div>
-            </div>
-
-            {/* Content - revealed on hover */}
-            <div className="relative p-8 lg:p-12 opacity-30 group-hover:opacity-100 transition-opacity duration-500">
-              
-              {/* Quick Improvements Section */}
-              {freeSuggestions.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2 justify-center">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Quick Improvements Available
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {freeSuggestions.slice(0, 2).map((suggestion, index) => (
-                      <div key={suggestion.id} className="p-4 bg-card/80 border border-border rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {suggestion.category}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            Priority {suggestion.priority}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {suggestion.suggestion}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Interview Plus Features */}
-              <div className="text-center space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">🔒 Unlock Interview Plus</h3>
-                  <p className="text-lg text-muted-foreground">Prioritize your improvement areas and boost your score</p>
-                </div>
-
-                {/* Value Propositions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                    <Target className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm">Personalized improvement roadmap</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                    <Brain className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm">Advanced AI-powered analysis</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                    <Star className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm">Priority-based scoring system</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-card/80 border border-border rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span className="font-medium text-sm">Track progress over time</span>
-                  </div>
-                </div>
-
-                {/* CTA Button */}
-                <div className="flex justify-center">
-                  <Button 
-                    size="default" 
-                    className="hover:scale-105 transition-all duration-300 px-8"
-                  >
-                    <Crown className="h-5 w-5 mr-2" />
-                    Unlock Interview Plus
-                    <ChevronRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-              </div>
+          {/* Sidebar */}
+          <div className="w-80 flex-shrink-0">
+            <div className="sticky top-24">
+              <InterviewPlusModule feedback={feedback} suggestions={suggestions} />
             </div>
           </div>
         </div>

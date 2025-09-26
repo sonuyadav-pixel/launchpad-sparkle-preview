@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp, Video, BarChart3, Crown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Sparkles, TrendingUp, Video, BarChart3, Crown, Brain, Lock, Target, Star } from "lucide-react";
 
 const features = [
   {
@@ -26,7 +27,16 @@ const features = [
   }
 ];
 
-export const InterviewPlusModule = () => {
+export const InterviewPlusModule = ({ feedback, suggestions }: { feedback?: any, suggestions?: any[] }) => {
+  const freeSuggestions = suggestions?.filter(s => !s.is_premium) || [];
+  const premiumSuggestions = suggestions?.filter(s => s.is_premium) || [];
+
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'text-green-600';
+    if (score >= 6) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -45,6 +55,90 @@ export const InterviewPlusModule = () => {
         </div>
       </div>
 
+      {/* Performance Analysis Section */}
+      {feedback && (
+        <div className="space-y-6">
+          <h3 className="text-xl font-bold">Performance Analysis</h3>
+          
+          {/* Performance Insights */}
+          <Card className="hover:shadow-lg transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Performance Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="text-center p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg hover:scale-105 transition-transform group cursor-pointer">
+                  <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
+                    {Math.round((feedback.communication_score + feedback.clarity_score) / 2 * 10)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium mt-2">Communication Score</div>
+                </div>
+                <div className="text-center p-6 bg-gradient-to-r from-secondary/10 to-accent/10 rounded-lg hover:scale-105 transition-transform group cursor-pointer">
+                  <div className="text-3xl font-bold text-primary group-hover:scale-110 transition-transform">
+                    {Math.round(feedback.confidence_score * 10)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium mt-2">Confidence Level</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Strengths & Weaknesses */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* What Went Well */}
+            <Card className="relative bg-gradient-to-br from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10 group-hover:opacity-0 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 flex items-center justify-center z-20 group-hover:opacity-0 transition-opacity duration-300">
+                <Lock className="h-6 w-6 text-green-600" />
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-700 text-lg">
+                  <TrendingUp className="h-4 w-4" />
+                  What Went Well
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {feedback.strengths?.slice(0, 2).map((strength: string, index: number) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <span className="text-green-700">{strength}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Areas for Improvement */}
+            <Card className="relative bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300 overflow-hidden group">
+              <div className="absolute inset-0 backdrop-blur-sm bg-white/30 z-10 group-hover:opacity-0 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 flex items-center justify-center z-20 group-hover:opacity-0 transition-opacity duration-300">
+                <Lock className="h-6 w-6 text-orange-600" />
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-700 text-lg">
+                  <Target className="h-4 w-4" />
+                  Areas for Improvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {feedback.weaknesses?.slice(0, 2).map((weakness: string, index: number) => (
+                    <div key={index} className="flex items-start gap-2 text-sm">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <span className="text-orange-700">{weakness}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
       {/* Premium CTA */}
       <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
         <CardHeader className="text-center">
@@ -59,11 +153,10 @@ export const InterviewPlusModule = () => {
         <CardContent className="text-center space-y-4">
           <div className="text-3xl font-bold text-primary">$29/month</div>
           <Button 
-            size="lg" 
-            className="btn-hover-scale bg-gradient-to-r from-primary to-accent px-8 py-3 text-lg font-semibold"
+            className="btn-hover-scale bg-gradient-to-r from-primary to-accent px-6 py-2 text-base font-semibold"
           >
-            <Sparkles className="mr-2 h-5 w-5" />
-            Upgrade to Pro
+            <Sparkles className="mr-2 h-4 w-4" />
+            Unlock Interview Plus
           </Button>
           <p className="text-sm text-muted-foreground">7-day free trial • Cancel anytime</p>
         </CardContent>
