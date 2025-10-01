@@ -51,10 +51,15 @@ serve(async (req) => {
 
     console.log(`📝 Processing message from user ${userId}:`, message);
 
-    // Get Llama API URL from secrets
+    // Get Llama API configuration from secrets
     const LLAMA_API_URL = Deno.env.get('LLAMA_API_URL');
+    const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
+    
     if (!LLAMA_API_URL) {
       throw new Error('LLAMA_API_URL not configured');
+    }
+    if (!LLAMA_API_KEY) {
+      throw new Error('LLAMA_API_KEY not configured');
     }
 
     // Build conversation history for Llama
@@ -92,17 +97,18 @@ Context: This is a real-time voice interview, so keep your responses brief and c
 
     console.log(`🤖 Calling Llama API at: ${LLAMA_API_URL}`);
 
-    // Call your Llama 3.1 API
+    // Call your Llama 3.1 API with x-api-key header
     const llamaResponse = await fetch(LLAMA_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': LLAMA_API_KEY
       },
       body: JSON.stringify({
-        model: "meta-llama/Meta-Llama-3.1-70B-Instruct", // Adjust if your model name is different
+        model: "meta-llama/Meta-Llama-3.1-70B-Instruct",
         messages: messages,
         temperature: 0.7,
-        max_tokens: 150, // Keep responses brief for voice
+        max_tokens: 150,
         stream: false
       })
     });
