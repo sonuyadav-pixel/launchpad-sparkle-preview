@@ -37,11 +37,13 @@ const Interview = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { speak, isPlaying, loading: ttsLoading } = useElevenLabsTTS();
-  const { updateSession } = useInterviewSession();
+  const { updateSession, createSession, joinSession } = useInterviewSession();
+  const { user } = useUserProfile();
 
   // Session state
-  const sessionId = searchParams.get('session');
+  const [sessionId, setSessionId] = useState<string | null>(searchParams.get('session'));
   const [session, setSession] = useState(null);
+  const [isInitializingSession, setIsInitializingSession] = useState(false);
   
   // UI state
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
@@ -569,8 +571,13 @@ const Interview = () => {
 
   // Add transcript message to database
   const addTranscriptMessage = async (message: TranscriptMessage) => {
+    if (!sessionId) {
+      console.warn('⚠️ No session ID available, skipping transcript save');
+      return;
+    }
+    
     try {
-      await supabase.functions.invoke('interview-session', {
+      const { error } = await supabase.functions.invoke('interview-session', {
         body: {
           action: 'add-transcript',
           session_id: sessionId,
@@ -579,8 +586,12 @@ const Interview = () => {
           metadata: {}
         }
       });
+      
+      if (error) {
+        console.error('❌ Error saving transcript:', error);
+      }
     } catch (error) {
-      console.error('❌ Error saving transcript:', error);
+      console.error('❌ Exception saving transcript:', error);
     }
   };
 
@@ -842,18 +853,19 @@ const Interview = () => {
       
       // Try TTS but don't fail interview if it doesn't work
       try {
-        await Promise.all([
-          addTranscriptMessage(aiMessage),
-          speak(welcomeMessage, 'alloy')
-        ]);
-      } catch (ttsError) {
-        console.warn('⚠️ TTS failed but interview continues:', ttsError);
-        // Just add to transcript database without TTS
-        try {
-          await addTranscriptMessage(aiMessage);
-        } catch (dbError) {
-          console.warn('⚠️ Database save failed:', dbError);
-        }
+        await addTranscriptMessage(aiMessage);
+        
+        // Speak welcome message (non-blocking)
+        speak(welcomeMessage, 'alloy').catch((ttsError) => {
+          console.warn('⚠️ TTS failed for welcome message:', ttsError);
+          toast({
+            title: "Audio Unavailable",
+            description: "Text-to-speech is currently unavailable. Interview will continue with text only.",
+            variant: "default"
+          });
+        });
+      } catch (dbError) {
+        console.warn('⚠️ Database save failed:', dbError);
       }
       
       console.log('✅ Interview started successfully');
@@ -1016,21 +1028,74 @@ const Interview = () => {
     }
   };
 
-  // Load session on mount
+  // Initialize or load session on mount
   useEffect(() => {
-    if (sessionId) {
-      console.log('📁 Loading session:', sessionId);
-      // Check if there's an active session in the manager
-      const hasActive = sessionManager.hasActiveSession();
-      const activeId = sessionManager.getActiveSessionId();
+    const initializeSession = async () => {
+      if (isInitializingSession) return;
       
-      if (hasActive && activeId === sessionId) {
-        console.log('🔄 Restoring active session from manager');
-        setIsInterviewActive(true);
-        // You could restore more state here if needed
+      const urlSessionId = searchParams.get('session');
+      
+      if (urlSessionId) {
+        // Load existing session
+        console.log('📁 Loading session from URL:', urlSessionId);
+        setSessionId(urlSessionId);
+        
+        // Check if there's an active session in the manager
+        const hasActive = sessionManager.hasActiveSession();
+        const activeId = sessionManager.getActiveSessionId();
+        
+        if (hasActive && activeId === urlSessionId) {
+          console.log('🔄 Restoring active session from manager');
+          setIsInterviewActive(true);
+        }
+        
+        // Try to load session details
+        try {
+          await joinSession(urlSessionId);
+        } catch (error) {
+          console.error('Failed to load session:', error);
+        }
+      } else if (user) {
+        // Create new session if no session ID in URL
+        console.log('🆕 No session ID in URL, creating new session...');
+        setIsInitializingSession(true);
+        
+        try {
+          const newSession = await createSession({
+            title: 'AI Interview Session',
+            interview_type: 'general',
+            settings: {},
+            metadata: {}
+          });
+          
+          if (newSession?.id) {
+            console.log('✅ Created new session:', newSession.id);
+            setSessionId(newSession.id);
+            setSession(newSession);
+            
+            // Update URL with new session ID
+            navigate(`/interview?session=${newSession.id}`, { replace: true });
+          } else {
+            throw new Error('Failed to create session - no ID returned');
+          }
+        } catch (error) {
+          console.error('❌ Failed to create session:', error);
+          toast({
+            title: "Session Error",
+            description: "Failed to create interview session. Redirecting to dashboard.",
+            variant: "destructive"
+          });
+          
+          // Redirect to dashboard after error
+          setTimeout(() => navigate('/dashboard'), 2000);
+        } finally {
+          setIsInitializingSession(false);
+        }
       }
-    }
-  }, [sessionId]);
+    };
+    
+    initializeSession();
+  }, [searchParams, user, isInitializingSession]);
 
   // Cleanup on unmount
   useEffect(() => {
