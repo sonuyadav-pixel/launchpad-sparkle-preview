@@ -105,11 +105,8 @@ Context: This is a real-time voice interview, so keep your responses brief and c
         'x-api-key': LLAMA_API_KEY
       },
       body: JSON.stringify({
-        model: "meta-llama/Meta-Llama-3.1-70B-Instruct",
-        messages: messages,
-        temperature: 0.7,
-        max_tokens: 150,
-        stream: false
+        model: "llama3.1",
+        messages: messages
       })
     });
 
