@@ -53,20 +53,13 @@ serve(async (req) => {
 
     // Get Llama API configuration from secrets
     const LLAMA_API_URL = Deno.env.get('LLAMA_API_URL');
-    const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
     
     if (!LLAMA_API_URL) {
       throw new Error('LLAMA_API_URL not configured');
     }
-    if (!LLAMA_API_KEY) {
-      throw new Error('LLAMA_API_KEY not configured');
-    }
 
-    // Build conversation history for Llama
-    const messages = [
-      {
-        role: "system",
-        content: `You are an experienced technical interviewer conducting a professional job interview. 
+    // Build conversation history and combine into a single prompt
+    let prompt = `You are an experienced technical interviewer conducting a professional job interview. 
 Your goal is to:
 - Ask thoughtful, relevant questions based on the candidate's responses
 - Assess technical knowledge, problem-solving abilities, and communication skills
@@ -75,38 +68,29 @@ Your goal is to:
 - Keep questions concise and clear
 - Be encouraging but maintain professional standards
 
-Context: This is a real-time voice interview, so keep your responses brief and conversational (2-3 sentences max per turn).`
-      }
-    ];
+Context: This is a real-time voice interview, so keep your responses brief and conversational (2-3 sentences max per turn).\n\n`;
 
     // Add conversation context
     if (context && Array.isArray(context)) {
       context.forEach((msg: any) => {
-        messages.push({
-          role: msg.speaker === 'ai' ? 'assistant' : 'user',
-          content: msg.message
-        });
+        const speaker = msg.speaker === 'ai' ? 'Assistant' : 'User';
+        prompt += `${speaker}: ${msg.message}\n`;
       });
     }
 
     // Add current user message
-    messages.push({
-      role: "user",
-      content: message
-    });
+    prompt += `User: ${message}\nAssistant:`;
 
     console.log(`🤖 Calling Llama API at: ${LLAMA_API_URL}`);
 
-    // Call your Llama 3.1 API with x-api-key header
+    // Call your Llama 3.1 API
     const llamaResponse = await fetch(LLAMA_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LLAMA_API_KEY
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "llama3.1",
-        messages: messages
+        prompt: prompt
       })
     });
 
