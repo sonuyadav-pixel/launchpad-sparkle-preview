@@ -535,13 +535,13 @@ const Interview = () => {
   // Generate AI response based on user input using ElevenLabs
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      console.log('🤖 Generating AI response using ElevenLabs for:', userInput);
+      console.log('🤖 Generating AI response using Llama 3.1 for:', userInput);
       
       // Get conversation context (last 5 messages for efficiency)
       const context = localTranscript.slice(0, 5).reverse();
       
-      // Call our ElevenLabs edge function with rate limiting
-      const { data, error } = await supabase.functions.invoke('elevenlabs-chat', {
+      // Call our Llama 3.1 edge function with rate limiting
+      const { data, error } = await supabase.functions.invoke('llama-chat', {
         body: { 
           message: userInput,
           context: context,
@@ -550,7 +550,7 @@ const Interview = () => {
       });
 
       if (error) {
-        console.error('🤖 ElevenLabs API error:', error);
+        console.error('🤖 Llama API error:', error);
         throw error;
       }
 
