@@ -83,13 +83,18 @@ Context: This is a real-time voice interview, so keep your responses brief and c
 
     console.log(`🤖 Calling Llama API at: ${LLAMA_API_URL}`);
 
+    // Get Llama API key
+    const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
+
     // Call your Llama 3.1 API
     const llamaResponse = await fetch(LLAMA_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-api-key': LLAMA_API_KEY || ''
       },
       body: JSON.stringify({
+        model: "llama3.1",
         prompt: prompt
       })
     });
@@ -100,12 +105,29 @@ Context: This is a real-time voice interview, so keep your responses brief and c
       throw new Error(`Llama API error: ${llamaResponse.status}`);
     }
 
-    const llamaData = await llamaResponse.json();
-    const aiResponse = llamaData.choices?.[0]?.message?.content || 
-                       llamaData.response || // Some APIs use this format
-                       "I understand. Could you tell me more about that?";
+    // Read the streaming response and combine all tokens
+    const responseText = await llamaResponse.text();
+    console.log(`📥 Raw response (first 200 chars):`, responseText.substring(0, 200));
+    
+    // Split by newlines and parse each JSON object
+    const lines = responseText.trim().split('\n');
+    let combinedResponse = '';
+    
+    for (const line of lines) {
+      if (line.trim()) {
+        try {
+          const chunk = JSON.parse(line);
+          if (chunk.response) {
+            combinedResponse += chunk.response;
+          }
+        } catch (e) {
+          console.warn('Failed to parse line:', line);
+        }
+      }
+    }
 
-    console.log(`✅ Generated response:`, aiResponse);
+    const aiResponse = combinedResponse || "I understand. Could you tell me more about that?";
+    console.log(`✅ Generated complete response (${combinedResponse.length} chars):`, aiResponse.substring(0, 100) + '...');
 
     return new Response(
       JSON.stringify({ response: aiResponse }),
