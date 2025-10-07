@@ -167,7 +167,8 @@ const Interview = () => {
     isInitializing: false,
     isStarting: false,
     isActive: false,
-    lastStartAttempt: 0
+    lastStartAttempt: 0,
+    manuallyStopped: false
   });
 
   // Speech Recognition Functions
@@ -218,12 +219,14 @@ const Interview = () => {
       speechRecognitionState.current.isStarting = false;
       setIsListening(false);
       
-      // FORCEFULLY RESTART - Auto-restart immediately if interview is active
-      if (isInterviewActive && !isMuted) {
-        console.log('💪 FORCE RESTART: Speech ended, forcefully restarting...');
-        setTimeout(async () => {
-          await ensureSpeechRecognitionActive();
-        }, 100);
+      // Only restart if interview is active and not manually stopped
+      if (isInterviewActive && !isMuted && !speechRecognitionState.current.manuallyStopped) {
+        console.log('🔄 Auto-restarting speech recognition...');
+        setTimeout(() => {
+          if (isInterviewActive && !isMuted && !speechRecognitionState.current.isStarting) {
+            startSpeechRecognitionSafe();
+          }
+        }, 500);
       }
     };
 
@@ -309,34 +312,32 @@ const Interview = () => {
       speechRecognitionState.current.isActive = false;
       speechRecognitionState.current.isStarting = false;
       
-      // FORCEFULLY RESTART LISTENING FOR ALL ERROR TYPES
-      console.log('💪 FORCE RESTART: Error detected, forcefully restarting speech recognition...');
+      // Handle different error types
+      if (event.error === 'aborted') {
+        console.log('⚠️ Speech recognition aborted - will auto-restart via onend');
+        return; // Don't restart here, let onend handle it
+      }
       
-      // Immediate restart for all error types
-      setTimeout(async () => {
-        if (isInterviewActive && !isMuted) {
-          console.log('💪 FORCE RESTART: Ensuring speech recognition is active after error:', event.error);
-          await ensureSpeechRecognitionActive();
-        }
-      }, 300);
-      
-      // Only show user-facing errors for critical issues
       if (event.error === 'not-allowed') {
         toast({
           title: "Microphone Access Denied",
-          description: "Please allow microphone access - attempting to reconnect",
+          description: "Please allow microphone access",
           variant: "destructive"
         });
-      } else if (event.error === 'audio-capture') {
-        toast({
-          title: "Microphone Issue",
-          description: "Audio capture error - attempting to reconnect",
-          variant: "destructive"
-        });
+        return;
       }
       
-      // For all other errors (network, no-speech, service, etc.), just log and force restart
-      console.warn('💪 FORCE RESTART: All error types trigger immediate restart:', event.error);
+      if (event.error === 'audio-capture') {
+        toast({
+          title: "Microphone Issue",
+          description: "Audio capture error",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // For other errors (network, no-speech, service), just log
+      console.warn('⚠️ Speech recognition error:', event.error);
     };
 
     speechRecognitionState.current.isInitializing = false;
@@ -400,7 +401,8 @@ const Interview = () => {
             isInitializing: false,
             isStarting: false,
             isActive: false,
-            lastStartAttempt: 0
+            lastStartAttempt: 0,
+            manuallyStopped: false
           };
           startSpeechRecognitionSafe();
         }
@@ -413,6 +415,7 @@ const Interview = () => {
       console.log('🛑 Stopping speech recognition...');
       speechRecognitionState.current.isActive = false;
       speechRecognitionState.current.isStarting = false;
+      speechRecognitionState.current.manuallyStopped = true;
       recognitionRef.current.stop();
     }
   }, []);
