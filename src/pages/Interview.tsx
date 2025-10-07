@@ -569,11 +569,14 @@ const Interview = () => {
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
       console.log('🤖 Generating AI response using Llama 3.1 for:', userInput);
+      console.log('📋 Current session ID:', sessionId);
+      console.log('📝 Transcript context:', localTranscript.slice(0, 5));
       
       // Get conversation context (last 5 messages for efficiency)
       const context = localTranscript.slice(0, 5).reverse();
       
       // Call our Llama 3.1 edge function with rate limiting
+      console.log('📡 Calling llama-chat function...');
       const { data, error } = await supabase.functions.invoke('llama-chat', {
         body: { 
           message: userInput,
@@ -582,13 +585,25 @@ const Interview = () => {
         }
       });
 
+      console.log('📥 Llama function response:', { data, error });
+
       if (error) {
         console.error('🤖 Llama API error:', error);
+        toast({
+          title: "AI Response Error",
+          description: `Failed to get AI response: ${error.message}`,
+          variant: "destructive"
+        });
         throw error;
       }
 
       if (!data?.response) {
         console.error('❌ No response in data:', data);
+        toast({
+          title: "AI Response Error",
+          description: "No response received from AI",
+          variant: "destructive"
+        });
         throw new Error('No response received from AI');
       }
 
@@ -598,7 +613,12 @@ const Interview = () => {
       
     } catch (error) {
       console.error('❌ Error generating AI response:', error);
-      return "I'm sorry, could you please repeat that?";
+      toast({
+        title: "AI Error",
+        description: "Failed to generate AI response. Please try speaking again.",
+        variant: "destructive"
+      });
+      return "I'm sorry, I didn't catch that. Could you please repeat?";
     }
   };
 
