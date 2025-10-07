@@ -86,23 +86,57 @@ Context: This is a real-time voice interview, so keep your responses brief and c
     // Get Llama API key
     const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
 
-    // Call your Llama 3.1 API
-    const llamaResponse = await fetch(LLAMA_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': LLAMA_API_KEY || ''
-      },
-      body: JSON.stringify({
-        model: "llama3.1",
-        prompt: prompt
-      })
-    });
+    // Retry logic for transient errors (502, 503, 504)
+    const maxRetries = 3;
+    let llamaResponse;
+    let lastError;
 
-    if (!llamaResponse.ok) {
-      const errorText = await llamaResponse.text();
-      console.error(`❌ Llama API error (${llamaResponse.status}):`, errorText);
-      throw new Error(`Llama API error: ${llamaResponse.status}`);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`📡 Attempt ${attempt + 1}/${maxRetries} to call Llama API`);
+        
+        llamaResponse = await fetch(LLAMA_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': LLAMA_API_KEY || ''
+          },
+          body: JSON.stringify({
+            model: "llama3.1",
+            prompt: prompt
+          })
+        });
+
+        // If successful or non-retryable error, break
+        if (llamaResponse.ok || ![502, 503, 504].includes(llamaResponse.status)) {
+          break;
+        }
+
+        // Log the error and prepare for retry
+        console.warn(`⚠️ Received ${llamaResponse.status} error, retrying...`);
+        lastError = llamaResponse.status;
+
+        // Wait with exponential backoff before retrying (1s, 2s, 3s)
+        if (attempt < maxRetries - 1) {
+          const waitTime = 1000 * (attempt + 1);
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      } catch (error) {
+        console.error(`❌ Network error on attempt ${attempt + 1}:`, error);
+        lastError = error;
+        
+        if (attempt < maxRetries - 1) {
+          const waitTime = 1000 * (attempt + 1);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      }
+    }
+
+    if (!llamaResponse || !llamaResponse.ok) {
+      const errorText = llamaResponse ? await llamaResponse.text() : 'Network error';
+      console.error(`❌ Llama API error after ${maxRetries} attempts (${llamaResponse?.status}):`, errorText);
+      throw new Error(`Llama API error: ${llamaResponse?.status || lastError}`);
     }
 
     // Read the streaming response and combine all tokens
