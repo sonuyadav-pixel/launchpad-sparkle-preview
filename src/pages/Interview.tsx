@@ -507,6 +507,9 @@ const Interview = () => {
         generateAIResponse(transcript)
       ]);
       
+      console.log('✅ AI Response received:', aiResponse?.substring(0, 100));
+      console.log('🔊 isAISpeaking.current:', isAISpeaking.current);
+      
       if (aiResponse && !isAISpeaking.current) {
         // Mark AI as speaking before starting TTS (but keep speech recognition running)
         isAISpeaking.current = true;
@@ -579,12 +582,14 @@ const Interview = () => {
         throw error;
       }
 
-      if (!data.response) {
-        throw new Error('No response received from ElevenLabs');
+      if (!data?.response) {
+        console.error('❌ No response in data:', data);
+        throw new Error('No response received from AI');
       }
 
-      console.log('🤖 Generated AI response:', data.response);
-      return data.response;
+      const responseText = typeof data.response === 'string' ? data.response : data.response.toString();
+      console.log(`✅ Generated complete response (${responseText.length} chars):`, responseText.substring(0, 100) + '...');
+      return responseText;
       
     } catch (error) {
       console.error('❌ Error generating AI response:', error);
