@@ -48,9 +48,11 @@ const Interview = () => {
   // UI state
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
   const [isListening, setIsListening] = useState(false);
   const [localTranscript, setLocalTranscript] = useState<TranscriptMessage[]>([]);
   const [isInterviewActive, setIsInterviewActive] = useState(false);
+  const isInterviewActiveRef = useRef(false);
   
   // Conversation flow control
   const lastProcessedTime = useRef<number>(0);
@@ -219,14 +221,23 @@ const Interview = () => {
       speechRecognitionState.current.isStarting = false;
       setIsListening(false);
       
-      // Only restart if interview is active and not manually stopped
-      if (isInterviewActive && !isMuted && !speechRecognitionState.current.manuallyStopped) {
+      // Use refs to get current values (not stale closure values)
+      const shouldRestart = isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.manuallyStopped;
+      
+      if (shouldRestart) {
         console.log('🔄 Auto-restarting speech recognition...');
         setTimeout(() => {
-          if (isInterviewActive && !isMuted && !speechRecognitionState.current.isStarting) {
+          // Check again with current values
+          if (isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.isStarting) {
             startSpeechRecognitionSafe();
           }
         }, 500);
+      } else {
+        console.log('🚫 Not restarting:', { 
+          isInterviewActive: isInterviewActiveRef.current, 
+          isMuted: isMutedRef.current, 
+          manuallyStopped: speechRecognitionState.current.manuallyStopped 
+        });
       }
     };
 
@@ -794,6 +805,7 @@ const Interview = () => {
       
       // CRITICAL: Set interview as active FIRST 
       setIsInterviewActive(true);
+      isInterviewActiveRef.current = true;
       resetAutoCloseTimer();
       
       // Update session status in database
@@ -876,6 +888,7 @@ const Interview = () => {
     } catch (error) {
       console.error('❌ Critical error starting interview:', error);
       setIsInterviewActive(false);
+      isInterviewActiveRef.current = false;
       
       toast({
         title: "Interview Start Failed",
@@ -888,6 +901,7 @@ const Interview = () => {
     console.log('🏁 Ending interview...');
     
     setIsInterviewActive(false);
+    isInterviewActiveRef.current = false;
     stopSpeechRecognition();
     stopVideo();
     
@@ -1018,6 +1032,7 @@ const Interview = () => {
   const toggleMute = async () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
+    isMutedRef.current = newMutedState;
     
     if (newMutedState) {
       // Muting - stop speech recognition
@@ -1050,6 +1065,7 @@ const Interview = () => {
         if (hasActive && activeId === urlSessionId) {
           console.log('🔄 Restoring active session from manager');
           setIsInterviewActive(true);
+          isInterviewActiveRef.current = true;
         }
         
         // Try to load session details
