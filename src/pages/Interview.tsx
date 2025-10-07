@@ -515,7 +515,7 @@ const Interview = () => {
       console.log('✅ AI Response received:', aiResponse?.substring(0, 100));
       console.log('🔊 isAISpeaking.current:', isAISpeaking.current);
       
-      if (aiResponse && !isAISpeaking.current) {
+      if (aiResponse) {
         // Mark AI as speaking before starting TTS (but keep speech recognition running)
         isAISpeaking.current = true;
         
