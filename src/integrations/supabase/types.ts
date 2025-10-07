@@ -123,12 +123,15 @@ export type Database = {
           id: string
           interview_type: string
           metadata: Json | null
+          recording_duration_seconds: number | null
           role_applied: string | null
           settings: Json | null
           started_at: string | null
           status: string
           title: string
+          transcript_file_url: string | null
           user_id: string
+          video_url: string | null
         }
         Insert: {
           company_name?: string | null
@@ -138,12 +141,15 @@ export type Database = {
           id?: string
           interview_type?: string
           metadata?: Json | null
+          recording_duration_seconds?: number | null
           role_applied?: string | null
           settings?: Json | null
           started_at?: string | null
           status?: string
           title?: string
+          transcript_file_url?: string | null
           user_id: string
+          video_url?: string | null
         }
         Update: {
           company_name?: string | null
@@ -153,12 +159,15 @@ export type Database = {
           id?: string
           interview_type?: string
           metadata?: Json | null
+          recording_duration_seconds?: number | null
           role_applied?: string | null
           settings?: Json | null
           started_at?: string | null
           status?: string
           title?: string
+          transcript_file_url?: string | null
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }

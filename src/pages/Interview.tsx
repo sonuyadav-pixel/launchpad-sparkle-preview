@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useInterviewSession } from '@/hooks/useInterviewSession';
+import { useVideoRecording } from '@/hooks/useVideoRecording';
+import { useTranscriptSave } from '@/hooks/useTranscriptSave';
 import { sessionManager } from '@/utils/SessionManager';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import PermissionRequest from '@/components/interview/PermissionRequest';
@@ -44,6 +46,16 @@ const Interview = () => {
   const [sessionId, setSessionId] = useState<string | null>(searchParams.get('session'));
   const [session, setSession] = useState(null);
   const [isInitializingSession, setIsInitializingSession] = useState(false);
+  
+  // Video recording and transcript saving
+  const { isRecording, isUploading, startRecording, stopRecording } = useVideoRecording({
+    sessionId: sessionId || '',
+    userId: user?.id || ''
+  });
+  const { saveTranscriptToFile } = useTranscriptSave({
+    sessionId: sessionId || '',
+    userId: user?.id || ''
+  });
   
   // UI state
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
@@ -830,6 +842,11 @@ const Interview = () => {
       // Start video (optional, don't block on failure)
       try {
         await startVideo();
+        
+        // Start video recording if stream is available
+        if (streamRef.current) {
+          await startRecording(streamRef.current);
+        }
       } catch (videoError) {
         console.warn('⚠️ Video failed to start, continuing without video:', videoError);
       }
@@ -910,6 +927,19 @@ const Interview = () => {
     setIsInterviewActive(false);
     isInterviewActiveRef.current = false;
     stopSpeechRecognition();
+    
+    // Stop and save video recording
+    if (isRecording) {
+      console.log('💾 Saving video recording...');
+      await stopRecording();
+    }
+    
+    // Save transcript to file
+    if (localTranscript.length > 0) {
+      console.log('💾 Saving transcript...');
+      await saveTranscriptToFile(localTranscript.slice().reverse()); // Reverse to get chronological order
+    }
+    
     stopVideo();
     
     if (silenceTimeoutRef.current) {
@@ -949,7 +979,7 @@ const Interview = () => {
     
     toast({
       title: "Interview Ended",
-      description: "Thank you for your time!",
+      description: "Thank you for your time! Your video and transcript have been saved.",
     });
 
     // Navigate to dashboard with feedback modal
