@@ -260,7 +260,8 @@ const Interview = () => {
       let finalTranscript = '';
       let interimTranscript = '';
       
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Process ALL results, not just from resultIndex
+      for (let i = 0; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
@@ -270,15 +271,20 @@ const Interview = () => {
         }
       }
       
-      // Handle final transcript - use smart append to avoid duplication
+      // Handle final transcript - always append to accumulated
       if (finalTranscript.trim()) {
-        accumulatedTranscript.current = appendNewWords(accumulatedTranscript.current, finalTranscript.trim());
-        console.log('📝 Added final transcript to accumulation:', accumulatedTranscript.current);
+        // Simple append with space if we have existing text
+        if (accumulatedTranscript.current.trim()) {
+          accumulatedTranscript.current = accumulatedTranscript.current.trim() + ' ' + finalTranscript.trim();
+        } else {
+          accumulatedTranscript.current = finalTranscript.trim();
+        }
+        console.log('📝 Added final transcript, total accumulated:', accumulatedTranscript.current);
       }
       
       // Handle interim transcript - show current speech + accumulated
       if (interimTranscript.trim()) {
-        // For interim results, just append to accumulated transcript
+        // Combine accumulated final words with current interim words
         const displayTranscript = accumulatedTranscript.current.trim() 
           ? `${accumulatedTranscript.current} ${interimTranscript.trim()}` 
           : interimTranscript.trim();
