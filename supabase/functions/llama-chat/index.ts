@@ -136,7 +136,17 @@ Context: This is a real-time voice interview, so keep your responses brief and c
     if (!llamaResponse || !llamaResponse.ok) {
       const errorText = llamaResponse ? await llamaResponse.text() : 'Network error';
       console.error(`❌ Llama API error after ${maxRetries} attempts (${llamaResponse?.status}):`, errorText);
-      throw new Error(`Llama API error: ${llamaResponse?.status || lastError}`);
+      
+      // Return fallback response instead of throwing to keep interview running
+      return new Response(
+        JSON.stringify({ 
+          response: "I see. Can you elaborate on that point? I'd like to understand your perspective better."
+        }),
+        { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Read the streaming response and combine all tokens
