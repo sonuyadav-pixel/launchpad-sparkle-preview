@@ -225,13 +225,22 @@ const Interview = () => {
       const shouldRestart = isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.manuallyStopped;
       
       if (shouldRestart) {
-        console.log('🔄 Auto-restarting speech recognition...');
+        console.log('🔄 Auto-restarting speech recognition in 1 second...');
+        // Longer delay to prevent rapid restart loop
         setTimeout(() => {
           // Check again with current values
-          if (isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.isStarting) {
+          if (isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.isStarting && !speechRecognitionState.current.isActive) {
+            console.log('🎯 Attempting restart now...');
             startSpeechRecognitionSafe();
+          } else {
+            console.log('🚫 Restart cancelled - conditions changed:', {
+              isInterviewActive: isInterviewActiveRef.current,
+              isMuted: isMutedRef.current,
+              isStarting: speechRecognitionState.current.isStarting,
+              isActive: speechRecognitionState.current.isActive
+            });
           }
-        }, 500);
+        }, 1000); // Increased from 500ms to 1000ms
       } else {
         console.log('🚫 Not restarting:', { 
           isInterviewActive: isInterviewActiveRef.current, 
@@ -359,8 +368,8 @@ const Interview = () => {
   const startSpeechRecognitionSafe = useCallback(() => {
     const now = Date.now();
     
-    // Prevent rapid restart attempts (debounce)
-    if (now - speechRecognitionState.current.lastStartAttempt < 500) {
+    // Prevent rapid restart attempts (increased debounce)
+    if (now - speechRecognitionState.current.lastStartAttempt < 1000) {
       console.log('🚫 Preventing rapid restart attempt');
       return;
     }
