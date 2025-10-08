@@ -26,6 +26,8 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
   const [date, setDate] = useState<Date>(selectedDate || new Date());
   const [time, setTime] = useState(selectedTime || '09:00');
   const [duration, setDuration] = useState(60);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [jdFile, setJdFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   const { createScheduledInterview } = useScheduledInterviews();
@@ -45,6 +47,11 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
     
     if (!candidateName.trim() || !interviewTitle.trim() || !invitedEmail.trim()) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (!cvFile || !jdFile) {
+      toast.error('Please upload both CV and JD files');
       return;
     }
 
@@ -69,9 +76,9 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
         duration_minutes: duration,
         status: 'scheduled',
         invited_email: invitedEmail.trim()
-      });
+      }, cvFile, jdFile);
 
-      toast.success('Interview scheduled successfully!');
+      toast.success('Interview scheduled successfully! CV and JD uploaded.');
       onClose();
       
       // Reset form
@@ -80,6 +87,8 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
       setInvitedEmail('');
       setTime('09:00');
       setDuration(60);
+      setCvFile(null);
+      setJdFile(null);
     } catch (error: any) {
       console.error('Error scheduling interview:', error);
       toast.error(error.message || 'Failed to schedule interview');
@@ -164,6 +173,34 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cvFile">Candidate CV *</Label>
+            <Input
+              id="cvFile"
+              type="file"
+              onChange={(e) => setCvFile(e.target.files?.[0] || null)}
+              accept=".pdf,.doc,.docx,.txt"
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              Upload candidate's CV (PDF, DOC, DOCX, TXT)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="jdFile">Job Description *</Label>
+            <Input
+              id="jdFile"
+              type="file"
+              onChange={(e) => setJdFile(e.target.files?.[0] || null)}
+              accept=".pdf,.doc,.docx,.txt"
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              Upload job description (PDF, DOC, DOCX, TXT)
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

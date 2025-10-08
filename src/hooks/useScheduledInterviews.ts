@@ -11,6 +11,8 @@ export interface ScheduledInterview {
   status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'missed';
   session_id?: string;
   invited_email: string;
+  cv_file_path?: string;
+  jd_file_path?: string;
   created_at: string;
   updated_at: string;
 }
@@ -41,13 +43,68 @@ export const useScheduledInterviews = () => {
     }
   }, []);
 
-  const createScheduledInterview = useCallback(async (interview: Omit<ScheduledInterview, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+  const createScheduledInterview = useCallback(async (
+    interview: Omit<ScheduledInterview, 'id' | 'user_id' | 'created_at' | 'updated_at'>,
+    cvFile?: File,
+    jdFile?: File
+  ) => {
     try {
       setLoading(true);
       setError(null);
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!session?.access_token || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      let cvPath = null;
+      let jdPath = null;
+
+      // Upload CV to Supabase storage
+      if (cvFile) {
+        const cvFilename = `${user.id}/${Date.now()}_${cvFile.name}`;
+        const { error: cvUploadError } = await supabase.storage
+          .from('interview-cvs')
+          .upload(cvFilename, cvFile);
+
+        if (cvUploadError) {
+          throw new Error(`CV upload failed: ${cvUploadError.message}`);
+        }
+        cvPath = cvFilename;
+
+        // Upload CV to EC2 in background
+        supabase.functions.invoke('upload-to-ec2', {
+          body: { filePath: cvFilename, role: 'cv', bucket: 'interview-cvs' },
+        }).catch(err => console.error('EC2 CV upload error:', err));
+      }
+
+      // Upload JD to Supabase storage
+      if (jdFile) {
+        const jdFilename = `${user.id}/${Date.now()}_${jdFile.name}`;
+        const { error: jdUploadError } = await supabase.storage
+          .from('interview-jds')
+          .upload(jdFilename, jdFile);
+
+        if (jdUploadError) {
+          throw new Error(`JD upload failed: ${jdUploadError.message}`);
+        }
+        jdPath = jdFilename;
+
+        // Upload JD to EC2 in background
+        supabase.functions.invoke('upload-to-ec2', {
+          body: { filePath: jdFilename, role: 'jd', bucket: 'interview-jds' },
+        }).catch(err => console.error('EC2 JD upload error:', err));
+      }
+
+      // Create interview with file paths
       const { data, error } = await supabase.functions.invoke('scheduled-interviews', {
-        body: interview,
+        body: {
+          ...interview,
+          cv_file_path: cvPath,
+          jd_file_path: jdPath,
+        },
         method: 'POST'
       });
 
