@@ -239,14 +239,14 @@ const Interview = () => {
       
       if (shouldRestart) {
         console.log('🔄 [CONTINUOUS] Auto-restarting speech recognition immediately...');
-        // Immediate restart for continuous listening
+        // Immediate restart for truly continuous listening - no delay
         setTimeout(() => {
           // Check again with current values
           if (isInterviewActiveRef.current && !isMutedRef.current && !speechRecognitionState.current.isStarting && !speechRecognitionState.current.isActive) {
             console.log('🎯 [CONTINUOUS] Restarting now...');
             startSpeechRecognitionSafe();
           }
-        }, 300); // Reduced to 300ms for more responsive continuous listening
+        }, 50); // Minimal 50ms delay for browser compatibility - ensures true continuous listening
       } else {
         console.log('🚫 Not restarting:', { 
           isInterviewActive: isInterviewActiveRef.current, 
@@ -380,8 +380,8 @@ const Interview = () => {
   const startSpeechRecognitionSafe = useCallback(() => {
     const now = Date.now();
     
-    // Reduced debounce for continuous listening
-    if (now - speechRecognitionState.current.lastStartAttempt < 500) {
+    // Minimal debounce for truly continuous listening
+    if (now - speechRecognitionState.current.lastStartAttempt < 100) {
       console.log('🚫 Preventing rapid restart attempt');
       return;
     }
