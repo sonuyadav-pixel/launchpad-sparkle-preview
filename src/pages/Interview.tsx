@@ -913,6 +913,7 @@ const Interview = () => {
       // Check if this is a scheduled interview with CV/JD files
       const scheduledInterviewId = searchParams.get('scheduled');
       let welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
+      let useEC2 = false;
       
       if (scheduledInterviewId) {
         try {
@@ -927,8 +928,9 @@ const Interview = () => {
           
           if (scheduledInterview?.cv_file_path && scheduledInterview?.jd_file_path) {
             console.log('📋 Initializing EC2 interview with CV and JD...');
+            useEC2 = true;
             
-            // Initialize EC2 interview
+            // Initialize EC2 interview and WAIT for the response
             const { data: initData, error: initError } = await supabase.functions.invoke('ec2-interview', {
               body: {
                 action: 'init',
@@ -940,16 +942,19 @@ const Interview = () => {
             
             if (!initError && initData?.question) {
               welcomeMessage = initData.question;
-              console.log('✅ EC2 interview initialized with custom first question');
+              console.log('✅ EC2 interview initialized with first question from Llama');
             } else {
               console.warn('⚠️ EC2 initialization failed, using default welcome:', initError);
+              useEC2 = false; // Fall back to default flow if EC2 fails
             }
           }
         } catch (ec2Error) {
           console.warn('⚠️ Failed to initialize EC2 interview, using default flow:', ec2Error);
+          useEC2 = false;
         }
       }
       
+      // Only show welcome message after we have the response (either from EC2 or default)
       const aiMessage: TranscriptMessage = {
         id: Date.now().toString(),
         speaker: 'ai',
