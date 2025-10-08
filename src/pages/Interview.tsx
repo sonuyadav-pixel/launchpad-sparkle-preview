@@ -14,6 +14,7 @@ import { useTranscriptSave } from '@/hooks/useTranscriptSave';
 import { sessionManager } from '@/utils/SessionManager';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import PermissionRequest from '@/components/interview/PermissionRequest';
+import { UpcomingInterviewSection } from '@/components/dashboard/modules/UpcomingInterviewSection';
 import type { InterviewSessionStatus } from '@/types/interview';
 import { 
   Video, 
@@ -1286,6 +1287,9 @@ const Interview = () => {
             )}
           </div>
         </div>
+
+        {/* Upcoming Interview Section - Shows if user has invited interviews */}
+        {!isInterviewActive && <UpcomingInterviewSection />}
 
         {/* Side by Side Layout: User (Left) and AI (Right) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
