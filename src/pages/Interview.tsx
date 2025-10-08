@@ -1158,6 +1158,7 @@ const Interview = () => {
       if (isInitializingSession) return;
       
       const urlSessionId = searchParams.get('session');
+      const scheduledInterviewId = searchParams.get('scheduled');
       
       if (urlSessionId) {
         // Load existing session
@@ -1177,6 +1178,15 @@ const Interview = () => {
         // Try to load session details
         try {
           await joinSession(urlSessionId);
+          
+          // Auto-start interview if coming from scheduled interview
+          if (scheduledInterviewId && !isInterviewActive) {
+            console.log('🚀 Auto-starting interview from scheduled interview:', scheduledInterviewId);
+            // Wait a brief moment for everything to initialize
+            setTimeout(() => {
+              startInterview();
+            }, 1000);
+          }
         } catch (error) {
           console.error('Failed to load session:', error);
         }
