@@ -13,9 +13,12 @@ async function summarizeDocument(text: string, type: 'cv' | 'jd'): Promise<strin
     return text.slice(0, 300); // Fallback to first 300 chars (~50 words)
   }
 
+  // Truncate text to prevent API size limits (max 5000 chars is enough for good summary)
+  const truncatedText = text.slice(0, 5000);
+
   const prompt = type === 'cv' 
-    ? `Summarize this CV/Resume in max 50 words. Include: candidate's name, top 2-3 skills, current role, years of experience:\n\n${text}`
-    : `Summarize this Job Description in max 50 words. Include: job title, 2-3 key requirements, experience level needed:\n\n${text}`;
+    ? `Summarize this CV/Resume in max 50 words. Include: candidate's name, top 2-3 skills, current role, years of experience:\n\n${truncatedText}`
+    : `Summarize this Job Description in max 50 words. Include: job title, 2-3 key requirements, experience level needed:\n\n${truncatedText}`;
 
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -34,15 +37,16 @@ async function summarizeDocument(text: string, type: 'cv' | 'jd'): Promise<strin
     });
 
     if (!response.ok) {
-      console.error('AI summarization failed:', await response.text());
-      return text.slice(0, 300); // Fallback
+      const errorText = await response.text();
+      console.error('AI summarization failed:', errorText);
+      return truncatedText.slice(0, 300); // Fallback
     }
 
     const data = await response.json();
-    return data.choices[0].message.content || text.slice(0, 300);
+    return data.choices[0].message.content || truncatedText.slice(0, 300);
   } catch (error) {
     console.error('Error summarizing document:', error);
-    return text.slice(0, 300); // Fallback
+    return truncatedText.slice(0, 300); // Fallback
   }
 }
 
