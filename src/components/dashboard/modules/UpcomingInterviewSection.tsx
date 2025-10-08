@@ -131,8 +131,8 @@ export const UpcomingInterviewSection = () => {
         status: 'active'
       });
 
-      // Navigate to interview
-      navigate(`/interview?session=${session.id}`);
+      // Navigate to interview with scheduled interview ID
+      navigate(`/interview?session=${session.id}&scheduled=${upcomingInterview.id}`);
     } catch (error: any) {
       console.error('Error starting interview:', error);
       toast.error('Failed to start interview');

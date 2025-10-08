@@ -571,30 +571,25 @@ const Interview = () => {
     await processCompleteUserSpeech(transcript);
   };
 
-  // Generate AI response based on user input using ElevenLabs
+  // Generate AI response using EC2 backend
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      console.log('🤖 Generating AI response using Llama 3.1 for:', userInput);
+      console.log('🤖 Generating AI response from EC2 backend for:', userInput);
       console.log('📋 Current session ID:', sessionId);
-      console.log('📝 Transcript context:', localTranscript.slice(0, 5));
       
-      // Get conversation context (last 5 messages for efficiency)
-      const context = localTranscript.slice(0, 5).reverse();
-      
-      // Call our Llama 3.1 edge function with rate limiting
-      console.log('📡 Calling llama-chat function...');
-      const { data, error } = await supabase.functions.invoke('llama-chat', {
+      // Call EC2 backend for next question
+      const { data, error } = await supabase.functions.invoke('ec2-interview', {
         body: { 
-          message: userInput,
-          context: context,
-          userId: sessionId // Use session ID as user identifier for rate limiting
+          action: 'next',
+          userId: sessionId,
+          answer: userInput
         }
       });
 
-      console.log('📥 Llama function response:', { data, error });
+      console.log('📥 EC2 response:', { data, error });
 
       if (error) {
-        console.error('🤖 Llama API error:', error);
+        console.error('🤖 EC2 API error:', error);
         toast({
           title: "AI Response Error",
           description: `Failed to get AI response: ${error.message}`,
@@ -603,8 +598,8 @@ const Interview = () => {
         throw error;
       }
 
-      if (!data?.response) {
-        console.error('❌ No response in data:', data);
+      if (!data?.question) {
+        console.error('❌ No question in data:', data);
         toast({
           title: "AI Response Error",
           description: "No response received from AI",
@@ -613,8 +608,18 @@ const Interview = () => {
         throw new Error('No response received from AI');
       }
 
-      const responseText = typeof data.response === 'string' ? data.response : data.response.toString();
-      console.log(`✅ Generated complete response (${responseText.length} chars):`, responseText.substring(0, 100) + '...');
+      const responseText = data.question;
+      console.log(`✅ Generated response: ${responseText.substring(0, 100)}...`);
+      
+      // Check if interview is complete
+      if (data.isComplete) {
+        console.log('🎉 Interview completed!');
+        toast({
+          title: "Interview Complete",
+          description: "Thank you for completing the interview!",
+        });
+      }
+      
       return responseText;
       
     } catch (error) {
@@ -904,8 +909,45 @@ const Interview = () => {
       setupSpeechHeartbeat();
       setupSilenceDetection();
       
-      // Welcome message (TTS failure should not affect interview)
-      const welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
+      // Check if this is a scheduled interview with CV/JD files
+      const scheduledInterviewId = searchParams.get('scheduled');
+      let welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
+      
+      if (scheduledInterviewId) {
+        try {
+          console.log('🔍 Fetching scheduled interview details:', scheduledInterviewId);
+          
+          // Get scheduled interview details
+          const { data: interviews } = await supabase.functions.invoke('scheduled-interviews', {
+            method: 'GET'
+          });
+          
+          const scheduledInterview = interviews?.find((i: any) => i.id === scheduledInterviewId);
+          
+          if (scheduledInterview?.cv_file_path && scheduledInterview?.jd_file_path) {
+            console.log('📋 Initializing EC2 interview with CV and JD...');
+            
+            // Initialize EC2 interview
+            const { data: initData, error: initError } = await supabase.functions.invoke('ec2-interview', {
+              body: {
+                action: 'init',
+                userId: sessionId,
+                cvFilePath: scheduledInterview.cv_file_path,
+                jdFilePath: scheduledInterview.jd_file_path
+              }
+            });
+            
+            if (!initError && initData?.question) {
+              welcomeMessage = initData.question;
+              console.log('✅ EC2 interview initialized with custom first question');
+            } else {
+              console.warn('⚠️ EC2 initialization failed, using default welcome:', initError);
+            }
+          }
+        } catch (ec2Error) {
+          console.warn('⚠️ Failed to initialize EC2 interview, using default flow:', ec2Error);
+        }
+      }
       
       const aiMessage: TranscriptMessage = {
         id: Date.now().toString(),
