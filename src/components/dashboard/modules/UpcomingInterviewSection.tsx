@@ -23,15 +23,14 @@ export const UpcomingInterviewSection = () => {
   const getUpcomingInvitedInterview = () => {
     if (!user?.email) return null;
     
-    const now = new Date();
     const invitedInterviews = scheduledInterviews.filter(interview => {
       const hasAttemptsRemaining = interview.attempts_count < interview.max_attempts;
-      const isScheduledInFuture = new Date(interview.scheduled_at) > now;
       
+      // Show if: invited to this interview AND has attempts remaining
+      // (no time restriction - users can start anytime until attempts are exhausted)
       return interview.invited_email === user.email && 
              interview.status === 'scheduled' &&
-             hasAttemptsRemaining &&
-             isScheduledInFuture;
+             hasAttemptsRemaining;
     });
     
     return invitedInterviews.sort((a, b) => 
