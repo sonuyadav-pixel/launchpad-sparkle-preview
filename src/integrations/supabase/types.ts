@@ -272,11 +272,13 @@ export type Database = {
           candidate_name: string
           created_at: string
           cv_file_path: string | null
+          cv_summary: string | null
           duration_minutes: number
           id: string
           interview_title: string
           invited_email: string | null
           jd_file_path: string | null
+          jd_summary: string | null
           max_attempts: number
           scheduled_at: string
           session_id: string | null
@@ -289,11 +291,13 @@ export type Database = {
           candidate_name: string
           created_at?: string
           cv_file_path?: string | null
+          cv_summary?: string | null
           duration_minutes?: number
           id?: string
           interview_title: string
           invited_email?: string | null
           jd_file_path?: string | null
+          jd_summary?: string | null
           max_attempts?: number
           scheduled_at: string
           session_id?: string | null
@@ -306,11 +310,13 @@ export type Database = {
           candidate_name?: string
           created_at?: string
           cv_file_path?: string | null
+          cv_summary?: string | null
           duration_minutes?: number
           id?: string
           interview_title?: string
           invited_email?: string | null
           jd_file_path?: string | null
+          jd_summary?: string | null
           max_attempts?: number
           scheduled_at?: string
           session_id?: string | null

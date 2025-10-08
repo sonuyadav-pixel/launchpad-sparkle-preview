@@ -112,6 +112,17 @@ export const useScheduledInterviews = () => {
 
       if (error) throw error;
 
+      // Generate and store summaries in background (non-blocking)
+      if (cvPath && jdPath && data?.id) {
+        supabase.functions.invoke('generate-summaries', {
+          body: {
+            scheduledInterviewId: data.id,
+            cvFilePath: cvPath,
+            jdFilePath: jdPath
+          }
+        }).catch(err => console.error('Summary generation error:', err));
+      }
+
       setScheduledInterviews(prev => [...prev, data]);
       return data;
     } catch (err: any) {

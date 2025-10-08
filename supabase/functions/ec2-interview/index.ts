@@ -86,40 +86,63 @@ Deno.serve(async (req) => {
         throw new Error('Missing CV or JD file paths for initialization');
       }
 
-      // Download CV from Supabase storage
-      const { data: cvData, error: cvError } = await supabase.storage
-        .from('interview-cvs')
-        .download(cvFilePath);
+      // Check if we have stored summaries in the database
+      const { data: scheduledInterview, error: fetchError } = await supabase
+        .from('scheduled_interviews')
+        .select('cv_summary, jd_summary')
+        .eq('session_id', userId)
+        .maybeSingle();
 
-      if (cvError || !cvData) {
-        console.error('❌ Error downloading CV:', cvError);
-        throw new Error(`Failed to download CV: ${cvError?.message || 'No data'}`);
+      let cvSummary: string;
+      let jdSummary: string;
+
+      if (fetchError) {
+        console.warn('⚠️ Could not fetch stored summaries:', fetchError);
       }
 
-      // Download JD from Supabase storage
-      const { data: jdData, error: jdError } = await supabase.storage
-        .from('interview-jds')
-        .download(jdFilePath);
+      // Use stored summaries if available, otherwise generate new ones
+      if (scheduledInterview?.cv_summary && scheduledInterview?.jd_summary) {
+        console.log('✅ Using stored summaries from database');
+        cvSummary = scheduledInterview.cv_summary;
+        jdSummary = scheduledInterview.jd_summary;
+      } else {
+        console.log('📄 Generating new summaries...');
+        
+        // Download CV from Supabase storage
+        const { data: cvData, error: cvError } = await supabase.storage
+          .from('interview-cvs')
+          .download(cvFilePath);
 
-      if (jdError || !jdData) {
-        console.error('❌ Error downloading JD:', jdError);
-        throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
+        if (cvError || !cvData) {
+          console.error('❌ Error downloading CV:', cvError);
+          throw new Error(`Failed to download CV: ${cvError?.message || 'No data'}`);
+        }
+
+        // Download JD from Supabase storage
+        const { data: jdData, error: jdError } = await supabase.storage
+          .from('interview-jds')
+          .download(jdFilePath);
+
+        if (jdError || !jdData) {
+          console.error('❌ Error downloading JD:', jdError);
+          throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
+        }
+
+        // Convert Blobs to text
+        const cvText = await cvData.text();
+        const jdText = await jdData.text();
+
+        console.log('📄 Document lengths - CV:', cvText.length, 'JD:', jdText.length);
+
+        // Summarize both documents using AI
+        console.log('🤖 Summarizing CV and JD...');
+        [cvSummary, jdSummary] = await Promise.all([
+          summarizeDocument(cvText, 'cv'),
+          summarizeDocument(jdText, 'jd')
+        ]);
+
+        console.log('✅ Summaries generated - CV:', cvSummary.length, 'chars, JD:', jdSummary.length, 'chars');
       }
-
-      // Convert Blobs to text (assuming text-based files)
-      const cvText = await cvData.text();
-      const jdText = await jdData.text();
-
-      console.log('📄 Document lengths - CV:', cvText.length, 'JD:', jdText.length);
-
-      // Summarize both documents using AI
-      console.log('🤖 Summarizing CV and JD...');
-      const [cvSummary, jdSummary] = await Promise.all([
-        summarizeDocument(cvText, 'cv'),
-        summarizeDocument(jdText, 'jd')
-      ]);
-
-      console.log('✅ Summaries generated - CV:', cvSummary.length, 'chars, JD:', jdSummary.length, 'chars');
 
       // Create FormData with summaries as text
       const formData = new FormData();
