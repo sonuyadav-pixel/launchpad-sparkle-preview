@@ -270,10 +270,12 @@ export type Database = {
         Row: {
           candidate_name: string
           created_at: string
+          cv_file_path: string | null
           duration_minutes: number
           id: string
           interview_title: string
           invited_email: string | null
+          jd_file_path: string | null
           scheduled_at: string
           session_id: string | null
           status: string
@@ -283,10 +285,12 @@ export type Database = {
         Insert: {
           candidate_name: string
           created_at?: string
+          cv_file_path?: string | null
           duration_minutes?: number
           id?: string
           interview_title: string
           invited_email?: string | null
+          jd_file_path?: string | null
           scheduled_at: string
           session_id?: string | null
           status?: string
@@ -296,10 +300,12 @@ export type Database = {
         Update: {
           candidate_name?: string
           created_at?: string
+          cv_file_path?: string | null
           duration_minutes?: number
           id?: string
           interview_title?: string
           invited_email?: string | null
+          jd_file_path?: string | null
           scheduled_at?: string
           session_id?: string | null
           status?: string
