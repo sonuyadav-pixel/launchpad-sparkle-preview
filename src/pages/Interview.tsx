@@ -912,7 +912,7 @@ const Interview = () => {
       
       // Check if this is a scheduled interview with CV/JD files
       const scheduledInterviewId = searchParams.get('scheduled');
-      let welcomeMessage = "Hello! Welcome to your AI interview. Please introduce yourself and tell me about your background.";
+      let welcomeMessage = "";
       let useEC2 = false;
       
       if (scheduledInterviewId) {
@@ -944,42 +944,39 @@ const Interview = () => {
               welcomeMessage = initData.question;
               console.log('✅ EC2 interview initialized with first question from Llama');
             } else {
-              console.warn('⚠️ EC2 initialization failed, using default welcome:', initError);
-              useEC2 = false; // Fall back to default flow if EC2 fails
+              console.warn('⚠️ EC2 initialization failed:', initError);
+              useEC2 = false; // Fall back if EC2 fails
             }
           }
         } catch (ec2Error) {
-          console.warn('⚠️ Failed to initialize EC2 interview, using default flow:', ec2Error);
+          console.warn('⚠️ Failed to initialize EC2 interview:', ec2Error);
           useEC2 = false;
         }
       }
       
-      // Only show welcome message after we have the response (either from EC2 or default)
-      const aiMessage: TranscriptMessage = {
-        id: Date.now().toString(),
-        speaker: 'ai',
-        message: welcomeMessage,
-        timestamp: new Date()
-      };
-      
-      // Add to transcript once only
-      setLocalTranscript(prev => [aiMessage, ...prev]);
-      
-      // Save to database (this may trigger realtime subscription, so don't duplicate)
-      try {
-        await addTranscriptMessage(aiMessage);
+      // Only show welcome message if we got one from EC2
+      if (welcomeMessage) {
+        const aiMessage: TranscriptMessage = {
+          id: Date.now().toString(),
+          speaker: 'ai',
+          message: welcomeMessage,
+          timestamp: new Date()
+        };
         
-        // Speak welcome message (non-blocking)
-        speak(welcomeMessage, 'alloy').catch((ttsError) => {
-          console.warn('⚠️ TTS failed for welcome message:', ttsError);
-          toast({
-            title: "Audio Unavailable",
-            description: "Text-to-speech is currently unavailable. Interview will continue with text only.",
-            variant: "default"
+        // Add to transcript once only
+        setLocalTranscript(prev => [aiMessage, ...prev]);
+        
+        // Save to database
+        try {
+          await addTranscriptMessage(aiMessage);
+          
+          // Speak welcome message (non-blocking)
+          speak(welcomeMessage, 'alloy').catch(() => {
+            console.warn('⚠️ TTS failed for welcome message');
           });
-        });
-      } catch (dbError) {
-        console.warn('⚠️ Database save failed:', dbError);
+        } catch (dbError) {
+          console.warn('⚠️ Database save failed:', dbError);
+        }
       }
       
       console.log('✅ Interview started successfully');
