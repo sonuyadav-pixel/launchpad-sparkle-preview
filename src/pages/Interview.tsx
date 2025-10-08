@@ -577,25 +577,31 @@ const Interview = () => {
   // Generate AI response using EC2 backend
   const generateAIResponse = async (userInput: string): Promise<string> => {
     try {
-      console.log('🤖 Generating AI response from EC2 backend for:', userInput);
-      console.log('📋 Current session ID:', sessionId);
-      console.log('📋 Calling ec2-interview function with:', {
+      console.log('🤖 ========================================');
+      console.log('🤖 GENERATING AI RESPONSE FROM EC2');
+      console.log('🤖 User input:', userInput);
+      console.log('🤖 Session ID:', sessionId);
+      console.log('🤖 ========================================');
+      
+      const requestBody = { 
         action: 'next',
         userId: sessionId,
         answer: userInput
-      });
+      };
+      
+      console.log('📋 Request body:', JSON.stringify(requestBody, null, 2));
       
       // Call EC2 backend for next question
+      console.log('📞 Invoking ec2-interview function...');
       const { data, error } = await supabase.functions.invoke('ec2-interview', {
-        body: { 
-          action: 'next',
-          userId: sessionId,
-          answer: userInput
-        }
+        body: requestBody
       });
 
-      console.log('📥 EC2 response received:', { data, error });
-      console.log('📥 Full response data:', JSON.stringify(data, null, 2));
+      console.log('📥 ========================================');
+      console.log('📥 EC2 RESPONSE RECEIVED');
+      console.log('📥 Error:', error);
+      console.log('📥 Data:', JSON.stringify(data, null, 2));
+      console.log('📥 ========================================');
 
       if (error) {
         console.error('🤖 EC2 API error:', error);

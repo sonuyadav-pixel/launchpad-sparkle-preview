@@ -181,7 +181,11 @@ Deno.serve(async (req) => {
 
     // Handle next question action
     if (action === 'next') {
+      console.log('📡 EC2 Interview Action: NEXT for user', userId);
+      console.log('📝 User answer:', answer);
+      
       if (!answer) {
+        console.error('❌ Missing answer for next question');
         throw new Error('Missing answer for next question');
       }
 
@@ -190,7 +194,7 @@ Deno.serve(async (req) => {
       formData.append('user_id', userId);
       formData.append('answer', answer);
 
-      console.log('📤 Sending next question request to EC2...');
+      console.log('📤 Sending next question request to EC2:', `${ec2BaseUrl}/next`);
       
       const ec2Response = await fetch(`${ec2BaseUrl}/next`, {
         method: 'POST',
