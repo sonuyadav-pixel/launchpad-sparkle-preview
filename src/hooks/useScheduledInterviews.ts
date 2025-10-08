@@ -15,6 +15,8 @@ export interface ScheduledInterview {
   jd_file_path?: string;
   created_at: string;
   updated_at: string;
+  attempts_count: number;
+  max_attempts: number;
 }
 
 export const useScheduledInterviews = () => {
@@ -182,11 +184,34 @@ export const useScheduledInterviews = () => {
 
   const getUpcomingInterview = useCallback(() => {
     const now = new Date();
-    return scheduledInterviews.find(interview => 
-      interview.status === 'scheduled' && 
-      new Date(interview.scheduled_at) > now
-    );
+    return scheduledInterviews.find(interview => {
+      const scheduledTime = new Date(interview.scheduled_at);
+      const hasAttemptsRemaining = interview.attempts_count < interview.max_attempts;
+      const isScheduledInFuture = scheduledTime > now;
+      
+      return interview.status === 'scheduled' && 
+             hasAttemptsRemaining && 
+             isScheduledInFuture;
+    });
   }, [scheduledInterviews]);
+  
+  const incrementAttempts = useCallback(async (id: string) => {
+    try {
+      const interview = scheduledInterviews.find(i => i.id === id);
+      if (!interview) return;
+      
+      const newAttemptsCount = interview.attempts_count + 1;
+      
+      await updateScheduledInterview(id, {
+        attempts_count: newAttemptsCount
+      });
+      
+      return newAttemptsCount;
+    } catch (err: any) {
+      console.error('Error incrementing attempts:', err);
+      throw err;
+    }
+  }, [scheduledInterviews, updateScheduledInterview]);
 
   const getInterviewsForDate = useCallback((date: Date) => {
     const startOfDay = new Date(date);
@@ -214,6 +239,7 @@ export const useScheduledInterviews = () => {
     updateScheduledInterview,
     deleteScheduledInterview,
     getUpcomingInterview,
-    getInterviewsForDate
+    getInterviewsForDate,
+    incrementAttempts
   };
 };

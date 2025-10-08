@@ -268,6 +268,7 @@ export type Database = {
       }
       scheduled_interviews: {
         Row: {
+          attempts_count: number
           candidate_name: string
           created_at: string
           cv_file_path: string | null
@@ -276,6 +277,7 @@ export type Database = {
           interview_title: string
           invited_email: string | null
           jd_file_path: string | null
+          max_attempts: number
           scheduled_at: string
           session_id: string | null
           status: string
@@ -283,6 +285,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempts_count?: number
           candidate_name: string
           created_at?: string
           cv_file_path?: string | null
@@ -291,6 +294,7 @@ export type Database = {
           interview_title: string
           invited_email?: string | null
           jd_file_path?: string | null
+          max_attempts?: number
           scheduled_at: string
           session_id?: string | null
           status?: string
@@ -298,6 +302,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempts_count?: number
           candidate_name?: string
           created_at?: string
           cv_file_path?: string | null
@@ -306,6 +311,7 @@ export type Database = {
           interview_title?: string
           invited_email?: string | null
           jd_file_path?: string | null
+          max_attempts?: number
           scheduled_at?: string
           session_id?: string | null
           status?: string

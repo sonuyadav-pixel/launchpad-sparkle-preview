@@ -13,7 +13,7 @@ import { SectionLoader } from '@/components/ui/loader';
 
 export const UpcomingInterviewSection = () => {
   const navigate = useNavigate();
-  const { scheduledInterviews, updateScheduledInterview, loading } = useScheduledInterviews();
+  const { scheduledInterviews, updateScheduledInterview, incrementAttempts, loading } = useScheduledInterviews();
   const { createSession } = useInterviewSession();
   const { user } = useUserProfile();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -24,11 +24,15 @@ export const UpcomingInterviewSection = () => {
     if (!user?.email) return null;
     
     const now = new Date();
-    const invitedInterviews = scheduledInterviews.filter(interview => 
-      interview.invited_email === user.email && 
-      interview.status === 'scheduled' &&
-      new Date(interview.scheduled_at) > now
-    );
+    const invitedInterviews = scheduledInterviews.filter(interview => {
+      const hasAttemptsRemaining = interview.attempts_count < interview.max_attempts;
+      const isScheduledInFuture = new Date(interview.scheduled_at) > now;
+      
+      return interview.invited_email === user.email && 
+             interview.status === 'scheduled' &&
+             hasAttemptsRemaining &&
+             isScheduledInFuture;
+    });
     
     return invitedInterviews.sort((a, b) => 
       new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()
@@ -125,6 +129,9 @@ export const UpcomingInterviewSection = () => {
     }
 
     try {
+      // Increment attempts count
+      await incrementAttempts(upcomingInterview.id);
+      
       // Create interview session
       const session = await createSession({
         title: upcomingInterview.interview_title,
@@ -192,6 +199,9 @@ export const UpcomingInterviewSection = () => {
                   Invited
                 </Badge>
               )}
+              <Badge variant="secondary" className="text-xs">
+                {upcomingInterview.max_attempts - upcomingInterview.attempts_count} attempts left
+              </Badge>
             </div>
 
             {showTimeError && !interviewState.canStart && (

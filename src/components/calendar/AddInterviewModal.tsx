@@ -75,7 +75,9 @@ export const AddInterviewModal = ({ isOpen, onClose, selectedDate, selectedTime 
         scheduled_at: scheduledAt.toISOString(),
         duration_minutes: duration,
         status: 'scheduled',
-        invited_email: invitedEmail.trim()
+        invited_email: invitedEmail.trim(),
+        attempts_count: 0,
+        max_attempts: 100 // Set to 100 for testing, change to 3 for production
       }, cvFile, jdFile);
 
       toast.success('Interview scheduled successfully! CV and JD uploaded.');
