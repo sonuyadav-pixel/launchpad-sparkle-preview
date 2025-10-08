@@ -260,12 +260,12 @@ const Interview = () => {
       let finalTranscript = '';
       let interimTranscript = '';
       
-      // Process ALL results, not just from resultIndex
-      for (let i = 0; i < event.results.length; i++) {
+      // Process only NEW results starting from resultIndex to avoid duplicates
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         
         if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+          finalTranscript += transcript + ' ';
         } else {
           interimTranscript += transcript;
         }
