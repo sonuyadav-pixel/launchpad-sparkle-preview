@@ -577,6 +577,11 @@ const Interview = () => {
     try {
       console.log('🤖 Generating AI response from EC2 backend for:', userInput);
       console.log('📋 Current session ID:', sessionId);
+      console.log('📋 Calling ec2-interview function with:', {
+        action: 'next',
+        userId: sessionId,
+        answer: userInput
+      });
       
       // Call EC2 backend for next question
       const { data, error } = await supabase.functions.invoke('ec2-interview', {
@@ -587,7 +592,8 @@ const Interview = () => {
         }
       });
 
-      console.log('📥 EC2 response:', { data, error });
+      console.log('📥 EC2 response received:', { data, error });
+      console.log('📥 Full response data:', JSON.stringify(data, null, 2));
 
       if (error) {
         console.error('🤖 EC2 API error:', error);
