@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, Plus, Trash2, X, Laptop, Users } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, addYears, subYears } from 'date-fns';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, User, Plus, Trash2, X, Laptop, Users, Play, AlertCircle } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, addMonths, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, addYears, subYears, differenceInMinutes } from 'date-fns';
 import { useScheduledInterviews, type ScheduledInterview } from '@/hooks/useScheduledInterviews';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useInterviewSession } from '@/hooks/useInterviewSession';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AddInterviewModal } from './AddInterviewModal';
 import { SectionLoader } from '@/components/ui/loader';
@@ -20,13 +22,94 @@ interface CalendarViewProps {
 }
 
 export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) => {
+  const navigate = useNavigate();
   const [viewType, setViewType] = useState<CalendarViewType>('monthly');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalSelectedDate, setModalSelectedDate] = useState<Date | undefined>(undefined);
   const [modalSelectedTime, setModalSelectedTime] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState('calendar');
-  const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, loading } = useScheduledInterviews();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const { scheduledInterviews, getInterviewsForDate, deleteScheduledInterview, updateScheduledInterview, loading } = useScheduledInterviews();
   const { profile } = useUserProfile();
+  const { createSession } = useInterviewSession();
+
+  const getInterviewStatus = (scheduledAt: string, durationMinutes: number) => {
+    const startTime = new Date(scheduledAt);
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
+    const now = new Date();
+    
+    // Available 1 hour before start time
+    const availableTime = new Date(startTime.getTime() - 60 * 60 * 1000);
+    
+    // 2 hours after end time = missed
+    const missedTime = new Date(endTime.getTime() + 2 * 60 * 60 * 1000);
+    
+    if (now < availableTime) {
+      return { status: 'upcoming', canStart: false, label: 'Upcoming' };
+    }
+    
+    if (now >= availableTime && now < startTime) {
+      return { status: 'ready', canStart: true, label: 'Ready' };
+    }
+    
+    if (now >= startTime && now < endTime) {
+      return { status: 'ongoing', canStart: true, label: 'Ongoing' };
+    }
+    
+    if (now >= endTime && now < missedTime) {
+      return { status: 'delayed', canStart: true, label: 'Delayed' };
+    }
+    
+    return { status: 'missed', canStart: false, label: 'Missed' };
+  };
+
+  const getTimeUntilAvailable = (scheduledAt: string) => {
+    const startTime = new Date(scheduledAt);
+    const availableTime = new Date(startTime.getTime() - 60 * 60 * 1000);
+    const minutesUntil = differenceInMinutes(availableTime, currentTime);
+    
+    if (minutesUntil <= 0) return null;
+    
+    const hours = Math.floor(minutesUntil / 60);
+    const minutes = minutesUntil % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
+  const handleStartInterview = async (interview: ScheduledInterview) => {
+    const interviewState = getInterviewStatus(interview.scheduled_at, interview.duration_minutes);
+    
+    if (!interviewState.canStart) {
+      const timeUntil = getTimeUntilAvailable(interview.scheduled_at);
+      const interviewTime = format(new Date(interview.scheduled_at), 'PPp');
+      
+      toast.error(`Interview will be available ${timeUntil ? `in ${timeUntil}` : 'at'} ${interviewTime}`);
+      return;
+    }
+
+    try {
+      // Create interview session
+      const session = await createSession({
+        title: interview.interview_title,
+        interview_type: 'scheduled'
+      });
+
+      // Update scheduled interview with session ID and mark as active
+      await updateScheduledInterview(interview.id, {
+        session_id: session.id,
+        status: 'active'
+      });
+
+      // Navigate to interview with scheduled interview ID
+      navigate(`/interview?session=${session.id}&scheduled=${interview.id}`);
+    } catch (error: any) {
+      console.error('Error starting interview:', error);
+      toast.error('Failed to start interview');
+    }
+  };
 
   const handleDeleteInterview = async (interview: ScheduledInterview, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -272,6 +355,27 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
 
   const hasInvitedInterviews = invitedInterviews.length > 0;
 
+  // Update current time every minute and check for missed interviews
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+      
+      // Check if any invited interviews should be marked as missed
+      invitedInterviews.forEach(interview => {
+        if (interview.status === 'scheduled') {
+          const interviewState = getInterviewStatus(interview.scheduled_at, interview.duration_minutes);
+          if (interviewState.status === 'missed') {
+            updateScheduledInterview(interview.id, {
+              status: 'missed'
+            }).catch(err => console.error('Failed to update missed interview:', err));
+          }
+        }
+      });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [invitedInterviews, updateScheduledInterview]);
+
   const renderScheduledInterviewsList = () => {
     if (invitedInterviews.length === 0) {
       return (
@@ -299,56 +403,77 @@ export const CalendarView = ({ selectedDate, onDateSelect }: CalendarViewProps) 
 
     return (
       <div className="space-y-4">
-        {sortedInterviews.map((interview) => (
-          <Card key={interview.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge variant={interview.status === 'scheduled' ? 'default' : 'secondary'}>
-                      {interview.status}
-                    </Badge>
-                    <h4 className="font-semibold text-lg">{interview.interview_title}</h4>
+        {sortedInterviews.map((interview) => {
+          const interviewState = getInterviewStatus(interview.scheduled_at, interview.duration_minutes);
+          const timeUntilAvailable = getTimeUntilAvailable(interview.scheduled_at);
+          
+          return (
+            <Card key={interview.id} className="hover:shadow-md transition-shadow border-l-4 border-l-primary">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-semibold text-lg">{interview.interview_title}</h4>
+                      <Badge variant={
+                        interviewState.status === 'ready' ? 'default' :
+                        interviewState.status === 'ongoing' ? 'default' :
+                        interviewState.status === 'delayed' ? 'destructive' :
+                        interviewState.status === 'missed' ? 'secondary' :
+                        'secondary'
+                      }>
+                        {interviewState.label}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span>{interview.candidate_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{interview.duration_minutes} minutes</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>{format(new Date(interview.scheduled_at), 'MMM d, yyyy')}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(new Date(interview.scheduled_at), 'h:mm a')}</span>
+                      </div>
+                    </div>
+
+                    {interviewState.status === 'delayed' && (
+                      <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 dark:bg-orange-950/20 p-2 rounded mb-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>Interview time has passed. You can still join within 2 hours of end time.</span>
+                      </div>
+                    )}
+
+                    {!interviewState.canStart && timeUntilAvailable && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-2 rounded">
+                        <Clock className="h-4 w-4" />
+                        <span>Available in {timeUntilAvailable}</span>
+                      </div>
+                    )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>{interview.candidate_name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{interview.duration_minutes} minutes</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" />
-                      <span>{format(new Date(interview.scheduled_at), 'MMM d, yyyy')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{format(new Date(interview.scheduled_at), 'h:mm a')}</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={() => handleStartInterview(interview)}
+                      disabled={!interviewState.canStart || interview.status === 'completed' || interview.status === 'missed'}
+                      size="lg"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      {interviewState.status === 'delayed' ? 'Join Now' : 'Start Interview'}
+                    </Button>
                   </div>
-                  
-                  {interview.invited_email && (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      <strong>Invited:</strong> {interview.invited_email}
-                    </div>
-                  )}
                 </div>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => handleDeleteInterview(interview, e)}
-                  className="ml-4 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   };
