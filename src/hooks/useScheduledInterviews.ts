@@ -126,25 +126,23 @@ export const useScheduledInterviews = () => {
       setLoading(true);
       setError(null);
 
-      // Since we can't pass method in invoke, we'll use a direct fetch call
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`https://ecrxtqvkncbbolmfqpxx.supabase.co/functions/v1/scheduled-interviews/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify(updates)
-      });
+      // Update directly in Supabase table
+      const { data, error } = await supabase
+        .from('scheduled_interviews')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update interview');
+      if (error) throw error;
+
+      const updatedInterview = data as ScheduledInterview;
 
       setScheduledInterviews(prev => prev.map(interview => 
-        interview.id === id ? data : interview
+        interview.id === id ? updatedInterview : interview
       ));
 
-      return data;
+      return updatedInterview;
     } catch (err: any) {
       console.error('Error updating scheduled interview:', err);
       setError(err.message);

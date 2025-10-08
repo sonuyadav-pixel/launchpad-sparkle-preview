@@ -111,10 +111,16 @@ export const UpcomingInterviewSection = () => {
       const timeUntil = getTimeUntilAvailable(upcomingInterview.scheduled_at);
       const interviewTime = format(new Date(upcomingInterview.scheduled_at), 'PPp');
       
-      setShowTimeError(true);
-      toast.error(`Interview will be available ${timeUntil ? `in ${timeUntil}` : 'at'} ${interviewTime}`);
+      // Different error messages based on status
+      if (interviewState.status === 'upcoming') {
+        setShowTimeError(true);
+        toast.error(`Starting too early! You can start the interview 1 hour before the scheduled time (${interviewTime})`);
+      } else if (interviewState.status === 'missed') {
+        setShowTimeError(true);
+        toast.error('This interview slot has expired. Please contact your HR to reschedule.');
+      }
       
-      setTimeout(() => setShowTimeError(false), 3000);
+      setTimeout(() => setShowTimeError(false), 5000);
       return;
     }
 
@@ -135,7 +141,7 @@ export const UpcomingInterviewSection = () => {
       navigate(`/interview?session=${session.id}&scheduled=${upcomingInterview.id}`);
     } catch (error: any) {
       console.error('Error starting interview:', error);
-      toast.error('Failed to start interview');
+      toast.error('Failed to start interview. Please try again.');
     }
   };
 
@@ -189,10 +195,15 @@ export const UpcomingInterviewSection = () => {
             </div>
 
             {showTimeError && !interviewState.canStart && (
-              <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 dark:bg-orange-950/20 p-2 rounded mb-3">
-                <AlertCircle className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-sm p-3 rounded mb-3 bg-destructive/10 text-destructive border border-destructive/20">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>
-                  Interview will be available {timeUntilAvailable ? `in ${timeUntilAvailable}` : 'at scheduled time'}
+                  {interviewState.status === 'upcoming' 
+                    ? `Starting too early! You can start 1 hour before scheduled time (${format(new Date(upcomingInterview.scheduled_at), 'PPp')})`
+                    : interviewState.status === 'missed'
+                    ? 'This interview slot has expired. Please contact your HR to reschedule.'
+                    : `Interview will be available ${timeUntilAvailable ? `in ${timeUntilAvailable}` : 'at scheduled time'}`
+                  }
                 </span>
               </div>
             )}
