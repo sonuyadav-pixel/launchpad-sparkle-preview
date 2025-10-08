@@ -46,9 +46,9 @@ Deno.serve(async (req) => {
         .from('interview-cvs')
         .download(cvFilePath);
 
-      if (cvError) {
+      if (cvError || !cvData) {
         console.error('❌ Error downloading CV:', cvError);
-        throw new Error(`Failed to download CV: ${cvError.message}`);
+        throw new Error(`Failed to download CV: ${cvError?.message || 'No data'}`);
       }
 
       // Download JD from Supabase storage
@@ -56,18 +56,28 @@ Deno.serve(async (req) => {
         .from('interview-jds')
         .download(jdFilePath);
 
-      if (jdError) {
+      if (jdError || !jdData) {
         console.error('❌ Error downloading JD:', jdError);
-        throw new Error(`Failed to download JD: ${jdError.message}`);
+        throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
       }
 
-      // Create FormData for EC2 /init_interview
+      // Convert Blobs to base64 strings
+      const cvArrayBuffer = await cvData.arrayBuffer();
+      const cvBase64 = btoa(String.fromCharCode(...new Uint8Array(cvArrayBuffer)));
+      
+      const jdArrayBuffer = await jdData.arrayBuffer();
+      const jdBase64 = btoa(String.fromCharCode(...new Uint8Array(jdArrayBuffer)));
+
+      // Create FormData with base64 strings
       const formData = new FormData();
       formData.append('user_id', userId);
-      formData.append('cv', cvData, cvFilePath.split('/').pop() || 'cv.pdf');
-      formData.append('jd', jdData, jdFilePath.split('/').pop() || 'jd.pdf');
+      formData.append('cv', cvBase64);
+      formData.append('jd', jdBase64);
 
-      console.log('📤 Sending init_interview request to EC2...');
+      console.log('📤 Sending init_interview request to EC2 with file sizes:', {
+        cv: cvArrayBuffer.byteLength,
+        jd: jdArrayBuffer.byteLength
+      });
       
       const ec2Response = await fetch(`${ec2BaseUrl}/init_interview`, {
         method: 'POST',
