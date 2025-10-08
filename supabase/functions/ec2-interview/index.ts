@@ -5,6 +5,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to summarize document using Lovable AI
+async function summarizeDocument(text: string, type: 'cv' | 'jd'): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.warn('LOVABLE_API_KEY not found, returning truncated text');
+    return text.slice(0, 2000); // Fallback to first 2000 chars
+  }
+
+  const prompt = type === 'cv' 
+    ? `Summarize this CV/Resume comprehensively, including: candidate's name, key skills, work experience highlights, education, and notable achievements. Keep it detailed but concise (max 500 words):\n\n${text}`
+    : `Summarize this Job Description comprehensively, including: job title, key responsibilities, required skills and qualifications, experience requirements, and important role details. Keep it detailed but concise (max 500 words):\n\n${text}`;
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: 'You are a document summarization assistant. Create comprehensive yet concise summaries.' },
+          { role: 'user', content: prompt }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('AI summarization failed:', await response.text());
+      return text.slice(0, 2000); // Fallback
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content || text.slice(0, 2000);
+  } catch (error) {
+    console.error('Error summarizing document:', error);
+    return text.slice(0, 2000); // Fallback
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -61,33 +102,28 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
       }
 
-      // Convert Blobs to base64 strings (without stack overflow)
-      const cvArrayBuffer = await cvData.arrayBuffer();
-      const cvUint8 = new Uint8Array(cvArrayBuffer);
-      let cvBinary = '';
-      for (let i = 0; i < cvUint8.length; i++) {
-        cvBinary += String.fromCharCode(cvUint8[i]);
-      }
-      const cvBase64 = btoa(cvBinary);
-      
-      const jdArrayBuffer = await jdData.arrayBuffer();
-      const jdUint8 = new Uint8Array(jdArrayBuffer);
-      let jdBinary = '';
-      for (let i = 0; i < jdUint8.length; i++) {
-        jdBinary += String.fromCharCode(jdUint8[i]);
-      }
-      const jdBase64 = btoa(jdBinary);
+      // Convert Blobs to text (assuming text-based files)
+      const cvText = await cvData.text();
+      const jdText = await jdData.text();
 
-      // Create FormData with base64 strings
+      console.log('📄 Document lengths - CV:', cvText.length, 'JD:', jdText.length);
+
+      // Summarize both documents using AI
+      console.log('🤖 Summarizing CV and JD...');
+      const [cvSummary, jdSummary] = await Promise.all([
+        summarizeDocument(cvText, 'cv'),
+        summarizeDocument(jdText, 'jd')
+      ]);
+
+      console.log('✅ Summaries generated - CV:', cvSummary.length, 'chars, JD:', jdSummary.length, 'chars');
+
+      // Create FormData with summaries as text
       const formData = new FormData();
       formData.append('user_id', userId);
-      formData.append('cv', cvBase64);
-      formData.append('jd', jdBase64);
+      formData.append('cv', cvSummary);
+      formData.append('jd', jdSummary);
 
-      console.log('📤 Sending init_interview request to EC2 with file sizes:', {
-        cv: cvArrayBuffer.byteLength,
-        jd: jdArrayBuffer.byteLength
-      });
+      console.log('📤 Sending init_interview request to EC2 with summaries');
       
       const ec2Response = await fetch(`${ec2BaseUrl}/init_interview`, {
         method: 'POST',
