@@ -515,14 +515,16 @@ const Interview = () => {
       
       setLocalTranscript(prev => [userMessage, ...prev]);
       
+      console.log('📞 About to call generateAIResponse with transcript:', transcript);
+      
       // PARALLEL: Add to transcript database AND generate AI response
       const [, aiResponse] = await Promise.all([
         addTranscriptMessage(userMessage),
         generateAIResponse(transcript)
       ]);
       
-      console.log('✅ AI Response received:', aiResponse?.substring(0, 100));
-      console.log('🔊 isAISpeaking.current:', isAISpeaking.current);
+      console.log('✅ AI Response received (first 100 chars):', aiResponse?.substring(0, 100));
+      console.log('🔊 isAISpeaking.current after response:', isAISpeaking.current);
       
       if (aiResponse) {
         // Mark AI as speaking before starting TTS (but keep speech recognition running)
