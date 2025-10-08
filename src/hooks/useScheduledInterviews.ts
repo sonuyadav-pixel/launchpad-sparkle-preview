@@ -8,7 +8,7 @@ export interface ScheduledInterview {
   interview_title: string;
   scheduled_at: string;
   duration_minutes: number;
-  status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'missed';
+  status: 'scheduled' | 'active' | 'completed' | 'cancelled' | 'missed' | 'no-show';
   session_id?: string;
   invited_email: string;
   cv_file_path?: string;
