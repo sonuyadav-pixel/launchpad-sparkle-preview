@@ -10,12 +10,12 @@ async function summarizeDocument(text: string, type: 'cv' | 'jd'): Promise<strin
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
     console.warn('LOVABLE_API_KEY not found, returning truncated text');
-    return text.slice(0, 2000); // Fallback to first 2000 chars
+    return text.slice(0, 300); // Fallback to first 300 chars (~50 words)
   }
 
   const prompt = type === 'cv' 
-    ? `Summarize this CV/Resume comprehensively, including: candidate's name, key skills, work experience highlights, education, and notable achievements. Keep it detailed but concise (max 500 words):\n\n${text}`
-    : `Summarize this Job Description comprehensively, including: job title, key responsibilities, required skills and qualifications, experience requirements, and important role details. Keep it detailed but concise (max 500 words):\n\n${text}`;
+    ? `Summarize this CV/Resume in max 50 words. Include: candidate's name, top 2-3 skills, current role, years of experience:\n\n${text}`
+    : `Summarize this Job Description in max 50 words. Include: job title, 2-3 key requirements, experience level needed:\n\n${text}`;
 
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -35,14 +35,14 @@ async function summarizeDocument(text: string, type: 'cv' | 'jd'): Promise<strin
 
     if (!response.ok) {
       console.error('AI summarization failed:', await response.text());
-      return text.slice(0, 2000); // Fallback
+      return text.slice(0, 300); // Fallback
     }
 
     const data = await response.json();
-    return data.choices[0].message.content || text.slice(0, 2000);
+    return data.choices[0].message.content || text.slice(0, 300);
   } catch (error) {
     console.error('Error summarizing document:', error);
-    return text.slice(0, 2000); // Fallback
+    return text.slice(0, 300); // Fallback
   }
 }
 
