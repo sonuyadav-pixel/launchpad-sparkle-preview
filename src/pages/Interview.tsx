@@ -962,9 +962,10 @@ const Interview = () => {
         timestamp: new Date()
       };
       
+      // Add to transcript once only
       setLocalTranscript(prev => [aiMessage, ...prev]);
       
-      // Try TTS but don't fail interview if it doesn't work
+      // Save to database (this may trigger realtime subscription, so don't duplicate)
       try {
         await addTranscriptMessage(aiMessage);
         

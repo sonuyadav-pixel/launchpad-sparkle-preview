@@ -61,12 +61,22 @@ Deno.serve(async (req) => {
         throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
       }
 
-      // Convert Blobs to base64 strings
+      // Convert Blobs to base64 strings (without stack overflow)
       const cvArrayBuffer = await cvData.arrayBuffer();
-      const cvBase64 = btoa(String.fromCharCode(...new Uint8Array(cvArrayBuffer)));
+      const cvUint8 = new Uint8Array(cvArrayBuffer);
+      let cvBinary = '';
+      for (let i = 0; i < cvUint8.length; i++) {
+        cvBinary += String.fromCharCode(cvUint8[i]);
+      }
+      const cvBase64 = btoa(cvBinary);
       
       const jdArrayBuffer = await jdData.arrayBuffer();
-      const jdBase64 = btoa(String.fromCharCode(...new Uint8Array(jdArrayBuffer)));
+      const jdUint8 = new Uint8Array(jdArrayBuffer);
+      let jdBinary = '';
+      for (let i = 0; i < jdUint8.length; i++) {
+        jdBinary += String.fromCharCode(jdUint8[i]);
+      }
+      const jdBase64 = btoa(jdBinary);
 
       // Create FormData with base64 strings
       const formData = new FormData();
