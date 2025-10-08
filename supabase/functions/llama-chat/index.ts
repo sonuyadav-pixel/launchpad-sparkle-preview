@@ -86,14 +86,18 @@ Context: This is a real-time voice interview, so keep your responses brief and c
     // Get Llama API key
     const LLAMA_API_KEY = Deno.env.get('LLAMA_API_KEY');
 
-    // Retry logic for transient errors (502, 503, 504)
-    const maxRetries = 3;
+    // Retry logic for transient errors (502, 503, 504) with shorter timeout
+    const maxRetries = 2;
     let llamaResponse;
     let lastError;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         console.log(`📡 Attempt ${attempt + 1}/${maxRetries} to call Llama API`);
+        
+        // Create abort controller with 15 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         
         llamaResponse = await fetch(LLAMA_API_URL, {
           method: 'POST',
@@ -103,9 +107,17 @@ Context: This is a real-time voice interview, so keep your responses brief and c
           },
           body: JSON.stringify({
             model: "llama3.1",
-            prompt: prompt
-          })
+            prompt: prompt,
+            stream: false,
+            options: {
+              num_predict: 100, // Limit response length for faster generation
+              temperature: 0.7
+            }
+          }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         // If successful or non-retryable error, break
         if (llamaResponse.ok || ![502, 503, 504].includes(llamaResponse.status)) {
@@ -116,18 +128,18 @@ Context: This is a real-time voice interview, so keep your responses brief and c
         console.warn(`⚠️ Received ${llamaResponse.status} error, retrying...`);
         lastError = llamaResponse.status;
 
-        // Wait with exponential backoff before retrying (1s, 2s, 3s)
+        // Wait shorter time before retrying (500ms, 1s)
         if (attempt < maxRetries - 1) {
-          const waitTime = 1000 * (attempt + 1);
+          const waitTime = 500 * (attempt + 1);
           console.log(`⏳ Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       } catch (error) {
-        console.error(`❌ Network error on attempt ${attempt + 1}:`, error);
+        console.error(`❌ Network/timeout error on attempt ${attempt + 1}:`, error);
         lastError = error;
         
         if (attempt < maxRetries - 1) {
-          const waitTime = 1000 * (attempt + 1);
+          const waitTime = 500 * (attempt + 1);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }

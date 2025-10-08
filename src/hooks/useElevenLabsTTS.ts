@@ -21,6 +21,13 @@ export const useElevenLabsTTS = () => {
         console.error('🔊 ElevenLabs TTS error:', error);
         setLoading(false);
         setIsPlaying(false);
+        
+        // Check if it's a quota error - don't throw, just return gracefully
+        if (error.message?.includes('quota_exceeded') || error.message?.includes('quota')) {
+          console.warn('⚠️ ElevenLabs quota exceeded - interview will continue without audio');
+          return; // Gracefully skip audio
+        }
+        
         throw error;
       }
 
@@ -28,6 +35,13 @@ export const useElevenLabsTTS = () => {
         console.error('🔊 No audio content received from ElevenLabs');
         setLoading(false);
         setIsPlaying(false);
+        
+        // Don't throw if data.error indicates quota issue
+        if (data?.error?.includes('quota')) {
+          console.warn('⚠️ ElevenLabs quota exceeded - interview will continue without audio');
+          return;
+        }
+        
         throw new Error('No audio content received from ElevenLabs');
       }
 
