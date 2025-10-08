@@ -18,31 +18,17 @@ export const useElevenLabsTTS = () => {
       });
 
       if (error) {
-        console.error('🔊 ElevenLabs TTS error:', error);
+        console.warn('🔊 ElevenLabs TTS error (continuing without audio):', error);
         setLoading(false);
         setIsPlaying(false);
-        
-        // Check if it's a quota error - don't throw, just return gracefully
-        if (error.message?.includes('quota_exceeded') || error.message?.includes('quota')) {
-          console.warn('⚠️ ElevenLabs quota exceeded - interview will continue without audio');
-          return; // Gracefully skip audio
-        }
-        
-        throw error;
+        return; // Gracefully skip audio - don't throw
       }
 
       if (!data?.audioContent) {
-        console.error('🔊 No audio content received from ElevenLabs');
+        console.warn('🔊 No audio content received (continuing without audio)');
         setLoading(false);
         setIsPlaying(false);
-        
-        // Don't throw if data.error indicates quota issue
-        if (data?.error?.includes('quota')) {
-          console.warn('⚠️ ElevenLabs quota exceeded - interview will continue without audio');
-          return;
-        }
-        
-        throw new Error('No audio content received from ElevenLabs');
+        return; // Gracefully skip audio - don't throw
       }
 
       console.log('🔊 Audio content received, length:', data.audioContent.length);
@@ -80,7 +66,7 @@ export const useElevenLabsTTS = () => {
         };
 
         audio.onerror = (error) => {
-          console.error('🔊 Audio playback error:', error);
+          console.warn('🔊 Audio playback error (continuing):', error);
           setIsPlaying(false);
           setLoading(false);
           URL.revokeObjectURL(audioUrl);
@@ -91,24 +77,17 @@ export const useElevenLabsTTS = () => {
         console.log('🔊 Playing ElevenLabs audio');
 
       } catch (audioError) {
-        console.error('🔊 Audio processing error:', audioError);
+        console.warn('🔊 Audio processing error (continuing without audio):', audioError);
         setLoading(false);
         setIsPlaying(false);
-        throw audioError;
+        // Don't throw - just continue without audio
       }
 
     } catch (error) {
-      console.error('🔊 ElevenLabs TTS error:', error);
+      console.warn('🔊 ElevenLabs TTS error (continuing without audio):', error);
       setIsPlaying(false);
       setLoading(false);
-      
-      // Try to provide helpful error message
-      if (error.message?.includes('system_busy')) {
-        console.warn('🔊 ElevenLabs system busy, using fallback');
-        // Could implement a fallback TTS here if needed
-      }
-      
-      throw error;
+      // Never throw - always continue the interview
     }
   }, []);
 

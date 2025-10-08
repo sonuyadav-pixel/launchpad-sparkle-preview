@@ -475,8 +475,10 @@ const Interview = () => {
       // Save to database
       await addTranscriptMessage(acknowledgmentMessage);
 
-      // Speak "Sure" using TTS
-      await speak('Sure', 'alloy');
+      // Speak "Sure" using TTS - but don't wait for it or let it block
+      speak('Sure', 'alloy').catch(() => {
+        console.warn('⚠️ TTS acknowledgment failed, but transcript is saved');
+      });
 
     } catch (error) {
       console.error('❌ Error in acknowledgment:', error);
@@ -537,22 +539,20 @@ const Interview = () => {
         
         try {
           // PARALLEL: Add AI response to database AND start TTS conversion
-          const [, ] = await Promise.all([
-            addTranscriptMessage(aiMessage),
-            speak(aiResponse, 'alloy').catch((ttsError) => {
-              console.warn('⚠️ TTS failed, continuing without audio:', ttsError);
-              // Don't throw error, just log it - interview can continue without TTS
-              return null;
-            })
-          ]);
+          await addTranscriptMessage(aiMessage);
           
-          console.log('🤖 AI finished speaking');
+          // Start TTS but don't wait for it or let it block the interview
+          speak(aiResponse, 'alloy').catch(() => {
+            console.warn('⚠️ TTS failed, but transcript is already saved and visible');
+          });
+          
+          console.log('🤖 AI response added to transcript');
           isAISpeaking.current = false;
           
         } catch (error) {
-          console.error('❌ Error in AI response processing:', error);
+          console.error('❌ Error saving AI response to transcript:', error);
           isAISpeaking.current = false;
-          // Don't show toast for TTS errors - they're not critical for interview flow
+          // Don't show toast - the transcript is still visible to the user
         }
       }
       
