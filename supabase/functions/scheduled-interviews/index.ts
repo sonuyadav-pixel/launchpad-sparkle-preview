@@ -120,6 +120,30 @@ const handler = async (req: Request): Promise<Response> => {
           );
         }
         
+        // Check interview limit (100 for testing, will change to 3 in production)
+        const MAX_INTERVIEWS = 100; // TODO: Change to 3 after testing
+        const { count, error: countError } = await supabase
+          .from('scheduled_interviews')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if (countError) {
+          console.error('Error counting interviews:', countError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to check interview limit' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (count && count >= MAX_INTERVIEWS) {
+          return new Response(
+            JSON.stringify({ 
+              error: `Interview limit reached. You can only create up to ${MAX_INTERVIEWS} scheduled interviews.` 
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         // Validate required fields
         if (!newInterview.candidate_name || !newInterview.interview_title || !newInterview.invited_email || !newInterview.scheduled_at) {
           return new Response(
