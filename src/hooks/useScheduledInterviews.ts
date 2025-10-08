@@ -187,11 +187,10 @@ export const useScheduledInterviews = () => {
     return scheduledInterviews.find(interview => {
       const scheduledTime = new Date(interview.scheduled_at);
       const hasAttemptsRemaining = interview.attempts_count < interview.max_attempts;
-      const isScheduledInFuture = scheduledTime > now;
       
-      return interview.status === 'scheduled' && 
-             hasAttemptsRemaining && 
-             isScheduledInFuture;
+      // Show if: scheduled status AND has attempts remaining
+      // (no time restriction - users can start anytime until attempts are exhausted)
+      return interview.status === 'scheduled' && hasAttemptsRemaining;
     });
   }, [scheduledInterviews]);
   
