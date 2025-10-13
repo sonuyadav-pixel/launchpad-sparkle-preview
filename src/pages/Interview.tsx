@@ -930,9 +930,17 @@ const Interview = () => {
       let welcomeMessage = "";
       let useEC2 = false;
       
-      if (scheduledInterviewId && !hasInitializedEC2.current) {
+      // Use sessionStorage to persist initialization flag across re-renders
+      const ec2InitKey = `ec2_initialized_${sessionId}`;
+      const alreadyInitialized = sessionStorage.getItem(ec2InitKey) === 'true';
+      
+      if (scheduledInterviewId && !alreadyInitialized) {
         try {
           console.log('🔍 Fetching scheduled interview details:', scheduledInterviewId);
+          
+          // Mark as initializing immediately to prevent race conditions
+          sessionStorage.setItem(ec2InitKey, 'true');
+          hasInitializedEC2.current = true;
           
           // Get scheduled interview details
           const { data: interviews } = await supabase.functions.invoke('scheduled-interviews', {
@@ -944,7 +952,6 @@ const Interview = () => {
           if (scheduledInterview?.cv_file_path && scheduledInterview?.jd_file_path) {
             console.log('📋 Initializing EC2 interview with CV and JD...');
             useEC2 = true;
-            hasInitializedEC2.current = true; // Mark as initialized to prevent duplicates
             
             // Initialize EC2 interview and WAIT for the response
             const { data: initData, error: initError } = await supabase.functions.invoke('ec2-interview', {
@@ -961,15 +968,19 @@ const Interview = () => {
               console.log('✅ EC2 interview initialized with first question from Llama');
             } else {
               console.warn('⚠️ EC2 initialization failed:', initError);
-              useEC2 = false; // Fall back if EC2 fails
-              hasInitializedEC2.current = false; // Reset on failure
+              useEC2 = false;
+              sessionStorage.removeItem(ec2InitKey); // Remove flag on failure
+              hasInitializedEC2.current = false;
             }
           }
         } catch (ec2Error) {
           console.warn('⚠️ Failed to initialize EC2 interview:', ec2Error);
           useEC2 = false;
-          hasInitializedEC2.current = false; // Reset on error
+          sessionStorage.removeItem(ec2InitKey); // Remove flag on error
+          hasInitializedEC2.current = false;
         }
+      } else if (alreadyInitialized) {
+        console.log('⏭️ EC2 already initialized for this session, skipping...');
       }
       
       // Only show welcome message if we got one from EC2
