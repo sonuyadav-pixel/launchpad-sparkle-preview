@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import pdf from 'npm:pdf-parse@1.1.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -103,11 +104,18 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to download JD: ${jdError?.message || 'No data'}`);
     }
 
-    // Convert Blobs to text
-    const cvText = await cvData.text();
-    const jdText = await jdData.text();
+    // Parse PDFs to extract text
+    console.log('📄 Parsing CV PDF...');
+    const cvBuffer = await cvData.arrayBuffer();
+    const cvParsed = await pdf(new Uint8Array(cvBuffer));
+    const cvText = cvParsed.text;
+    
+    console.log('📄 Parsing JD PDF...');
+    const jdBuffer = await jdData.arrayBuffer();
+    const jdParsed = await pdf(new Uint8Array(jdBuffer));
+    const jdText = jdParsed.text;
 
-    console.log('📄 Document lengths - CV:', cvText.length, 'JD:', jdText.length);
+    console.log('📄 Extracted text lengths - CV:', cvText.length, 'chars, JD:', jdText.length, 'chars');
 
     // Summarize both documents using AI
     console.log('🤖 Summarizing CV and JD...');
