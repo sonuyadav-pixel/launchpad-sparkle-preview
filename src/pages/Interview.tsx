@@ -71,6 +71,7 @@ const Interview = () => {
   const lastProcessedTime = useRef<number>(0);
   const isAISpeaking = useRef(false);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const hasInitializedEC2 = useRef(false);
   
   
   
@@ -929,7 +930,7 @@ const Interview = () => {
       let welcomeMessage = "";
       let useEC2 = false;
       
-      if (scheduledInterviewId) {
+      if (scheduledInterviewId && !hasInitializedEC2.current) {
         try {
           console.log('🔍 Fetching scheduled interview details:', scheduledInterviewId);
           
@@ -943,6 +944,7 @@ const Interview = () => {
           if (scheduledInterview?.cv_file_path && scheduledInterview?.jd_file_path) {
             console.log('📋 Initializing EC2 interview with CV and JD...');
             useEC2 = true;
+            hasInitializedEC2.current = true; // Mark as initialized to prevent duplicates
             
             // Initialize EC2 interview and WAIT for the response
             const { data: initData, error: initError } = await supabase.functions.invoke('ec2-interview', {
@@ -960,11 +962,13 @@ const Interview = () => {
             } else {
               console.warn('⚠️ EC2 initialization failed:', initError);
               useEC2 = false; // Fall back if EC2 fails
+              hasInitializedEC2.current = false; // Reset on failure
             }
           }
         } catch (ec2Error) {
           console.warn('⚠️ Failed to initialize EC2 interview:', ec2Error);
           useEC2 = false;
+          hasInitializedEC2.current = false; // Reset on error
         }
       }
       
