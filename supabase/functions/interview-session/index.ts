@@ -99,13 +99,18 @@ serve(async (req) => {
           console.log('No body provided, using defaults');
           body = {};
         }
+        const allowedTypes = ['general', 'technical', 'behavioral', 'custom'];
+        const requestedType = body.interview_type;
+        const interviewType = allowedTypes.includes(requestedType)
+          ? requestedType
+          : requestedType === 'scheduled' ? 'custom' : 'general';
         const sessionData: InterviewSession = {
           user_id: user.id,
           title: body.title || 'AI Interview Session',
           status: 'waiting',
-          interview_type: body.interview_type || 'general',
+          interview_type: interviewType,
           settings: body.settings || {},
-          metadata: body.metadata || {}
+          metadata: { ...(body.metadata || {}), source_type: requestedType || 'general' }
         };
 
         const { data: session, error } = await supabase
