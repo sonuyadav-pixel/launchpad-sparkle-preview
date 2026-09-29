@@ -76,8 +76,8 @@ const Interview = () => {
   
   
   // Speech finalization timer
-  const speechFinalizationTimer = useRef<NodeJS.Timeout | null>(null);
-  const acknowledgmentTimer = useRef<NodeJS.Timeout | null>(null);
+  const speechFinalizationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const acknowledgmentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const accumulatedTranscript = useRef('');
   const pendingTranscript = useRef('');
   const hasAcknowledgedCurrent = useRef(false);
@@ -108,10 +108,10 @@ const Interview = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSpeechTime = useRef<number>(Date.now());
-  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
-  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
   // Permission and Auto-Start Functions
