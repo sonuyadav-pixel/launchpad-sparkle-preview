@@ -22,7 +22,7 @@ export const InterviewLoadingScreen = ({
   ];
 
   useEffect(() => {
-    const intervals: NodeJS.Timeout[] = [];
+    const intervals: ReturnType<typeof setTimeout>[] = [];
 
     loadingSteps.forEach((step, index) => {
       const timeout = setTimeout(() => {
